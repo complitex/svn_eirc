@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns:wicket>
+    <head>
+        <title></title>
+    </head>
+    <body>
+        <wicket:panel>
+            <table class="tbForm">
+                <tr>
+                    <th>
+                        <wicket:message key="organization_type"/>:
+                    </th>
+                    <td>
+                        <select wicket:id="organizationType" multiple="multiple">
+                            <option></option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+            <table class="tbForm">
+                <tr wicket:id="districtContainer">
+                    <th>
+                        <wicket:message key="district"/>
+                        <span wicket:id="districtRequiredContainer"><b class="blue">*</b></span>:
+                    </th>
+                    <td>
+                        <span wicket:id="district"></span>
+                    </td>
+                </tr>
+                <tr wicket:id="parentContainer">
+                    <th>
+                        <wicket:message key="parent"/>:
+                    </th>
+                    <td>
+                        <span wicket:id="parent"></span>
+                    </td>
+                </tr>
+                
+                <!-- EDRPOU. Only for user organizations. -->
+                <tr wicket:id="emailContainer">
+                    <th>
+                        <span wicket:id="label"></span><b wicket:id="required" class="blue">*</b>:
+                    </th>
+                    <td>
+                        <div wicket:id="input"></div>
+                    </td>
+                </tr>
+            </table>
+        </wicket:panel>
+    </body>
+</html>

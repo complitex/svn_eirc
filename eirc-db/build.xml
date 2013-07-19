@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="eirc database" default="create" basedir=".">
+    <property file="database.properties"/>
+
+    <target name="create">
+        <sql driver="com.mysql.jdbc.Driver" encoding="UTF-8" url="${url}" userid="${username}" password="${password}">
+            <classpath>
+                <pathelement location="${jdbc}"/>
+            </classpath>
+
+            <transaction src="../../complitex/complitex-db/complitex-dictionary-create.sql"/>
+            <transaction src="../../complitex/complitex-db/complitex-create.sql"/>
+
+            <transaction src="eirc-create.sql"/>
+        </sql>
+
+        <sql driver="com.mysql.jdbc.Driver" encoding="UTF-8" url="${url}" userid="${username}" password="${password}">
+            <classpath>
+                <pathelement location="${jdbc}"/>
+            </classpath>
+
+            <!--transaction src="../../complitex/complitex-db/complitex-insert.sql"/-->
+            <transaction src="../../complitex/complitex-db/complitex-sequence.sql"/>
+
+            <!--transaction src="eirc-insert.sql"/-->
+            <transaction src="eirc-sequence.sql"/>
+        </sql>
+    </target>
+
+    <target name="populate_test_data">
+        <sql driver="com.mysql.jdbc.Driver" encoding="UTF-8" url="${url}" userid="${username}" password="${password}">
+            <classpath>
+                <pathelement location="${jdbc}"/>
+            </classpath>
+
+            <transaction src="../../complitex/complitex-db/complitex-testdump.sql"/>
+            <transaction src="eirc-testdump.sql"/>
+            
+            <transaction src="../../complitex/complitex-db/complitex-sequence.sql"/>
+            <transaction src="eirc-sequence.sql"/>
+        </sql>
+    </target>
+
+    <target name="create_with_test">
+        <antcall target="create"/>
+        <antcall target="populate_test_data"/>
+    </target>
+</project>
