@@ -80,14 +80,21 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
     private static final String RESOURCE_BUNDLE = EircOrganizationStrategy.class.getName();
     private static final String MAPPING_NAMESPACE = EircOrganizationStrategy.class.getPackage().getName() + ".EircOrganization";
 
+    public static final Map<Long, String> GENERAL_ATTRIBUTE_TYPES = ImmutableMap.<Long, String>builder().
+            put(KPP, "kpp").
+            put(INN, "inn").
+            put(NOTE, "note").
+            put(JURIDICAL_ADDRESS, "juridicalAddress").
+            put(POSTAL_ADDRESS, "postalAddress").
+            build();
 
     private static final List<Long> CUSTOM_ATTRIBUTE_TYPES = ImmutableList.<Long>builder().
-            add(KPP).
-            add(INN).
-            add(NOTE).
-            add(JURIDICAL_ADDRESS).
-            add(POSTAL_ADDRESS).
             add(EMAIL).
+            build();
+
+    private static final List<Long> ALL_ATTRIBUTE_TYPES = ImmutableList.<Long>builder().
+            addAll(GENERAL_ATTRIBUTE_TYPES.keySet()).
+            addAll(CUSTOM_ATTRIBUTE_TYPES).
             build();
 
     @EJB
@@ -171,7 +178,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
 
     @Override
     public boolean isSimpleAttributeType(EntityAttributeType entityAttributeType) {
-        if (CUSTOM_ATTRIBUTE_TYPES.contains(entityAttributeType.getId())) {
+        if (ALL_ATTRIBUTE_TYPES.contains(entityAttributeType.getId())) {
             return false;
         }
         return super.isSimpleAttributeType(entityAttributeType);
@@ -181,7 +188,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
     protected void fillAttributes(DomainObject object) {
         super.fillAttributes(object);
 
-        for (long attributeTypeId : CUSTOM_ATTRIBUTE_TYPES) {
+        for (long attributeTypeId : ALL_ATTRIBUTE_TYPES) {
             if (object.getAttribute(attributeTypeId).getLocalizedValues() == null) {
                 object.getAttribute(attributeTypeId).setLocalizedValues(stringBean.newStringCultures());
             }
@@ -193,7 +200,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
         super.loadStringCultures(attributes);
 
         for (Attribute attribute : attributes) {
-            if (CUSTOM_ATTRIBUTE_TYPES.contains(attribute.getAttributeTypeId())) {
+            if (ALL_ATTRIBUTE_TYPES.contains(attribute.getAttributeTypeId())) {
                 if (attribute.getValueId() != null) {
                     loadStringCultures(attribute);
                 } else {
@@ -355,7 +362,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
         /* if it's data source or one of load/save request file directory attributes 
          * or root directory for loading and saving request files
          * then string value should be inserted as is and not upper cased. */
-        return CUSTOM_ATTRIBUTE_TYPES.contains(attributeTypeId)
+        return ALL_ATTRIBUTE_TYPES.contains(attributeTypeId)
                 ? stringBean.insertStrings(strings, getEntityTable(), false)
                 : super.insertStrings(attributeTypeId, strings);
     }
