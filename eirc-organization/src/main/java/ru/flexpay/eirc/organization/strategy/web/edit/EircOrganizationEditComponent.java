@@ -1,6 +1,5 @@
 package ru.flexpay.eirc.organization.strategy.web.edit;
 
-import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
@@ -13,8 +12,6 @@ import org.complitex.dictionary.web.component.DomainObjectInputPanel;
 import org.complitex.organization.strategy.web.edit.OrganizationEditComponent;
 import ru.flexpay.eirc.dictionary.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
-import ru.flexpay.eirc.organization.strategy.entity.EircOrganization;
-import ru.flexpay.eirc.organization_type.strategy.EircOrganizationTypeStrategy;
 
 import javax.ejb.EJB;
 import java.util.Map;
