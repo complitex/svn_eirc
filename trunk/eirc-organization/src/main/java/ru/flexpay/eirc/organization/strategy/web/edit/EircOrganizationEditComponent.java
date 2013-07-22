@@ -1,29 +1,22 @@
 package ru.flexpay.eirc.organization.strategy.web.edit;
 
+import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.model.IModel;
-import org.apache.wicket.model.Model;
-import org.apache.wicket.model.ResourceModel;
-import org.complitex.dictionary.converter.StringConverter;
 import org.complitex.dictionary.entity.Attribute;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.description.EntityAttributeType;
 import org.complitex.dictionary.service.StringCultureBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
-import org.complitex.dictionary.util.AttributeUtil;
-import org.complitex.dictionary.web.component.DisableAwareDropDownChoice;
 import org.complitex.dictionary.web.component.DomainObjectInputPanel;
-import org.complitex.dictionary.web.component.IDisableAwareChoiceRenderer;
 import org.complitex.organization.strategy.web.edit.OrganizationEditComponent;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.organization.strategy.entity.EircOrganization;
-import ru.flexpay.eirc.organization.strategy.entity.RemoteDataSource;
 import ru.flexpay.eirc.organization_type.strategy.EircOrganizationTypeStrategy;
 
 import javax.ejb.EJB;
-import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -35,10 +28,7 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
 
     @EJB
     private StringCultureBean stringBean;
-
-    private WebMarkupContainer dataSourceContainer;
     private WebMarkupContainer emailContainer;
-    private IModel<RemoteDataSource> dataSourceModel;
 
     public EircOrganizationEditComponent(String id, boolean disabled) {
         super(id, disabled);
@@ -57,33 +47,46 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
 
         final EircOrganization organization = getDomainObject();
 
+        // General attributes.
+        {
+            for (Map.Entry<Long, String> attribute : EircOrganizationStrategy.GENERAL_ATTRIBUTE_TYPES.entrySet()) {
+                addAttributeContainer(attribute.getKey(), isDisabled, organization, attribute.getValue() + "Container");
+            }
+        }
+
         //E-mail. It is service provider organization only attribute.
         {
-            emailContainer = new WebMarkupContainer("emailContainer");
-            emailContainer.setOutputMarkupPlaceholderTag(true);
-            add(emailContainer);
-            final long attributeTypeId = EircOrganizationStrategy.EMAIL;
-            Attribute attribute = organization.getAttribute(attributeTypeId);
-            if (attribute == null) {
-                attribute = new Attribute();
-                attribute.setAttributeTypeId(attributeTypeId);
-                attribute.setObjectId(organization.getId());
-                attribute.setAttributeId(1L);
-                attribute.setLocalizedValues(stringBean.newStringCultures());
-            }
-            final EntityAttributeType attributeType =
-                    eircOrganizationStrategy.getEntity().getAttributeType(attributeTypeId);
-            emailContainer.add(new Label("label",
-                    DomainObjectInputPanel.labelModel(attributeType.getAttributeNames(), getLocale())));
-            emailContainer.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));
-
-            emailContainer.add(
-                    DomainObjectInputPanel.newInputComponent("organization", getStrategyName(),
-                            organization, attribute, getLocale(), isDisabled));
+            emailContainer = addAttributeContainer(EircOrganizationStrategy.EMAIL, isDisabled, organization, "emailContainer");
 
             //initial visibility
             emailContainer.setVisible(isServiceProvider());
         }
+    }
+
+    private WebMarkupContainer addAttributeContainer(final long attributeTypeId, boolean disabled,
+                                                     EircOrganization organization, String name) {
+        WebMarkupContainer container = new WebMarkupContainer(name);
+        container.setOutputMarkupPlaceholderTag(true);
+        add(container);
+        Attribute attribute = organization.getAttribute(attributeTypeId);
+        if (attribute == null) {
+            attribute = new Attribute();
+            attribute.setAttributeTypeId(attributeTypeId);
+            attribute.setObjectId(organization.getId());
+            attribute.setAttributeId(1L);
+            attribute.setLocalizedValues(stringBean.newStringCultures());
+        }
+        final EntityAttributeType attributeType =
+                eircOrganizationStrategy.getEntity().getAttributeType(attributeTypeId);
+        container.add(new Label("label",
+                DomainObjectInputPanel.labelModel(attributeType.getAttributeNames(), getLocale())));
+        container.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));
+
+        container.add(
+                DomainObjectInputPanel.newInputComponent("organization", getStrategyName(),
+                        organization, attribute, getLocale(), disabled));
+
+        return container;
     }
 
     @Override
