@@ -20,6 +20,8 @@ import org.complitex.dictionary.util.ResourceUtil;
 import org.complitex.organization.strategy.AbstractOrganizationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.flexpay.eirc.dictionary.Organization;
+import ru.flexpay.eirc.dictionary.OrganizationType;
 import ru.flexpay.eirc.organization.strategy.entity.EircOrganization;
 import ru.flexpay.eirc.organization.strategy.entity.RemoteDataSource;
 import ru.flexpay.eirc.organization.strategy.web.edit.EircOrganizationEditComponent;
@@ -143,7 +145,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
             example.setLocaleId(localeBean.convert(locale).getId());
             example.setAsc(true);
         }
-        example.addAdditionalParam(ORGANIZATION_TYPE_PARAMETER, ImmutableList.of(EircOrganizationTypeStrategy.SERVICE_PROVIDER));
+        example.addAdditionalParam(ORGANIZATION_TYPE_PARAMETER, ImmutableList.of(OrganizationType.SERVICE_PROVIDER.getId()));
         configureExample(example, ImmutableMap.<String, Long>of(), null);
         return (List<DomainObject>) find(example);
     }
@@ -164,7 +166,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
     public List<DomainObject> getAllServiceProviders(Locale locale) {
         DomainObjectExample example = new DomainObjectExample();
 
-        example.addAdditionalParam(ORGANIZATION_TYPE_PARAMETER, ImmutableList.of(EircOrganizationTypeStrategy.SERVICE_PROVIDER));
+        example.addAdditionalParam(ORGANIZATION_TYPE_PARAMETER, ImmutableList.of(OrganizationType.SERVICE_PROVIDER.getId()));
         if (locale != null) {
             example.setOrderByAttributeTypeId(NAME);
             example.setLocaleId(localeBean.convert(locale).getId());
@@ -212,27 +214,27 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
 
     @Transactional
     @Override
-    public EircOrganization findById(long id, boolean runAsAdmin) {
+    public Organization findById(long id, boolean runAsAdmin) {
         DomainObject object = super.findById(id, runAsAdmin);
         if (object == null) {
             return null;
         }
 
-        return new EircOrganization(object);
+        return new Organization(object);
     }
 
     @Override
-    public EircOrganization newInstance() {
-        return new EircOrganization(super.newInstance());
+    public Organization newInstance() {
+        return new Organization(super.newInstance());
     }
 
     @Override
-    public EircOrganization findHistoryObject(long objectId, Date date) {
+    public Organization findHistoryObject(long objectId, Date date) {
         DomainObject object = super.findHistoryObject(objectId, date);
         if (object == null) {
             return null;
         }
-        return new EircOrganization(object);
+        return new Organization(object);
     }
 
     @Transactional
