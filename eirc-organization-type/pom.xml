@@ -14,6 +14,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>ru.flexpay.eirc</groupId>
+            <artifactId>eirc-dictionary</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.complitex</groupId>
             <artifactId>complitex-organization-type</artifactId>
         </dependency>

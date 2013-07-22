@@ -5,6 +5,7 @@ import java.util.Collection;
 import javax.ejb.Stateless;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.complitex.organization_type.strategy.OrganizationTypeStrategy;
+import ru.flexpay.eirc.dictionary.OrganizationType;
 
 /**
  *
@@ -14,14 +15,14 @@ import org.complitex.organization_type.strategy.OrganizationTypeStrategy;
 public class EircOrganizationTypeStrategy extends OrganizationTypeStrategy {
 
     private static final String STRATEGY_NAME = EircOrganizationTypeStrategy.class.getSimpleName();
-    /**
-     * Organization type ids
-     */
-    public static final long SERVICE_PROVIDER = 2;
 
     @Override
     protected Collection<Long> getReservedInstanceIds() {
-        return ImmutableList.of(USER_ORGANIZATION_TYPE, SERVICE_PROVIDER);
+        ImmutableList.Builder<Long> builder = ImmutableList.builder();
+        for (OrganizationType organizationType : OrganizationType.values()) {
+            builder.add(organizationType.getId());
+        }
+        return builder.build();
     }
 
     @Override

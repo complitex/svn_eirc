@@ -11,6 +11,7 @@ import org.complitex.dictionary.service.StringCultureBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.DomainObjectInputPanel;
 import org.complitex.organization.strategy.web.edit.OrganizationEditComponent;
+import ru.flexpay.eirc.dictionary.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.organization.strategy.entity.EircOrganization;
 import ru.flexpay.eirc.organization_type.strategy.EircOrganizationTypeStrategy;
@@ -35,8 +36,8 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
     }
 
     @Override
-    protected EircOrganization getDomainObject() {
-        return (EircOrganization) super.getDomainObject();
+    protected Organization getDomainObject() {
+        return (Organization) super.getDomainObject();
     }
 
     @Override
@@ -45,7 +46,7 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
 
         final boolean isDisabled = isDisabled();
 
-        final EircOrganization organization = getDomainObject();
+        final Organization organization = getDomainObject();
 
         // General attributes.
         {
@@ -64,7 +65,7 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
     }
 
     private WebMarkupContainer addAttributeContainer(final long attributeTypeId, boolean disabled,
-                                                     EircOrganization organization, String name) {
+                                                     Organization organization, String name) {
         WebMarkupContainer container = new WebMarkupContainer(name);
         container.setOutputMarkupPlaceholderTag(true);
         add(container);
@@ -105,12 +106,7 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
     }
 
     public boolean isServiceProvider() {
-        for (DomainObject organizationType : getOrganizationTypesModel().getObject()) {
-            if (organizationType.getId().equals(EircOrganizationTypeStrategy.SERVICE_PROVIDER)) {
-                return true;
-            }
-        }
-        return false;
+        return getDomainObject().isServiceProvider();
     }
 
     @Override
