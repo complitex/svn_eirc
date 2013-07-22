@@ -22,11 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.dictionary.Organization;
 import ru.flexpay.eirc.dictionary.OrganizationType;
-import ru.flexpay.eirc.organization.strategy.entity.EircOrganization;
 import ru.flexpay.eirc.organization.strategy.entity.RemoteDataSource;
 import ru.flexpay.eirc.organization.strategy.web.edit.EircOrganizationEditComponent;
 import ru.flexpay.eirc.organization.strategy.web.edit.EircOrganizationValidator;
-import ru.flexpay.eirc.organization_type.strategy.EircOrganizationTypeStrategy;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
