@@ -4,17 +4,16 @@ import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import javax.ejb.Stateless;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
-import org.complitex.organization_type.strategy.OrganizationTypeStrategy;
-import ru.flexpay.eirc.dictionary.OrganizationType;
+import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 
 /**
  *
  * @author Artem
  */
 @Stateless
-public class EircOrganizationTypeStrategy extends OrganizationTypeStrategy {
+public class OrganizationTypeStrategy extends org.complitex.organization_type.strategy.OrganizationTypeStrategy {
 
-    private static final String STRATEGY_NAME = EircOrganizationTypeStrategy.class.getSimpleName();
+    private static final String STRATEGY_NAME = OrganizationTypeStrategy.class.getSimpleName();
 
     @Override
     protected Collection<Long> getReservedInstanceIds() {

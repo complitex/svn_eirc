@@ -1,4 +1,4 @@
-package ru.flexpay.eirc.organization.strategy.web.edit;
+package ru.flexpay.eirc.organization.web.edit;
 
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.markup.html.WebMarkupContainer;
@@ -10,8 +10,8 @@ import org.complitex.dictionary.service.StringCultureBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.DomainObjectInputPanel;
 import org.complitex.organization.strategy.web.edit.OrganizationEditComponent;
-import ru.flexpay.eirc.dictionary.Organization;
-import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
+import ru.flexpay.eirc.organization.entity.Organization;
+import ru.flexpay.eirc.organization.strategy.OrganizationStrategy;
 
 import javax.ejb.EJB;
 import java.util.Map;
@@ -22,7 +22,7 @@ import java.util.Map;
  */
 public class EircOrganizationEditComponent extends OrganizationEditComponent {
     @EJB(name = IOrganizationStrategy.BEAN_NAME, beanInterface = IOrganizationStrategy.class)
-    private EircOrganizationStrategy eircOrganizationStrategy;
+    private OrganizationStrategy organizationStrategy;
 
     @EJB
     private StringCultureBean stringBean;
@@ -47,14 +47,14 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
 
         // General attributes.
         {
-            for (Map.Entry<Long, String> attribute : EircOrganizationStrategy.GENERAL_ATTRIBUTE_TYPES.entrySet()) {
+            for (Map.Entry<Long, String> attribute : OrganizationStrategy.GENERAL_ATTRIBUTE_TYPES.entrySet()) {
                 addAttributeContainer(attribute.getKey(), isDisabled, organization, attribute.getValue() + "Container");
             }
         }
 
         //E-mail. It is service provider organization only attribute.
         {
-            emailContainer = addAttributeContainer(EircOrganizationStrategy.EMAIL, isDisabled, organization, "emailContainer");
+            emailContainer = addAttributeContainer(OrganizationStrategy.EMAIL, isDisabled, organization, "emailContainer");
 
             //initial visibility
             emailContainer.setVisible(isServiceProvider());
@@ -75,7 +75,7 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
             attribute.setLocalizedValues(stringBean.newStringCultures());
         }
         final EntityAttributeType attributeType =
-                eircOrganizationStrategy.getEntity().getAttributeType(attributeTypeId);
+                organizationStrategy.getEntity().getAttributeType(attributeTypeId);
         container.add(new Label("label",
                 DomainObjectInputPanel.labelModel(attributeType.getAttributeNames(), getLocale())));
         container.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));
@@ -128,19 +128,19 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
         final DomainObject organization = getDomainObject();
 
         if (!isServiceProvider()) {
-            organization.removeAttribute(EircOrganizationStrategy.EMAIL);
+            organization.removeAttribute(OrganizationStrategy.EMAIL);
         }
     }
 
     @Override
     protected String getStrategyName() {
-        return EircOrganizationStrategy.EIRC_ORGANIZATION_STRATEGY_NAME;
+        return OrganizationStrategy.EIRC_ORGANIZATION_STRATEGY_NAME;
     }
 
     @Override
     protected boolean isOrganizationTypeEnabled() {
         Long organizationId = getDomainObject().getId();
-        return !(organizationId != null && (organizationId.equals(EircOrganizationStrategy.MODULE_ID)))
+        return !(organizationId != null && (organizationId.equals(OrganizationStrategy.MODULE_ID)))
                 && super.isOrganizationTypeEnabled();
     }
 }

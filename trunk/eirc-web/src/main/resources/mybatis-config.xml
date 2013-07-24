@@ -46,7 +46,5 @@
         <mapper resource="org/complitex/logging/service/LogListBean.xml"/>
 
         <mapper resource="org/complitex/organization/strategy/Organization.xml"/>
-
-        <mapper resource="ru/flexpay/eirc/organization/strategy/EircOrganization.xml"/>
     </mappers>
 </configuration>
