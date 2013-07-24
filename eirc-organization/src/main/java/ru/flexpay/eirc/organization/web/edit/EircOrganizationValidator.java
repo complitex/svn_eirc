@@ -1,4 +1,4 @@
-package ru.flexpay.eirc.organization.strategy.web.edit;
+package ru.flexpay.eirc.organization.web.edit;
 
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.organization.strategy.web.edit.OrganizationEditComponent;

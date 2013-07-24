@@ -1,14 +1,12 @@
-package ru.flexpay.eirc.dictionary;
+package ru.flexpay.eirc.organization.entity;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.complitex.dictionary.entity.Attribute;
 import org.complitex.dictionary.entity.DomainObject;
-import org.complitex.dictionary.entity.Locale;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
+import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Pavel Sknar

@@ -1,10 +1,7 @@
-package ru.flexpay.eirc.dictionary;
+package ru.flexpay.eirc.organization_type.entity;
 
-import com.google.common.collect.Maps;
-import org.complitex.dictionary.entity.Locale;
 import org.complitex.dictionary.mybatis.IFixedIdType;
-
-import java.util.Map;
+import ru.flexpay.eirc.dictionary.entity.DictionaryObject;
 
 /**
  * @author Pavel Sknar
