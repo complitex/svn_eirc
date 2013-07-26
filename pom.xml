@@ -33,6 +33,7 @@
         <module>eirc-registry</module>
         <module>eirc-organization-type</module>
         <module>eirc-organization</module>
+	<module>eirc-eirc-account</module>
 
         <module>../complitex/complitex-dictionary</module>
         <module>../complitex/complitex-template</module>
@@ -135,6 +136,11 @@
             <dependency>
                 <groupId>ru.flexpay.eirc</groupId>
                 <artifactId>eirc-organization</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+	    <dependency>
+                <groupId>ru.flexpay.eirc</groupId>
+                <artifactId>eirc-eirc-account</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

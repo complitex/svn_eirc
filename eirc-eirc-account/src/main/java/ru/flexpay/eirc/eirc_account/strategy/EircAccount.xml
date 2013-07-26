@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ru.flexpay.eirc.eirc_account.entity.EircAccount">
+
+    <resultMap id="EircAccount" type="ru.flexpay.eirc.eirc_account.entity.EircAccount">
+        <id column="pk_id" property="pkId"/>
+        <result column="object_id" property="objectId"/>
+        <result column="account_number" property="accountNumber"/>
+        <result column="begin_date" property="beginDate"/>
+        <result column="end_date" property="endDate"/>
+
+        <association property="address" select="getAddress"/>
+
+        <association property="person" resultMap="ru.flexpay.eirc.dictionary.entity.Person.Person" />
+    </resultMap>
+
+    <resultMap id="Address" type="ru.flexpay.eirc.dictionary.entity.Address"
+               extends="org.complitex.dictionary.entity.DomainObject"/>
+    
+    <select id="getAddress" resultMap="Address" parameterType="map">
+        SELECT e.*
+        FROM
+         <choose>
+             <when test="address_entity_id == 500">
+                 `building`
+             </when>
+             <when test="address_entity_id == 200">
+                 `apartment`
+             </when>
+             <when test="address_entity_id == 100">
+                 `room`
+             </when>
+         </choose> e WHERE (e.`status` IN ('ACTIVE', 'INACTIVE')) AND e.`object_id` = #{address_id}
+    </select>
+
+    <sql id="findByApartmentSql">
+
+        LEFT JOIN `room` room ON room.`object_id` = e.`object_id` AND e.`address_entity_id` = 200
+        LEFT JOIN `apartment` apartment1 ON apartment1.`object_id` = room.`parent_id` AND room.`parent_entity_id` = 100
+        LEFT JOIN `apartment` apartment2 ON apartment1.`object_id` = e.`object_id` AND apartment2.`address_entity_id` = 100
+
+        WHERE apartment1.`object_id` = #{addressId} OR apartment2.`object_id` = #{addressId}
+    </sql>
+
+    <select id="findByApartment" parameterType="map" resultType="long">
+        SELECT DISTINCT e.`object_id` FROM `eirc_account` e
+        <include refid="findByApartmentSql"/>
+
+        <if test="size > 0">
+            LIMIT ${start},${size}
+        </if>
+    </select>
+
+    <select id="countByApartment" parameterType="map" resultType="integer">
+        SELECT COUNT(DISTINCT e.`object_id`) FROM `eirc_account` e
+        <include refid="findByApartmentSql"/>
+    </select>
+
+    <sql id="findByBuildingSql">
+        LEFT JOIN `room` room1 ON room1.`object_id` = e.`object_id` AND e.`address_entity_id` = 200
+
+        LEFT JOIN `apartment` apartment1 ON apartment1.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 100
+        LEFT JOIN `apartment` apartment2 ON apartment2.`object_id` = e.`object_id` AND e.`address_entity_id` = 100
+
+        LEFT JOIN `building` building1 ON building1.`object_id` = apartment1.`parent_id`
+        LEFT JOIN `building` building2 ON building2.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 500
+        LEFT JOIN `building` building3 ON building3.`object_id` = e.`address_id` AND e.`address_entity_id` = 500
+
+        WHERE building1.`object_id` = #{addressId} OR building2.`object_id` = #{addressId} OR building3.`object_id` = #{addressId}
+    </sql>
+
+    <select id="findByBuilding" parameterType="long" resultType="long">
+        SELECT DISTINCT e.`object_id` FROM `eirc_account` e
+        <include refid="findByBuildingSql"/>
+
+        <if test="size > 0">
+            LIMIT ${start},${size}
+        </if>
+    </select>
+
+    <select id="countByBuilding" parameterType="long" resultType="integer">
+        SELECT COUNT(DISTINCT e.`object_id`) FROM `eirc_account` e
+        <include refid="findByBuildingSql"/>
+    </select>
+
+    <sql id="findByBuildingAddressSql">
+
+        LEFT JOIN `room` room1 ON room1.`object_id` = e.`object_id` AND e.`address_entity_id` = 200
+
+        LEFT JOIN `apartment` apartment1 ON apartment1.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 100
+        LEFT JOIN `apartment` apartment2 ON apartment2.`object_id` = e.`object_id` AND e.`address_entity_id` = 100
+
+        LEFT JOIN `building` building1 ON building1.`object_id` = apartment1.`parent_id`
+        LEFT JOIN `building` building2 ON building2.`object_id` = apartment2.`parent_id`
+        LEFT JOIN `building` building3 ON building3.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 500
+        LEFT JOIN `building` building4 ON building4.`object_id` = e.`address_id` AND e.`address_entity_id` = 500
+
+        LEFT JOIN `building_address` building_a1 ON building_a1.`object_id` = building1.`parent_id`
+        LEFT JOIN `building_address` building_a2 ON building_a2.`object_id` = building2.`parent_id`
+        LEFT JOIN `building_address` building_a3 ON building_a3.`object_id` = building3.`parent_id`
+        LEFT JOIN `building_address` building_a4 ON building_a4.`object_id` = building4.`parent_id`
+
+        WHERE building_a1.`object_id` = #{addressId} or building_a2.`object_id` = #{addressId} or building_a3.`object_id` = #{addressId} or building_a4.`object_id` = #{addressId}
+    </sql>
+
+    <select id="findByBuildingAddress" parameterType="long" resultType="long">
+        SELECT DISTINCT e.`object_id` FROM `eirc_account` e
+        <include refid="findByBuildingAddressSql"/>
+
+        <if test="size > 0">
+            LIMIT ${start},${size}
+        </if>
+    </select>
+
+    <select id="countByBuildingAddress" parameterType="long" resultType="integer">
+        SELECT COUNT(DISTINCT e.`object_id`) FROM `eirc_account` e
+        <include refid="findByBuildingAddressSql"/>
+    </select>
+
+    <sql id="findByStreetSql">
+
+        LEFT JOIN `room` room1 ON room1.`object_id` = e.`object_id` AND e.`address_entity_id` = 200
+
+        LEFT JOIN `apartment` apartment1 ON apartment1.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 100
+        LEFT JOIN `apartment` apartment2 ON apartment2.`object_id` = e.`object_id` AND e.`address_entity_id` = 100
+
+        LEFT JOIN `building` building1 ON building1.`object_id` = apartment1.`parent_id`
+        LEFT JOIN `building` building2 ON building2.`object_id` = apartment2.`parent_id`
+        LEFT JOIN `building` building3 ON building3.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 500
+        LEFT JOIN `building` building4 ON building4.`object_id` = e.`address_id` AND e.`address_entity_id` = 500
+
+        LEFT JOIN `building_address` building_a1 ON building_a1.`object_id` = building1.`parent_id`
+        LEFT JOIN `building_address` building_a2 ON building_a2.`object_id` = building2.`parent_id`
+        LEFT JOIN `building_address` building_a3 ON building_a3.`object_id` = building3.`parent_id`
+        LEFT JOIN `building_address` building_a4 ON building_a4.`object_id` = building4.`parent_id`
+
+        LEFT JOIN `street` street1 ON street1.`object_id` = building_a1.`parent_id`
+        LEFT JOIN `street` street2 ON street2.`object_id` = building_a2.`parent_id`
+        LEFT JOIN `street` street3 ON street3.`object_id` = building_a3.`parent_id`
+        LEFT JOIN `street` street4 ON street4.`object_id` = building_a4.`parent_id`
+
+        WHERE street1.`object_id` = #{addressId} or street2.`object_id` = #{addressId} or street3.`object_id` = #{addressId} or street4.`object_id` = #{addressId}
+    </sql>
+
+    <select id="findByStreet" parameterType="long" resultType="long">
+        SELECT DISTINCT e.`object_id` FROM `eirc_account` e
+        <include refid="findByStreetSql"/>
+
+        <if test="size > 0">
+            LIMIT ${start},${size}
+        </if>
+    </select>
+
+    <select id="countByStreet" parameterType="long" resultType="integer">
+        SELECT COUNT(DISTINCT e.`object_id`) FROM `eirc_account` e
+        <include refid="findByStreetSql"/>
+    </select>
+
+    <sql id="findByCitySql">
+
+        LEFT JOIN `room` room1 ON room1.`object_id` = e.`object_id` AND e.`address_entity_id` = 200
+
+        LEFT JOIN `apartment` apartment1 ON apartment1.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 100
+        LEFT JOIN `apartment` apartment2 ON apartment2.`object_id` = e.`object_id` AND e.`address_entity_id` = 100
+
+        LEFT JOIN `building` building1 ON building1.`object_id` = apartment1.`parent_id`
+        LEFT JOIN `building` building2 ON building2.`object_id` = apartment2.`parent_id`
+        LEFT JOIN `building` building3 ON building3.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 500
+        LEFT JOIN `building` building4 ON building4.`object_id` = e.`address_id` AND e.`address_entity_id` = 500
+
+        LEFT JOIN `building_address` building_a1 ON building_a1.`object_id` = building1.`parent_id`
+        LEFT JOIN `building_address` building_a2 ON building_a2.`object_id` = building2.`parent_id`
+        LEFT JOIN `building_address` building_a3 ON building_a3.`object_id` = building3.`parent_id`
+        LEFT JOIN `building_address` building_a4 ON building_a4.`object_id` = building4.`parent_id`
+
+        LEFT JOIN `street` street1 ON street1.`object_id` = building_a1.`parent_id`
+        LEFT JOIN `street` street2 ON street2.`object_id` = building_a2.`parent_id`
+        LEFT JOIN `street` street3 ON street3.`object_id` = building_a3.`parent_id`
+        LEFT JOIN `street` street4 ON street4.`object_id` = building_a4.`parent_id`
+        
+        LEFT JOIN `city` city1 ON city1.`object_id` = street1.`parent_id`
+        LEFT JOIN `city` city2 ON city2.`object_id` = street2.`parent_id`
+        LEFT JOIN `city` city3 ON city3.`object_id` = street3.`parent_id`
+        LEFT JOIN `city` city4 ON city4.`object_id` = street4.`parent_id`
+
+        WHERE city1.`object_id` = #{addressId} or city2.`object_id` = #{addressId} or city3.`object_id` = #{addressId} or city4.`object_id` = #{addressId}
+    </sql>
+
+    <select id="findByCity" parameterType="long" resultType="long">
+        SELECT DISTINCT e.`object_id` FROM `eirc_account` e
+        <include refid="findByCitySql"/>
+
+        <if test="size > 0">
+            LIMIT ${start},${size}
+        </if>
+    </select>
+
+    <select id="countByCity" parameterType="long" resultType="integer">
+        SELECT COUNT(DISTINCT e.`object_id`) FROM `eirc_account` e
+        <include refid="findByCitySql"/>
+    </select>
+
+    <sql id="findByRegionSql">
+
+        LEFT JOIN `room` room1 ON room1.`object_id` = e.`object_id` AND e.`address_entity_id` = 200
+
+        LEFT JOIN `apartment` apartment1 ON apartment1.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 100
+        LEFT JOIN `apartment` apartment2 ON apartment2.`object_id` = e.`object_id` AND e.`address_entity_id` = 100
+
+        LEFT JOIN `building` building1 ON building1.`object_id` = apartment1.`parent_id`
+        LEFT JOIN `building` building2 ON building2.`object_id` = apartment2.`parent_id`
+        LEFT JOIN `building` building3 ON building3.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 500
+        LEFT JOIN `building` building4 ON building4.`object_id` = e.`address_id` AND e.`address_entity_id` = 500
+
+        LEFT JOIN `building_address` building_a1 ON building_a1.`object_id` = building1.`parent_id`
+        LEFT JOIN `building_address` building_a2 ON building_a2.`object_id` = building2.`parent_id`
+        LEFT JOIN `building_address` building_a3 ON building_a3.`object_id` = building3.`parent_id`
+        LEFT JOIN `building_address` building_a4 ON building_a4.`object_id` = building4.`parent_id`
+
+        LEFT JOIN `street` street1 ON street1.`object_id` = building_a1.`parent_id`
+        LEFT JOIN `street` street2 ON street2.`object_id` = building_a2.`parent_id`
+        LEFT JOIN `street` street3 ON street3.`object_id` = building_a3.`parent_id`
+        LEFT JOIN `street` street4 ON street4.`object_id` = building_a4.`parent_id`
+        
+        LEFT JOIN `city` city1 ON city1.`object_id` = street1.`parent_id`
+        LEFT JOIN `city` city2 ON city2.`object_id` = street2.`parent_id`
+        LEFT JOIN `city` city3 ON city3.`object_id` = street3.`parent_id`
+        LEFT JOIN `city` city4 ON city4.`object_id` = street4.`parent_id`
+        
+        LEFT JOIN `region` region1 ON region1.`object_id` = city1.`parent_id`
+        LEFT JOIN `region` region2 ON region2.`object_id` = city2.`parent_id`
+        LEFT JOIN `region` region3 ON region3.`object_id` = city3.`parent_id`
+        LEFT JOIN `region` region4 ON region4.`object_id` = city4.`parent_id`
+
+        WHERE region1.`object_id` = #{addressId} or region2.`object_id` = #{addressId} or region3.`object_id` = #{addressId} or region4.`object_id` = #{addressId}
+    </sql>
+
+    <select id="findByRegion" parameterType="long" resultType="long">
+        SELECT DISTINCT e.`object_id` FROM `eirc_account` e
+        <include refid="findByRegionSql"/>
+
+        <if test="size > 0">
+            LIMIT ${start},${size}
+        </if>
+    </select>
+
+    <select id="countByRegion" parameterType="long" resultType="integer">
+        SELECT COUNT(DISTINCT e.`object_id`) FROM `eirc_account` e
+        <include refid="findByRegionSql"/>
+    </select>
+
+    <sql id="findByCountrySql">
+
+        LEFT JOIN `room` room1 ON room1.`object_id` = e.`object_id` AND e.`address_entity_id` = 200
+
+        LEFT JOIN `apartment` apartment1 ON apartment1.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 100
+        LEFT JOIN `apartment` apartment2 ON apartment2.`object_id` = e.`object_id` AND e.`address_entity_id` = 100
+
+        LEFT JOIN `building` building1 ON building1.`object_id` = apartment1.`parent_id`
+        LEFT JOIN `building` building2 ON building2.`object_id` = apartment2.`parent_id`
+        LEFT JOIN `building` building3 ON building3.`object_id` = room1.`parent_id` AND room1.`parent_entity_id` = 500
+        LEFT JOIN `building` building4 ON building4.`object_id` = e.`address_id` AND e.`address_entity_id` = 500
+
+        LEFT JOIN `building_address` building_a1 ON building_a1.`object_id` = building1.`parent_id`
+        LEFT JOIN `building_address` building_a2 ON building_a2.`object_id` = building2.`parent_id`
+        LEFT JOIN `building_address` building_a3 ON building_a3.`object_id` = building3.`parent_id`
+        LEFT JOIN `building_address` building_a4 ON building_a4.`object_id` = building4.`parent_id`
+
+        LEFT JOIN `street` street1 ON street1.`object_id` = building_a1.`parent_id`
+        LEFT JOIN `street` street2 ON street2.`object_id` = building_a2.`parent_id`
+        LEFT JOIN `street` street3 ON street3.`object_id` = building_a3.`parent_id`
+        LEFT JOIN `street` street4 ON street4.`object_id` = building_a4.`parent_id`
+        
+        LEFT JOIN `city` city1 ON city1.`object_id` = street1.`parent_id`
+        LEFT JOIN `city` city2 ON city2.`object_id` = street2.`parent_id`
+        LEFT JOIN `city` city3 ON city3.`object_id` = street3.`parent_id`
+        LEFT JOIN `city` city4 ON city4.`object_id` = street4.`parent_id`
+        
+        LEFT JOIN `region` region1 ON region1.`object_id` = city1.`parent_id`
+        LEFT JOIN `region` region2 ON region2.`object_id` = city2.`parent_id`
+        LEFT JOIN `region` region3 ON region3.`object_id` = city3.`parent_id`
+        LEFT JOIN `region` region4 ON region4.`object_id` = city4.`parent_id`
+        
+        LEFT JOIN `country` country1 ON country1.`object_id` = region1.`parent_id`
+        LEFT JOIN `country` country2 ON country2.`object_id` = region2.`parent_id`
+        LEFT JOIN `country` country3 ON country3.`object_id` = region3.`parent_id`
+        LEFT JOIN `country` country4 ON country4.`object_id` = region4.`parent_id`
+
+        WHERE country1.`object_id` = #{addressId} or country2.`object_id` = #{addressId} or country3.`object_id` = #{addressId} or country4.`object_id` = #{addressId}
+    </sql>
+
+    <select id="findByCountry" parameterType="long" resultType="long">
+        SELECT DISTINCT e.`object_id` FROM `eirc_account` e
+        <include refid="findByCountrySql"/>
+
+        <if test="size > 0">
+            LIMIT ${start},${size}
+        </if>
+    </select>
+
+    <select id="countByCountry" parameterType="long" resultType="integer">
+        SELECT COUNT(DISTINCT e.`object_id`) FROM `eirc_account` e
+        <include refid="findByCountrySql"/>
+    </select>
+
+</mapper>
