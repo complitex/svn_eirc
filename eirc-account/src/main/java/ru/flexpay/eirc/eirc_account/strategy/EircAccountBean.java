@@ -38,7 +38,7 @@ public class EircAccountBean extends AbstractBean {
     }
 
     public EircAccount getEircAccount(long id) {
-       return sqlSession().selectOne(NS + ".getEircAccount", id);
+       return sqlSession().selectOne(NS + ".selectEircAccount", id);
     }
 
     public List<EircAccount> getEircAccounts(FilterWrapper<EircAccount> filter) {
@@ -63,7 +63,7 @@ public class EircAccountBean extends AbstractBean {
     }
 
     public EircAccount getEricAccountByPkId(long pkId) {
-        return sqlSession().selectOne(NS + ".getEircAccount", pkId);
+        return sqlSession().selectOne(NS + ".selectEircAccountByPkId", pkId);
     }
 
     public PageParameters getEditPageParams(Long objectId, Long parentId, String parentEntity) {
