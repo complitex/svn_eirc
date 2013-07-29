@@ -10,7 +10,7 @@
         <result column="begin_date" property="beginDate"/>
         <result column="end_date" property="endDate"/>
 
-        <association property="address" select="getAddress"/>
+        <association property="address" select="selectAddress"/>
 
         <association property="person" resultMap="ru.flexpay.eirc.dictionary.entity.Person.Person" />
     </resultMap>
@@ -18,7 +18,7 @@
     <resultMap id="Address" type="ru.flexpay.eirc.dictionary.entity.Address"
                extends="org.complitex.dictionary.entity.DomainObject"/>
     
-    <select id="getAddress" resultMap="address" parameterType="map">
+    <select id="selectAddress" resultMap="address" parameterType="map">
         select e.*
         from
          <choose>
@@ -181,11 +181,11 @@
         <include refid="selectByAddressWhere"/>
     </select>
 
-    <select id="getEircAccount" parameterType="long" resultMap="EircAccount">
+    <select id="selectEircAccount" parameterType="long" resultMap="EircAccount">
         select * from `eirc_account` where `object_id` = #{id} order by `begin_date` desc
     </select>
 
-    <select id="getEircAccountByPkId" parameterType="long" resultMap="EircAccount">
+    <select id="selectEircAccountByPkId" parameterType="long" resultMap="EircAccount">
         select * from `eirc_account` where `pk_id` = #{pkId}
     </select>
 
