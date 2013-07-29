@@ -8,7 +8,7 @@ import org.complitex.organization.web.CommonResources;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.ITemplateLink;
 import org.complitex.template.web.template.ResourceTemplateMenu;
-import ru.flexpay.eirc.eirc_account.strategy.EircAccountStrategy;
+import ru.flexpay.eirc.eirc_account.strategy.EircAccountBean;
 
 import javax.ejb.EJB;
 import java.util.List;
@@ -23,9 +23,9 @@ public class EircAccountTemplateMenu extends ResourceTemplateMenu {
     public static final String EIRC_ACCOUNT_MENU_ITEM = "eirc_account_item";
 
     @EJB
-    private EircAccountStrategy strategy;
+    private EircAccountBean strategy;
 
-    protected EircAccountStrategy getStrategy() {
+    protected EircAccountBean getStrategy() {
         return strategy;
     }
 

@@ -20,10 +20,11 @@ import java.util.Locale;
  * @author Pavel Sknar
  */
 @Stateless
-public class EircAccountStrategy extends AbstractBean {
+public class EircAccountBean extends AbstractBean {
 
-    private static final String EIRC_ACCOUNT_MAPPING = EircAccountStrategy.class.getPackage().getName() + ".EircAccount";
-    public static final String RESOURCE_BUNDLE = EircAccountStrategy.class.getName();
+    private static final String NS = EircAccountBean.class.getPackage().getName() + ".EircAccount";
+    public static final String RESOURCE_BUNDLE = EircAccountBean.class.getName();
+    public static final String ENTITY_TABLE = "eirc_account";
 
     @EJB
     private SequenceBean sequenceBean;
@@ -36,41 +37,33 @@ public class EircAccountStrategy extends AbstractBean {
         sqlSession().update("updateEndDate", object);
     }
 
-    public EircAccount findById(long id) {
-       return sqlSession().selectOne(EIRC_ACCOUNT_MAPPING + ".getEircAccount", id);
+    public EircAccount getEircAccount(long id) {
+       return sqlSession().selectOne(NS + ".getEircAccount", id);
     }
 
-    public List<EircAccount> find(FilterWrapper<EircAccount> filter) {
-        return sqlSession().selectList(EIRC_ACCOUNT_MAPPING + ".selectEircAccounts", filter);
+    public List<EircAccount> getEircAccounts(FilterWrapper<EircAccount> filter) {
+        return sqlSession().selectList(NS + ".selectEircAccounts", filter);
     }
 
     @Transactional
-    public void insert(EircAccount eircAccount) {
-        eircAccount.setId(sequenceBean.nextId(getEntityTable()));
-        sqlSession().insert(EIRC_ACCOUNT_MAPPING + ".insert", eircAccount);
+    public void save(EircAccount eircAccount) {
+        eircAccount.setId(sequenceBean.nextId(ENTITY_TABLE));
+        sqlSession().insert(NS + ".insert", eircAccount);
     }
 
     @Transactional
     public void update(EircAccount eircAccount) {
-        EircAccount oldObject = findByPkId(eircAccount.getPkId());
+        EircAccount oldObject = getEricAccountByPkId(eircAccount.getPkId());
         if (EqualsBuilder.reflectionEquals(oldObject, eircAccount)) {
             return;
         }
-        if (oldObject.getBeginDate().after(eircAccount.getBeginDate())) {
-            throw new RuntimeException("Can not update EIRC Account. Fail date. Old Object: " + oldObject +
-                    ", New Object: " + eircAccount + ".");
-        }
         oldObject.setEndDate(eircAccount.getBeginDate());
         archive(oldObject);
-        insert(eircAccount);
+        save(eircAccount);
     }
 
-    public static String getEntityTable() {
-        return "eirc_account";
-    }
-
-    private EircAccount findByPkId(long pkId) {
-        return sqlSession().selectOne(EIRC_ACCOUNT_MAPPING + ".getEircAccount", pkId);
+    public EircAccount getEricAccountByPkId(long pkId) {
+        return sqlSession().selectOne(NS + ".getEircAccount", pkId);
     }
 
     public PageParameters getEditPageParams(Long objectId, Long parentId, String parentEntity) {
@@ -93,7 +86,7 @@ public class EircAccountStrategy extends AbstractBean {
     }
 
     public String getPluralEntityLabel(Locale locale) {
-        return ResourceUtil.getString(RESOURCE_BUNDLE, getEntityTable(), locale);
+        return ResourceUtil.getString(RESOURCE_BUNDLE, ENTITY_TABLE, locale);
     }
 
 }
