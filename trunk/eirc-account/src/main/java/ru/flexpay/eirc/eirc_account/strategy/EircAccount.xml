@@ -5,7 +5,7 @@
 
     <resultMap id="EircAccount" type="ru.flexpay.eirc.eirc_account.entity.EircAccount">
         <id column="pk_id" property="pkId"/>
-        <result column="object_id" property="objectId"/>
+        <result column="object_id" property="id"/>
         <result column="account_number" property="accountNumber"/>
         <result column="begin_date" property="beginDate"/>
         <result column="end_date" property="endDate"/>
@@ -176,9 +176,28 @@
         </if>
     </select>
 
-    <select id="countEircAccount" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+    <select id="countEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
         select count(distinct e.`object_id`) from `eirc_account` e
         <include refid="selectByAddressWhere"/>
     </select>
+
+    <select id="getEircAccount" parameterType="long" resultMap="EircAccount">
+        select * from `eirc_account` where `object_id` = #{id} order by `begin_date` desc
+    </select>
+
+    <select id="getEircAccountByPkId" parameterType="long" resultMap="EircAccount">
+        select * from `eirc_account` where `pk_id` = #{pkId}
+    </select>
+
+    <insert id="insert" parameterType="ru.flexpay.eirc.eirc_account.entity.EircAccount" keyProperty="pkId" useGeneratedKeys="true">
+        insert into `eirc_account` (`object_id`, `account_number`, `address_id`, `address_entity_id`,
+                                    `first_name`, `last_name`, `middle_name`, `begin_date`, `end_date`)
+                            values (#{id}, #{accountNumber}, #{address.id}, #{address.entity.id},
+                                    #{person.firstName}, #{person.lastName}, #{person.middleName}, #{beginDate}, #{endDate})
+    </insert>
+
+    <update id="updateEndDate" parameterType="ru.flexpay.eirc.eirc_account.entity.EircAccount">
+        update `eirc_account` set `end_date` = #{endDate} where `pk_id` = #{id}
+    </update>
 
 </mapper>
