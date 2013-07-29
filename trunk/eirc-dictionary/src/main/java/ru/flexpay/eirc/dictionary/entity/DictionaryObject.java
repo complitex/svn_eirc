@@ -4,10 +4,12 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 
+import java.io.Serializable;
+
 /**
  * @author Pavel Sknar
  */
-public abstract class DictionaryObject {
+public abstract class DictionaryObject implements Serializable {
 
     private Long id;
 
