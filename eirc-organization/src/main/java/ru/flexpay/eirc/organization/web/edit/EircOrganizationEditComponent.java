@@ -11,7 +11,7 @@ import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.DomainObjectInputPanel;
 import org.complitex.organization.strategy.web.edit.OrganizationEditComponent;
 import ru.flexpay.eirc.organization.entity.Organization;
-import ru.flexpay.eirc.organization.strategy.OrganizationStrategy;
+import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 
 import javax.ejb.EJB;
 import java.util.Map;
@@ -22,7 +22,7 @@ import java.util.Map;
  */
 public class EircOrganizationEditComponent extends OrganizationEditComponent {
     @EJB(name = IOrganizationStrategy.BEAN_NAME, beanInterface = IOrganizationStrategy.class)
-    private OrganizationStrategy organizationStrategy;
+    private EircOrganizationStrategy organizationStrategy;
 
     @EJB
     private StringCultureBean stringBean;
@@ -47,14 +47,14 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
 
         // General attributes.
         {
-            for (Map.Entry<Long, String> attribute : OrganizationStrategy.GENERAL_ATTRIBUTE_TYPES.entrySet()) {
+            for (Map.Entry<Long, String> attribute : EircOrganizationStrategy.GENERAL_ATTRIBUTE_TYPES.entrySet()) {
                 addAttributeContainer(attribute.getKey(), isDisabled, organization, attribute.getValue() + "Container");
             }
         }
 
         //E-mail. It is service provider organization only attribute.
         {
-            emailContainer = addAttributeContainer(OrganizationStrategy.EMAIL, isDisabled, organization, "emailContainer");
+            emailContainer = addAttributeContainer(EircOrganizationStrategy.EMAIL, isDisabled, organization, "emailContainer");
 
             //initial visibility
             emailContainer.setVisible(isServiceProvider());
@@ -128,19 +128,19 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
         final DomainObject organization = getDomainObject();
 
         if (!isServiceProvider()) {
-            organization.removeAttribute(OrganizationStrategy.EMAIL);
+            organization.removeAttribute(EircOrganizationStrategy.EMAIL);
         }
     }
 
     @Override
     protected String getStrategyName() {
-        return OrganizationStrategy.EIRC_ORGANIZATION_STRATEGY_NAME;
+        return EircOrganizationStrategy.EIRC_ORGANIZATION_STRATEGY_NAME;
     }
 
     @Override
     protected boolean isOrganizationTypeEnabled() {
         Long organizationId = getDomainObject().getId();
-        return !(organizationId != null && (organizationId.equals(OrganizationStrategy.MODULE_ID)))
+        return !(organizationId != null && (organizationId.equals(EircOrganizationStrategy.MODULE_ID)))
                 && super.isOrganizationTypeEnabled();
     }
 }

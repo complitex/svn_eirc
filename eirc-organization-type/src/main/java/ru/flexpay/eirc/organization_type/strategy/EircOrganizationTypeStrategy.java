@@ -11,9 +11,9 @@ import ru.flexpay.eirc.organization_type.entity.OrganizationType;
  * @author Artem
  */
 @Stateless
-public class OrganizationTypeStrategy extends org.complitex.organization_type.strategy.OrganizationTypeStrategy {
+public class EircOrganizationTypeStrategy extends org.complitex.organization_type.strategy.OrganizationTypeStrategy {
 
-    private static final String STRATEGY_NAME = OrganizationTypeStrategy.class.getSimpleName();
+    private static final String STRATEGY_NAME = EircOrganizationTypeStrategy.class.getSimpleName();
 
     @Override
     protected Collection<Long> getReservedInstanceIds() {

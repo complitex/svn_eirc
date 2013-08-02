@@ -9,6 +9,7 @@ import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.ITemplateLink;
 import org.complitex.template.web.template.ResourceTemplateMenu;
 import ru.flexpay.eirc.eirc_account.strategy.EircAccountBean;
+import ru.flexpay.eirc.eirc_account.web.list.EircAccountList;
 
 import javax.ejb.EJB;
 import java.util.List;
@@ -31,7 +32,7 @@ public class EircAccountTemplateMenu extends ResourceTemplateMenu {
 
     @Override
     public String getTitle(Locale locale) {
-        return getString(CommonResources.class, locale, "organization_menu");
+        return getString(EircAccountTemplateMenu.class, locale, "eirc_account_menu");
     }
 
     @Override
@@ -45,12 +46,12 @@ public class EircAccountTemplateMenu extends ResourceTemplateMenu {
 
             @Override
             public Class<? extends Page> getPage() {
-                return getStrategy().getListPage();
+                return EircAccountList.class;
             }
 
             @Override
             public PageParameters getParameters() {
-                return getStrategy().getListPageParams();
+                return new PageParameters();
             }
 
             @Override

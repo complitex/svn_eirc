@@ -1,5 +1,7 @@
 package ru.flexpay.eirc.dictionary.entity;
 
+import org.apache.commons.lang.StringUtils;
+
 /**
  * @author Pavel Sknar
  */
@@ -30,5 +32,20 @@ public class Person {
 
     public void setMiddleName(String middleName) {
         this.middleName = middleName;
+    }
+
+    private void appendNotEmptyField(StringBuilder builder, String field) {
+        if (StringUtils.isNotEmpty(field)) {
+            builder.append(field);
+        }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        appendNotEmptyField(builder, lastName);
+        appendNotEmptyField(builder, firstName);
+        appendNotEmptyField(builder, middleName);
+        return builder.toString();
     }
 }

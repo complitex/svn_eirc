@@ -35,7 +35,7 @@ import java.util.Map;
  * @author Artem
  */
 @Stateless(name = IOrganizationStrategy.BEAN_NAME)
-public class OrganizationStrategy extends AbstractOrganizationStrategy {
+public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
     public final static Long MODULE_ID = 3L;
 
     /**
@@ -74,9 +74,9 @@ public class OrganizationStrategy extends AbstractOrganizationStrategy {
      */
 
 
-    private static final Logger log = LoggerFactory.getLogger(OrganizationStrategy.class);
+    private static final Logger log = LoggerFactory.getLogger(EircOrganizationStrategy.class);
     public static final String EIRC_ORGANIZATION_STRATEGY_NAME = IOrganizationStrategy.BEAN_NAME;
-    private static final String RESOURCE_BUNDLE = OrganizationStrategy.class.getName();
+    private static final String RESOURCE_BUNDLE = EircOrganizationStrategy.class.getName();
 
     public static final Map<Long, String> GENERAL_ATTRIBUTE_TYPES = ImmutableMap.<Long, String>builder().
             put(KPP, "kpp").

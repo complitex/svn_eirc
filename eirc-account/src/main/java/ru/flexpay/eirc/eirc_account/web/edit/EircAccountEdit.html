@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns:wicket>
+<head>
+    <title></title>
+</head>
+<body>
+<wicket:panel>
+    <div wicket:id="container">
+        <h2 style="margin-bottom: 20px;">
+            <wicket:message key="title"/>
+        </h2>
+        <div wicket:id="messages"></div>
+        <table class="tbForm">
+            <tr>
+                <th>
+                    <wicket:message key="address"/>
+                    :
+                </th>
+                <td>
+                    <span wicket:id="searchComponent"></span>
+                    <!--select wicket:id="streetTypeSelect">
+                        <option></option>
+                    </select-->
+                </td>
+            </tr>
+        </table>
+        <div>
+            <input type="button" wicket:message="value:save" wicket:id="save" class="btnMiddle"/>
+            <input type="button" wicket:message="value:cancel" wicket:id="cancel" class="btnMiddle"/>
+        </div>
+    </div>
+</wicket:panel>
+</body>
+</html>
