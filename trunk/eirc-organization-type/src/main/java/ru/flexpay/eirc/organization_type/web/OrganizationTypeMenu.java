@@ -4,7 +4,7 @@ import org.apache.wicket.authroles.authorization.strategies.role.annotations.Aut
 import org.complitex.dictionary.strategy.IStrategy;
 import org.complitex.dictionary.util.EjbBeanLocator;
 import org.complitex.template.web.security.SecurityRole;
-import ru.flexpay.eirc.organization_type.strategy.OrganizationTypeStrategy;
+import ru.flexpay.eirc.organization_type.strategy.EircOrganizationTypeStrategy;
 
 /**
  *
@@ -15,6 +15,6 @@ public class OrganizationTypeMenu extends org.complitex.organization_type.menu.O
 
     @Override
     protected IStrategy getStrategy() {
-        return EjbBeanLocator.getBean(OrganizationTypeStrategy.class);
+        return EjbBeanLocator.getBean(EircOrganizationTypeStrategy.class);
     }
 }

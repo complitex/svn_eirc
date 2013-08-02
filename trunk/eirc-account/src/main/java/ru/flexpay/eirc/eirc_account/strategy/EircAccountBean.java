@@ -1,5 +1,6 @@
 package ru.flexpay.eirc.eirc_account.strategy;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
@@ -9,6 +10,7 @@ import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.service.SequenceBean;
 import org.complitex.dictionary.util.ResourceUtil;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
+import ru.flexpay.eirc.eirc_account.web.edit.EircAccountEdit;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -45,6 +47,10 @@ public class EircAccountBean extends AbstractBean {
         return sqlSession().selectList(NS + ".selectEircAccounts", filter);
     }
 
+    public int count(FilterWrapper<EircAccount> filter) {
+        return sqlSession().selectOne(NS + ".countEircAccounts", filter);
+    }
+
     @Transactional
     public void save(EircAccount eircAccount) {
         eircAccount.setId(sequenceBean.nextId(ENTITY_TABLE));
@@ -66,27 +72,12 @@ public class EircAccountBean extends AbstractBean {
         return sqlSession().selectOne(NS + ".selectEircAccountByPkId", pkId);
     }
 
-    public PageParameters getEditPageParams(Long objectId, Long parentId, String parentEntity) {
-        PageParameters pageParameters = new PageParameters();
-        return pageParameters;
-    }
-
-    public PageParameters getHistoryPageParams(long objectId) {
-        PageParameters pageParameters = new PageParameters();
-        return pageParameters;
-    }
-
-    public PageParameters getListPageParams() {
-        PageParameters pageParameters = new PageParameters();
-        return pageParameters;
-    }
-
-    public Class<? extends WebPage> getListPage() {
-        return null;
-    }
-
     public String getPluralEntityLabel(Locale locale) {
         return ResourceUtil.getString(RESOURCE_BUNDLE, ENTITY_TABLE, locale);
+    }
+
+    public List<String> getSearchFilters() {
+        return ImmutableList.of("country", "region", "city", "street", "building", "apartment", "room");
     }
 
 }
