@@ -65,5 +65,9 @@
             <groupId>ru.flexpay.eirc</groupId>
             <artifactId>eirc-organization</artifactId>
         </dependency>
+        <dependency>
+            <groupId>ru.flexpay.eirc</groupId>
+            <artifactId>eirc-account</artifactId>
+        </dependency>
     </dependencies>
 </project>
