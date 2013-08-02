@@ -41,7 +41,7 @@ public class EircAccountTemplateMenu extends ResourceTemplateMenu {
 
             @Override
             public String getLabel(Locale locale) {
-                return getStrategy().getPluralEntityLabel(locale);
+                return getString(EircAccountTemplateMenu.class, locale, "eirc_account_menu");
             }
 
             @Override

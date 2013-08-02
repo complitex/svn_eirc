@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="ru.flexpay.eirc.eirc_account.entity.EircAccount">
+<mapper namespace="ru.flexpay.eirc.eirc_account.strategy.EircAccount">
 
     <resultMap id="EircAccount" type="ru.flexpay.eirc.eirc_account.entity.EircAccount">
         <id column="pk_id" property="pkId"/>
@@ -10,15 +10,15 @@
         <result column="begin_date" property="beginDate"/>
         <result column="end_date" property="endDate"/>
 
-        <association property="address" select="selectAddress"/>
+        <association property="address" select="selectAddress" column="address_id"/>
 
         <association property="person" resultMap="ru.flexpay.eirc.dictionary.entity.Person.Person" />
     </resultMap>
 
     <resultMap id="Address" type="ru.flexpay.eirc.dictionary.entity.Address"
-               extends="org.complitex.dictionary.entity.DomainObject"/>
+               extends="org.complitex.dictionary.entity.DomainObject.DomainObject"/>
     
-    <select id="selectAddress" resultMap="address" parameterType="map">
+    <select id="selectAddress" resultMap="Address" parameterType="map">
         select e.*
         from
          <choose>
@@ -34,12 +34,21 @@
          </choose> e where e.`object_id` = #{address_id}
     </select>
 
-    <sql id="selectByApartmentJoin">
+    <sql id="selectByRoomJoin">
         left join `room` room on room.`object_id` = e.`object_id` and e.`address_entity_id` = 200
+    </sql>
+    
+    <sql id="selectByRoomWhere">
+        <include refid="selectByApartmentJoin"/>
+        where room.`object_id` = #{object.id}
+    </sql>
+
+    <sql id="selectByApartmentJoin">
+        <include refid="selectByRoomJoin"/>
         left join `apartment` apartment1 on apartment1.`object_id` = room.`parent_id` and room.`parent_entity_id` = 100
         left join `apartment` apartment2 on apartment1.`object_id` = e.`object_id` and apartment2.`address_entity_id` = 100
     </sql>
-    
+
     <sql id="selectByApartmentWhere">
         <include refid="selectByApartmentJoin"/>
         where apartment1.`object_id` = #{object.id} or apartment2.`object_id` = #{object.id}
