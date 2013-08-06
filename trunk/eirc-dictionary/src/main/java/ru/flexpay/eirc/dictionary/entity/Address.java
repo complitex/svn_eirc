@@ -37,6 +37,15 @@ public class Address {
         this.entity = entity;
     }
 
+    public void setEntityId(long entityId) {
+        for (AddressEntity addressEntity : AddressEntity.values()) {
+            if (entityId == addressEntity.getId()) {
+                entity = addressEntity;
+                break;
+            }
+        }
+    }
+
     public String getCountry() {
         return country;
     }
