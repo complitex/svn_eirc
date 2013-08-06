@@ -9,6 +9,7 @@
 <body>
 <wicket:extend>
     <h2 wicket:id="label"></h2>
+
     <div wicket:id="searchPanel"></div>
 
     <div wicket:id="container">
@@ -16,7 +17,6 @@
             <table class="tbColor bookContent" cellpadding="0" cellspacing="0" border="0">
                 <thead>
                 <tr>
-                    <th>№</th>
                     <th>
                         <span wicket:id="header.account_number">
                             <wicket:message key="account_number"/>
@@ -37,22 +37,16 @@
                     </th>
                 </tr>
                 <tr>
-                    <td class="filter-td" style="width:30px"></td>
+                    <td class="filter-td"></td>
+                    <td class="filter-td"></td>
                     <td class="filter-td"></td>
                     <td class="filter-td">
-                        <!--input type="text" wicket:id="corpFilter"></input-->
-                    </td>
-                    <td class="filter-td">
-                        <!--input type="text" wicket:id="structureFilter"></input-->
-                    </td>
-                    <td class="filter-td">
-                        <!--input wicket:id="submit" type="submit" wicket:message="value:find" class="btnSmall"/-->
+                        <input wicket:id="submit" type="submit" wicket:message="value:find" class="btnSmall"/>
                     </td>
                 </tr>
                 </thead>
                 <tbody>
                 <tr wicket:id="data">
-                    <td><span wicket:id="order"></span></td>
                     <td>
                         <span wicket:id="accountNumber"></span>
                     </td>
@@ -75,3 +69,4 @@
     </div>
 </wicket:extend>
 </body>
+</html>
