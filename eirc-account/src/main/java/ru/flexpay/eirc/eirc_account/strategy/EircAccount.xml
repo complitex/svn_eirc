@@ -10,52 +10,53 @@
         <result column="begin_date" property="beginDate"/>
         <result column="end_date" property="endDate"/>
 
-        <association property="address" select="selectAddress" column="address_id"/>
+        <association property="address" select="selectAddress" column="{id=address_id, entityId=address_entity_id}"/>
 
         <association property="person" resultMap="ru.flexpay.eirc.dictionary.entity.Person.Person" />
     </resultMap>
 
-    <resultMap id="Address" type="ru.flexpay.eirc.dictionary.entity.Address"
-               extends="org.complitex.dictionary.entity.DomainObject.DomainObject"/>
+    <resultMap id="Address" type="ru.flexpay.eirc.dictionary.entity.Address">
+        <id column="id" property="id"/>
+        <result column="entity_id" property="entityId"/>
+    </resultMap>
     
     <select id="selectAddress" resultMap="Address" parameterType="map">
-        select e.*
+        select a.*, #{id} as `id`, #{entityId}  as `entity_id`
         from
          <choose>
-             <when test="address_entity_id == 500">
+             <when test="entityId == 500">
                  `building`
              </when>
-             <when test="address_entity_id == 200">
+             <when test="entityId == 100">
                  `apartment`
              </when>
-             <when test="address_entity_id == 100">
+             <when test="entityI    d == 200">
                  `room`
              </when>
-         </choose> e where e.`object_id` = #{address_id}
+         </choose> a where a.`object_id` = #{id}
     </select>
 
-    <sql id="selectByRoomJoin">
+    <sql id="roomJoin">
         left join `room` room on room.`object_id` = e.`object_id` and e.`address_entity_id` = 200
     </sql>
     
-    <sql id="selectByRoomWhere">
-        <include refid="selectByApartmentJoin"/>
-        where room.`object_id` = #{object.id}
+    <sql id="roomCondition">
+        room.`object_id` = #{object.id}
     </sql>
 
-    <sql id="selectByApartmentJoin">
-        <include refid="selectByRoomJoin"/>
+    <sql id="apartmentJoin">
+        <include refid="roomJoin"/>
+        
         left join `apartment` apartment1 on apartment1.`object_id` = room.`parent_id` and room.`parent_entity_id` = 100
         left join `apartment` apartment2 on apartment1.`object_id` = e.`object_id` and apartment2.`address_entity_id` = 100
     </sql>
 
-    <sql id="selectByApartmentWhere">
-        <include refid="selectByApartmentJoin"/>
-        where apartment1.`object_id` = #{object.id} or apartment2.`object_id` = #{object.id}
+    <sql id="apartmentCondition">
+        (apartment1.`object_id` = #{object.id} or apartment2.`object_id` = #{object.id})
     </sql>
 
-    <sql id="selectByBuildingJoin">
-        <include refid="selectByApartmentJoin"/>
+    <sql id="buildingJoin">
+        <include refid="apartmentJoin"/>
 
         left join `building` building1 on building1.`object_id` = apartment1.`parent_id`
         left join `building` building2 on building2.`object_id` = apartment2.`parent_id`
@@ -63,15 +64,13 @@
         left join `building` building4 on building4.`object_id` = e.`address_id` and e.`address_entity_id` = 500
     </sql>
 
-    <sql id="selectByBuildingWhere">
-        <include refid="selectByBuildingJoin"/>
-
-        where building1.`object_id` = #{object.id} or building2.`object_id` = #{object.id} or 
-              building3.`object_id` = #{object.id} or building4.`object_id` = #{object.id}
+    <sql id="buildingCondition">
+         (building1.`object_id` = #{object.id} or building2.`object_id` = #{object.id} or 
+          building3.`object_id` = #{object.id} or building4.`object_id` = #{object.id})
     </sql>
 
-    <sql id="selectByBuildingAddressJoin">
-        <include refid="selectByBuildingJoin"/>
+    <sql id="buildingAddressJoin">
+        <include refid="buildingJoin"/>
 
         left join `building_address` building_a1 on building_a1.`object_id` = building1.`parent_id`
         left join `building_address` building_a2 on building_a2.`object_id` = building2.`parent_id`
@@ -79,15 +78,13 @@
         left join `building_address` building_a4 on building_a4.`object_id` = building4.`parent_id`
     </sql>
     
-    <sql id="selectByBuildingAddressSql">
-        <include refid="selectByBuildingAddressJoin"/>
-
-        where building_a1.`object_id` = #{object.id} or building_a2.`object_id` = #{object.id} or 
-              building_a3.`object_id` = #{object.id} or building_a4.`object_id` = #{object.id}
+    <sql id="buildingAddressCondition">
+        (building_a1.`object_id` = #{object.id} or building_a2.`object_id` = #{object.id} or 
+         building_a3.`object_id` = #{object.id} or building_a4.`object_id` = #{object.id})
     </sql>
 
-    <sql id="selectByStreetJoin">
-        <include refid="selectByBuildingAddressJoin"/>
+    <sql id="streetJoin">
+        <include refid="buildingAddressJoin"/>
         
         left join `street` street1 on street1.`object_id` = building_a1.`parent_id`
         left join `street` street2 on street2.`object_id` = building_a2.`parent_id`
@@ -95,15 +92,12 @@
         left join `street` street4 on street4.`object_id` = building_a4.`parent_id`
     </sql>
     
-    <sql id="selectByStreetWhere">
-        <include refid="selectByStreetJoin"/>
-
-        where street1.`object_id` = #{object.id} or street2.`object_id` = #{object.id} or street3.`object_id` = #{object.id} or street4.`object_id` = #{object.id}
+    <sql id="streetCondition">
+        (street1.`object_id` = #{object.id} or street2.`object_id` = #{object.id} or street3.`object_id` = #{object.id} or street4.`object_id` = #{object.id})
     </sql>
 
-    <sql id="selectByCityJoin">
-
-        <include refid="selectByStreetJoin"/>
+    <sql id="cityJoin">
+        <include refid="streetJoin"/>
         
         left join `city` city1 on city1.`object_id` = street1.`parent_id`
         left join `city` city2 on city2.`object_id` = street2.`parent_id`
@@ -111,14 +105,14 @@
         left join `city` city4 on city4.`object_id` = street4.`parent_id`
     </sql>
 
-    <sql id="selectByCityWhere">
-        <include refid="selectByCityJoin"/>
+    <sql id="cityCondition">
+        <include refid="cityJoin"/>
 
         where city1.`object_id` = #{object.id} or city2.`object_id` = #{object.id} or city3.`object_id` = #{object.id} or city4.`object_id` = #{object.id}
     </sql>
 
-    <sql id="selectByRegionJoin">
-        <include refid="selectByCityJoin"/>
+    <sql id="regionJoin">
+        <include refid="cityJoin"/>
 
         left join `region` region1 on region1.`object_id` = city1.`parent_id`
         left join `region` region2 on region2.`object_id` = city2.`parent_id`
@@ -126,14 +120,12 @@
         left join `region` region4 on region4.`object_id` = city4.`parent_id`
     </sql>
     
-    <sql id="selectByRegionSelect">
-        <include refid="selectByRegionJoin"/>
-
-        where region1.`object_id` = #{object.id} or region2.`object_id` = #{object.id} or region3.`object_id` = #{object.id} or region4.`object_id` = #{object.id}
+    <sql id="regionCondition">
+        (region1.`object_id` = #{object.id} or region2.`object_id` = #{object.id} or region3.`object_id` = #{object.id} or region4.`object_id` = #{object.id})
     </sql>
 
-    <sql id="selectByCountryJoin">
-        <include refid="selectByRegionJoin"/>
+    <sql id="countryJoin">
+        <include refid="regionJoin"/>
         
         left join `country` country1 on country1.`object_id` = region1.`parent_id`
         left join `country` country2 on country2.`object_id` = region2.`parent_id`
@@ -141,42 +133,66 @@
         left join `country` country4 on country4.`object_id` = region4.`parent_id`
     </sql>
 
-    <sql id="selectByCountryWhere">
-        <include refid="selectByCountryJoin"/>
-
-        where country1.`object_id` = #{object.id} or country2.`object_id` = #{object.id} or country3.`object_id` = #{object.id} or country4.`object_id` = #{object.id}
+    <sql id="countryCondition">
+        (country1.`object_id` = #{object.id} or country2.`object_id` = #{object.id} or country3.`object_id` = #{object.id} or country4.`object_id` = #{object.id})
     </sql>
 
-    <sql id="selectByAddressWhere">
+    <sql id="addressJoin">
         <if test="object.address != null and object.address.entity != null">
             <choose>
                 <when test="object.address.entity.id == 200">
-                    <include refid="selectByRoomWhere"/>
+                    <include refid="roomJoin"/>
                 </when>
                 <when test="object.address.entity.id == 100">
-                    <include refid="selectByApartmentWhere"/>
+                    <include refid="apartmentJoin"/>
                 </when>
                 <when test="object.address.entity.id == 500">
-                    <include refid="selectByBuildingWhere"/>
+                    <include refid="buildingJoin"/>
                 </when>
                 <when test="object.address.entity.id == 300">
-                    <include refid="selectByStreetWhere"/>
+                    <include refid="streetJoin"/>
                 </when>
                 <when test="object.address.entity.id == 400">
-                    <include refid="selectByCityWhere"/>
+                    <include refid="cityJoin"/>
                 </when>
                 <when test="object.address.entity.id == 800">
-                    <include refid="selectByCountryWhere"/>
+                    <include refid="countryJoin"/>
                 </when>
             </choose>
         </if>
     </sql>
 
-    <select id="selectEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="long">
-        select max(e.`pk_id`) from `eirc_account` e
-        <include refid="selectByAddressWhere"/>
+    <sql id="addressCondition">
+        <if test="object.address != null and object.address.entity != null">
+            and
+            <choose>
+                <when test="object.address.entity.id == 200">
+                    <include refid="roomCondition"/>
+                </when>
+                <when test="object.address.entity.id == 100">
+                    <include refid="apartmentCondition"/>
+                </when>
+                <when test="object.address.entity.id == 500">
+                    <include refid="buildingCondition"/>
+                </when>
+                <when test="object.address.entity.id == 300">
+                    <include refid="streetCondition"/>
+                </when>
+                <when test="object.address.entity.id == 400">
+                    <include refid="cityCondition"/>
+                </when>
+                <when test="object.address.entity.id == 800">
+                    <include refid="countryCondition"/>
+                </when>
+            </choose>
+        </if>
+    </sql>
 
-        group by object_id
+    <select id="selectEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="EircAccount">
+        select e.* from `eirc_account` e
+        <include refid="addressJoin"/>
+        where e.`end_date` is null
+        <include refid="addressCondition"/>
 
         <if test="sortProperty != null">
             order by ${sortProperty}
@@ -191,7 +207,9 @@
 
     <select id="countEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
         select count(distinct e.`object_id`) from `eirc_account` e
-        <include refid="selectByAddressWhere"/>
+        <include refid="addressJoin"/>
+        where e.`end_date` is null
+        <include refid="addressCondition"/>
     </select>
 
     <select id="selectEircAccount" parameterType="long" resultMap="EircAccount">
