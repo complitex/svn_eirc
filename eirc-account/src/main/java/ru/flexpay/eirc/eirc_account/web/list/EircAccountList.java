@@ -19,13 +19,10 @@ import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
-import org.complitex.address.strategy.building.BuildingStrategy;
 import org.complitex.address.util.AddressRenderer;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.entity.example.DomainObjectExample;
 import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.strategy.web.DomainObjectAccessUtil;
-import org.complitex.dictionary.util.StringUtil;
 import org.complitex.dictionary.web.component.ShowMode;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
@@ -58,7 +55,6 @@ public class EircAccountList extends TemplatePage {
 
     @EJB
     private LocaleBean localeBean;
-    private DomainObjectExample example;
     private WebMarkupContainer container;
     private DataView<EircAccount> dataView;
     private CollapsibleSearchPanel searchPanel;
@@ -84,15 +80,12 @@ public class EircAccountList extends TemplatePage {
         container = new WebMarkupContainer("container");
         container.setOutputMarkupPlaceholderTag(true);
 
-        //Example
-        example = (DomainObjectExample) getFilterObject(new DomainObjectExample());
-
         //Search
         final List<String> searchFilters = eircAccountBean.getSearchFilters();
-        container.setVisible(searchFilters == null || searchFilters.isEmpty());
+        container.setVisible(true);
         add(container);
 
-        final IModel<ShowMode> showModeModel = new Model<ShowMode>(ShowMode.ACTIVE);
+        final IModel<ShowMode> showModeModel = new Model<>(ShowMode.ACTIVE);
         searchPanel = new CollapsibleSearchPanel("searchPanel", getTemplateSession().getGlobalSearchComponentState(),
                 searchFilters, new ISearchCallback() {
             @Override
@@ -104,7 +97,7 @@ public class EircAccountList extends TemplatePage {
         searchPanel.initialize();
 
         //Form
-        final Form<Void> filterForm = new Form<Void>("filterForm");
+        final Form filterForm = new Form("filterForm");
         container.add(filterForm);
 
         //Data Provider
@@ -125,47 +118,7 @@ public class EircAccountList extends TemplatePage {
                 return eircAccountBean.count(filterWrapper);
             }
         };
-        dataProvider.setSort("id", SortOrder.ASCENDING);
-
-        //Filters
-        /*
-        filterForm.add(new TextField<>("numberFilter", new Model<String>() {
-
-            @Override
-            public String getObject() {
-                return example.getAdditionalParam(BuildingStrategy.NUMBER);
-            }
-
-            @Override
-            public void setObject(String number) {
-                example.addAdditionalParam(BuildingStrategy.NUMBER, number);
-            }
-        }));
-        filterForm.add(new TextField<>("corpFilter", new Model<String>() {
-
-            @Override
-            public String getObject() {
-                return example.getAdditionalParam(BuildingStrategy.CORP);
-            }
-
-            @Override
-            public void setObject(String corp) {
-                example.addAdditionalParam(BuildingStrategy.CORP, corp);
-            }
-        }));
-        filterForm.add(new TextField<>("structureFilter", new Model<String>() {
-
-            @Override
-            public String getObject() {
-                return example.getAdditionalParam(BuildingStrategy.STRUCTURE);
-            }
-
-            @Override
-            public void setObject(String structure) {
-                example.addAdditionalParam(BuildingStrategy.STRUCTURE, structure);
-            }
-        }));
-        */
+        dataProvider.setSort("account_number", SortOrder.ASCENDING);
 
         //Data View
         dataView = new DataView<EircAccount>("data", dataProvider, 1) {
@@ -174,7 +127,6 @@ public class EircAccountList extends TemplatePage {
             protected void populateItem(Item<EircAccount> item) {
                 final EircAccount eircAccount = item.getModelObject();
 
-                item.add(new Label("order", StringUtil.valueOf(getFirstItemOffset() + item.getIndex() + 1)));
                 item.add(new Label("accountNumber", eircAccount.getAccountNumber()));
                 item.add(new Label("person", eircAccount.getPerson() != null? eircAccount.getPerson().toString(): ""));
                 item.add(new Label("address", new AbstractReadOnlyModel<String>() {
@@ -207,15 +159,11 @@ public class EircAccountList extends TemplatePage {
         filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "accountNumber", "person", "address"));
 
         //Reset Action
-        AjaxLink<Void> reset = new AjaxLink<Void>("reset") {
+        AjaxLink reset = new AjaxLink("reset") {
 
             @Override
             public void onClick(AjaxRequestTarget target) {
                 filterForm.clearInput();
-                example.setId(null);
-                example.addAdditionalParam(BuildingStrategy.NUMBER, null);
-                example.addAdditionalParam(BuildingStrategy.CORP, null);
-                example.addAdditionalParam(BuildingStrategy.STRUCTURE, null);
 
                 target.add(container);
             }

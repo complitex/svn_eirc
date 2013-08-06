@@ -148,31 +148,35 @@
     </sql>
 
     <sql id="selectByAddressWhere">
-        <choose>
-            <when test="object.entity.id == 200">
-                <include refid="selectByRoomWhere"/>
-            </when>
-            <when test="object.entity.id == 100">
-                <include refid="selectByApartmentWhere"/>
-            </when>
-            <when test="object.entity.id == 500">
-                <include refid="selectByBuildingWhere"/>
-            </when>
-            <when test="object.entity.id == 300">
-                <include refid="selectByStreetWhere"/>
-            </when>
-            <when test="object.entity.id == 400">
-                <include refid="selectByCityWhere"/>
-            </when>
-            <when test="object.entity.id == 800">
-                <include refid="selectByCountryWhere"/>
-            </when>
-        </choose>
+        <if test="object.address != null and object.address.entity != null">
+            <choose>
+                <when test="object.address.entity.id == 200">
+                    <include refid="selectByRoomWhere"/>
+                </when>
+                <when test="object.address.entity.id == 100">
+                    <include refid="selectByApartmentWhere"/>
+                </when>
+                <when test="object.address.entity.id == 500">
+                    <include refid="selectByBuildingWhere"/>
+                </when>
+                <when test="object.address.entity.id == 300">
+                    <include refid="selectByStreetWhere"/>
+                </when>
+                <when test="object.address.entity.id == 400">
+                    <include refid="selectByCityWhere"/>
+                </when>
+                <when test="object.address.entity.id == 800">
+                    <include refid="selectByCountryWhere"/>
+                </when>
+            </choose>
+        </if>
     </sql>
 
     <select id="selectEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="long">
-        select distinct e.`object_id` from `eirc_account` e
+        select max(e.`pk_id`) from `eirc_account` e
         <include refid="selectByAddressWhere"/>
+
+        group by object_id
 
         <if test="sortProperty != null">
             order by ${sortProperty}
@@ -196,6 +200,10 @@
 
     <select id="selectEircAccountByPkId" parameterType="long" resultMap="EircAccount">
         select * from `eirc_account` where `pk_id` = #{pkId}
+    </select>
+
+    <select id="selectEircAccountsByPkId" parameterType="map" resultMap="EircAccount">
+        select * from `eirc_account` where `pk_id` in #{pkIds}
     </select>
 
     <insert id="insert" parameterType="ru.flexpay.eirc.eirc_account.entity.EircAccount" keyProperty="pkId" useGeneratedKeys="true">
