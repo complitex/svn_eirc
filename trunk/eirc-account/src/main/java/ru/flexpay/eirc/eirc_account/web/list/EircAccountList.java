@@ -1,6 +1,7 @@
 package ru.flexpay.eirc.eirc_account.web.list;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
@@ -19,6 +20,7 @@ import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
+import org.complitex.address.entity.AddressEntity;
 import org.complitex.address.util.AddressRenderer;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.LocaleBean;
@@ -34,6 +36,7 @@ import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.search.CollapsibleSearchToolbarButton;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
+import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.eirc_account.strategy.EircAccountBean;
 import ru.flexpay.eirc.eirc_account.web.edit.EircAccountEdit;
@@ -58,6 +61,9 @@ public class EircAccountList extends TemplatePage {
     private WebMarkupContainer container;
     private DataView<EircAccount> dataView;
     private CollapsibleSearchPanel searchPanel;
+
+    private EircAccount filterObject = new EircAccount();
+    private Address filterAddress;
 
     public EircAccountList() {
         init();
@@ -90,7 +96,22 @@ public class EircAccountList extends TemplatePage {
                 searchFilters, new ISearchCallback() {
             @Override
             public void found(Component component, Map<String, Long> ids, AjaxRequestTarget target) {
-                
+                AddressEntity addressEntity = null;
+                Long filterValue = null;
+                for (int i = eircAccountBean.getSearchFilters().size() - 1; i >= 0; i--) {
+                    String filterField = eircAccountBean.getSearchFilters().get(i);
+                    filterValue = ids.get(filterField);
+                    if (filterValue != null && filterValue > -1L) {
+                        addressEntity = AddressEntity.valueOf(StringUtils.upperCase(filterField));
+                        break;
+                    }
+                }
+                if (addressEntity != null) {
+                    filterAddress = new Address(filterValue, addressEntity);
+                    filterObject.setAddress(filterAddress);
+                } else {
+                    filterObject.setAddress(null);
+                }
             }
         }, ShowMode.ALL, true, showModeModel);
         add(searchPanel);
@@ -105,7 +126,7 @@ public class EircAccountList extends TemplatePage {
 
             @Override
             protected Iterable<? extends EircAccount> getData(int first, int count) {
-                FilterWrapper<EircAccount> filterWrapper = FilterWrapper.of(new EircAccount(), first, count);
+                FilterWrapper<EircAccount> filterWrapper = FilterWrapper.of(filterObject, first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
 
@@ -133,10 +154,10 @@ public class EircAccountList extends TemplatePage {
 
                     @Override
                     public String getObject() {
-                        return AddressRenderer.displayAddress(
+                        return eircAccount.getAddress() != null? AddressRenderer.displayAddress(
                                 eircAccount.getAddress().getStreetType(), eircAccount.getAddress().getStreet(),
                                 eircAccount.getAddress().getBuilding(), null, eircAccount.getAddress().getApartment(),
-                                eircAccount.getAddress().getRoom(), getLocale());
+                                eircAccount.getAddress().getRoom(), getLocale()) : "";
                     }
                 }));
 
@@ -156,7 +177,7 @@ public class EircAccountList extends TemplatePage {
         filterForm.add(dataView);
 
         //Sorting
-        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "accountNumber", "person", "address"));
+        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "accountNumber", "person"));
 
         //Reset Action
         AjaxLink reset = new AjaxLink("reset") {
@@ -164,6 +185,7 @@ public class EircAccountList extends TemplatePage {
             @Override
             public void onClick(AjaxRequestTarget target) {
                 filterForm.clearInput();
+                filterObject.setAddress(null);
 
                 target.add(container);
             }
@@ -175,6 +197,8 @@ public class EircAccountList extends TemplatePage {
 
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
+                filterObject.setAddress(filterAddress);
+
                 target.add(container);
             }
 

@@ -18,41 +18,92 @@
     <resultMap id="Address" type="ru.flexpay.eirc.dictionary.entity.Address">
         <id column="id" property="id"/>
         <result column="entity_id" property="entityId"/>
+        <result column="street_type" property="streetType"/>
+        <result column="street" property="street"/>
+        <result column="building" property="building"/>
+        <result column="apartment" property="apartment"/>
+        <result column="room" property="room"/>
     </resultMap>
+
+    <sql id="apartmentCultureJoin">
+        inner join `apartment_attribute` aa on aa.`object_id` = a.`object_id`
+        inner join `apartment_string_culture` ac on ac.`id` = aa.`value_id`
+    </sql>
+
+    <sql id="buildingAddressCultureJoin">
+        inner join `building_address` ba on ba.`object_id` = b.`parent_id`
+        inner join `building_address_attribute` baa on baa.`object_id` = b.`parent_id`
+        inner join `building_address_string_culture` bac on bac.`id` = baa.`value_id`
+    </sql>
+
+    <sql id="streetCultureJoin">
+        inner join `street` s on s.`object_id` = ba.`parent_id`
+        inner join `street_attribute` sa on sa.`object_id` = ba.`parent_id`
+        inner join `street_string_culture` sc on sc.`id` = sa.`value_id`
+    </sql>
+
+    <sql id="streetTypeCultureJoin">
+        inner join `street_type` st on st.`object_id` = s.`parent_id`
+        inner join `street_type_attribute` sta on sta.`object_id` = s.`parent_id`
+        inner join `street_type_string_culture` stc on stc.`id` = sta.`value_id`
+    </sql>
+
+    <sql id="addressCultureJoin">
+        <include refid="buildingAddressCultureJoin"/>
+        <include refid="streetCultureJoin"/>
+        <include refid="streetTypeCultureJoin"/>
+    </sql>
     
     <select id="selectAddress" resultMap="Address" parameterType="map">
-        select a.*, #{id} as `id`, #{entityId}  as `entity_id`
-        from
+        select #{id} as `id`, #{entityId}  as `entity_id`, stc.`value` as `street_type`, sc.`value` as `street`, bac.`value` as `building`
          <choose>
              <when test="entityId == 500">
-                 `building`
+                 , null as `apartment`, null as `room`
+                 from `building` b
+                 <include refid="addressCultureJoin"/>
+                 where b.`object_id` = #{id} and
              </when>
              <when test="entityId == 100">
-                 `apartment`
+                 , ac.`value` as `apartment`, null as `room`
+                 from `apartment` a
+                 <include refid="apartmentCultureJoin"/>
+                 inner join `building` b on b.`object_id` = a.`parent_id`
+                 <include refid="addressCultureJoin"/>
+                 where a.`object_id` = #{id} and aa.`end_date` is null and
              </when>
-             <when test="entityI    d == 200">
-                 `room`
+             <when test="entityId == 200">
+                 , ac.`value` as `apartment`, rc.`value` as `room`
+                 from `room` r
+                 inner join `room_attribute` ra on r.`object_id` = ra.`object_id`
+                 inner join `room_string_culture` rc on rc.`id` = ra.`value_id`
+                 left inner join `apartment` a on a.`object_id` = r.`parent_id` and r.`parent_entity_id` = 100
+                 <include refid="apartmentCultureJoin"/>
+                 inner join `building` b on (b.`object_id` = r.`parent_id` and r.`parent_entity_id` = 500 or b.`object_id` = a.`parent_id`)
+                 <include refid="addressCultureJoin"/>
+                 where r.`object_id` = #{id} and ra.`end_date` is null and aa.`end_date` is null and
              </when>
-         </choose> a where a.`object_id` = #{id}
+         </choose>baa.`end_date` is null and
+                  sa.`end_date`  is null and sa.`attribute_type_id` = 300 and
+                  sta.`end_date` is null and sta.`attribute_type_id` = 1400
     </select>
 
     <sql id="roomJoin">
-        left join `room` room on room.`object_id` = e.`object_id` and e.`address_entity_id` = 200
+        left join `room` room on room.`object_id` = e.`address_id` and e.`address_entity_id` = 200
     </sql>
     
     <sql id="roomCondition">
-        room.`object_id` = #{object.id}
+        room.`object_id` = #{object.address.id}
     </sql>
 
     <sql id="apartmentJoin">
         <include refid="roomJoin"/>
         
         left join `apartment` apartment1 on apartment1.`object_id` = room.`parent_id` and room.`parent_entity_id` = 100
-        left join `apartment` apartment2 on apartment1.`object_id` = e.`object_id` and apartment2.`address_entity_id` = 100
+        left join `apartment` apartment2 on apartment2.`object_id` = e.`address_id` and e.`address_entity_id` = 100
     </sql>
 
     <sql id="apartmentCondition">
-        (apartment1.`object_id` = #{object.id} or apartment2.`object_id` = #{object.id})
+        (apartment1.`object_id` = #{object.address.id} or apartment2.`object_id` = #{object.address.id})
     </sql>
 
     <sql id="buildingJoin">
@@ -60,13 +111,13 @@
 
         left join `building` building1 on building1.`object_id` = apartment1.`parent_id`
         left join `building` building2 on building2.`object_id` = apartment2.`parent_id`
-        left join `building` building3 on building3.`object_id` = room1.`parent_id` and room1.`parent_entity_id` = 500
+        left join `building` building3 on building3.`object_id` = room.`parent_id` and room.`parent_entity_id` = 500
         left join `building` building4 on building4.`object_id` = e.`address_id` and e.`address_entity_id` = 500
     </sql>
 
     <sql id="buildingCondition">
-         (building1.`object_id` = #{object.id} or building2.`object_id` = #{object.id} or 
-          building3.`object_id` = #{object.id} or building4.`object_id` = #{object.id})
+         (building1.`object_id` = #{object.address.id} or building2.`object_id` = #{object.address.id} or 
+          building3.`object_id` = #{object.address.id} or building4.`object_id` = #{object.address.id})
     </sql>
 
     <sql id="buildingAddressJoin">
@@ -79,8 +130,8 @@
     </sql>
     
     <sql id="buildingAddressCondition">
-        (building_a1.`object_id` = #{object.id} or building_a2.`object_id` = #{object.id} or 
-         building_a3.`object_id` = #{object.id} or building_a4.`object_id` = #{object.id})
+        (building_a1.`object_id` = #{object.address.id} or building_a2.`object_id` = #{object.address.id} or 
+         building_a3.`object_id` = #{object.address.id} or building_a4.`object_id` = #{object.address.id})
     </sql>
 
     <sql id="streetJoin">
@@ -93,7 +144,7 @@
     </sql>
     
     <sql id="streetCondition">
-        (street1.`object_id` = #{object.id} or street2.`object_id` = #{object.id} or street3.`object_id` = #{object.id} or street4.`object_id` = #{object.id})
+        (street1.`object_id` = #{object.address.id} or street2.`object_id` = #{object.address.id} or street3.`object_id` = #{object.address.id} or street4.`object_id` = #{object.address.id})
     </sql>
 
     <sql id="cityJoin">
@@ -108,7 +159,7 @@
     <sql id="cityCondition">
         <include refid="cityJoin"/>
 
-        where city1.`object_id` = #{object.id} or city2.`object_id` = #{object.id} or city3.`object_id` = #{object.id} or city4.`object_id` = #{object.id}
+        where city1.`object_id` = #{object.address.id} or city2.`object_id` = #{object.address.id} or city3.`object_id` = #{object.address.id} or city4.`object_id` = #{object.address.id}
     </sql>
 
     <sql id="regionJoin">
@@ -121,7 +172,7 @@
     </sql>
     
     <sql id="regionCondition">
-        (region1.`object_id` = #{object.id} or region2.`object_id` = #{object.id} or region3.`object_id` = #{object.id} or region4.`object_id` = #{object.id})
+        (region1.`object_id` = #{object.address.id} or region2.`object_id` = #{object.address.id} or region3.`object_id` = #{object.address.id} or region4.`object_id` = #{object.address.id})
     </sql>
 
     <sql id="countryJoin">
@@ -134,7 +185,7 @@
     </sql>
 
     <sql id="countryCondition">
-        (country1.`object_id` = #{object.id} or country2.`object_id` = #{object.id} or country3.`object_id` = #{object.id} or country4.`object_id` = #{object.id})
+        (country1.`object_id` = #{object.address.id} or country2.`object_id` = #{object.address.id} or country3.`object_id` = #{object.address.id} or country4.`object_id` = #{object.address.id})
     </sql>
 
     <sql id="addressJoin">
@@ -195,7 +246,23 @@
         <include refid="addressCondition"/>
 
         <if test="sortProperty != null">
-            order by ${sortProperty}
+            order by
+            <choose>
+                <when test="sortProperty == 'person'">
+                    e.`last_name`
+                    <if test="asc">
+                        ${asc}
+                    </if>,
+                    e.`first_name`
+                    <if test="asc">
+                        ${asc}
+                    </if>,
+                    e.`middle_name`
+                </when>
+                <otherwise>
+                    ${sortProperty}
+                </otherwise>
+            </choose>
             <if test="asc">
                 ${asc}
             </if>
