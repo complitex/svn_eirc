@@ -2,15 +2,12 @@ package ru.flexpay.eirc.eirc_account.strategy;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.wicket.markup.html.WebPage;
-import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.service.SequenceBean;
 import org.complitex.dictionary.util.ResourceUtil;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
-import ru.flexpay.eirc.eirc_account.web.edit.EircAccountEdit;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -27,6 +24,8 @@ public class EircAccountBean extends AbstractBean {
     private static final String NS = EircAccountBean.class.getPackage().getName() + ".EircAccount";
     public static final String RESOURCE_BUNDLE = EircAccountBean.class.getName();
     public static final String ENTITY_TABLE = "eirc_account";
+
+    private static final List<String> searchFilters = ImmutableList.of("country", "region", "city", "street", "building", "apartment", "room");
 
     @EJB
     private SequenceBean sequenceBean;
@@ -77,7 +76,7 @@ public class EircAccountBean extends AbstractBean {
     }
 
     public List<String> getSearchFilters() {
-        return ImmutableList.of("country", "region", "city", "street", "building", "apartment", "room");
+        return searchFilters;
     }
 
 }

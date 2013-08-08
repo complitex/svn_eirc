@@ -2,10 +2,12 @@ package ru.flexpay.eirc.dictionary.entity;
 
 import org.complitex.address.entity.AddressEntity;
 
+import java.io.Serializable;
+
 /**
  * @author Pavel Sknar
  */
-public class Address {
+public class Address implements Serializable {
 
     private Long id;
     private AddressEntity entity;
@@ -20,6 +22,14 @@ public class Address {
     private String building;
     private String apartment;
     private String room;
+
+    public Address() {
+    }
+
+    public Address(Long id, AddressEntity entity) {
+        this.id = id;
+        this.entity = entity;
+    }
 
     public Long getId() {
         return id;

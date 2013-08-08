@@ -2,10 +2,12 @@ package ru.flexpay.eirc.dictionary.entity;
 
 import org.apache.commons.lang.StringUtils;
 
+import java.io.Serializable;
+
 /**
  * @author Pavel Sknar
  */
-public class Person {
+public class Person implements Serializable {
     private String firstName;
     private String lastName;
     private String middleName;
@@ -36,6 +38,9 @@ public class Person {
 
     private void appendNotEmptyField(StringBuilder builder, String field) {
         if (StringUtils.isNotEmpty(field)) {
+            if (builder.length() > 0) {
+                builder.append(" ");
+            }
             builder.append(field);
         }
     }
