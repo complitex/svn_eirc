@@ -10,14 +10,14 @@
         <result column="begin_date" property="beginDate"/>
         <result column="end_date" property="endDate"/>
 
-        <association property="address" select="selectAddress" column="{id=address_id, entityId=address_entity_id}"/>
+        <association property="address" resultMap="Address"/>
 
         <association property="person" resultMap="ru.flexpay.eirc.dictionary.entity.Person.Person" />
     </resultMap>
 
     <resultMap id="Address" type="ru.flexpay.eirc.dictionary.entity.Address">
-        <id column="id" property="id"/>
-        <result column="entity_id" property="entityId"/>
+        <id column="address_id" property="id"/>
+        <result column="address_entity_id" property="entityId"/>
         <result column="street_type" property="streetType"/>
         <result column="street" property="street"/>
         <result column="building" property="building"/>
@@ -189,28 +189,34 @@
     </sql>
 
     <sql id="addressJoin">
-        <if test="object.address != null and object.address.entity != null">
-            <choose>
-                <when test="object.address.entity.id == 200">
-                    <include refid="roomJoin"/>
-                </when>
-                <when test="object.address.entity.id == 100">
-                    <include refid="apartmentJoin"/>
-                </when>
-                <when test="object.address.entity.id == 500">
-                    <include refid="buildingJoin"/>
-                </when>
-                <when test="object.address.entity.id == 300">
-                    <include refid="streetJoin"/>
-                </when>
-                <when test="object.address.entity.id == 400">
-                    <include refid="cityJoin"/>
-                </when>
-                <when test="object.address.entity.id == 800">
-                    <include refid="countryJoin"/>
-                </when>
-            </choose>
-        </if>
+        <choose>
+            <when test="map.address == true">
+                <include refid="countryJoin"/>
+                <include refid="addressJoinCulture"/>
+            </when>
+            <when test="object.address != null and object.address.entity != null">
+                <choose>
+                    <when test="object.address.entity.id == 200">
+                        <include refid="roomJoin"/>
+                    </when>
+                    <when test="object.address.entity.id == 100">
+                        <include refid="apartmentJoin"/>
+                    </when>
+                    <when test="object.address.entity.id == 500">
+                        <include refid="buildingJoin"/>
+                    </when>
+                    <when test="object.address.entity.id == 300">
+                        <include refid="streetJoin"/>
+                    </when>
+                    <when test="object.address.entity.id == 400">
+                        <include refid="cityJoin"/>
+                    </when>
+                    <when test="object.address.entity.id == 800">
+                        <include refid="countryJoin"/>
+                    </when>
+                </choose>
+            </when>
+        </choose>
     </sql>
 
     <sql id="addressCondition">
@@ -237,10 +243,46 @@
                 </when>
             </choose>
         </if>
+        <if test="map.address == true">
+            and ra.`end_date` is null and aa.`end_date` is null and baa.`end_date` is null and sa.`end_date` is null
+            and sta.`end_date` is null
+        </if>
+    </sql>
+
+    <sql id="addressJoinCulture">
+        left join `room_attribute` ra on
+            (ra.`object_id` = room.`object_id`)
+        left join `room_string_culture` rc on rc.`id` = ra.`value_id`
+
+        left join `apartment_attribute` aa on
+            (aa.`object_id` = apartment1.`object_id` or aa.`object_id` = apartment2.`object_id`)
+        left join `apartment_string_culture` ac on ac.`id` = aa.`value_id`
+
+        left join `building_address_attribute` baa on
+            (baa.`object_id` = building_a1.`object_id` or baa.`object_id` = building_a2.`object_id` or
+             baa.`object_id` = building_a3.`object_id` or baa.`object_id` = building_a4.`object_id`)
+        left join `building_address_string_culture` bac on bac.`id` = baa.`value_id`
+
+        left join `street_attribute` sa on
+            (sa.`object_id` = street1.`object_id` or baa.`object_id` = street2.`object_id` or
+             baa.`object_id` = street3.`object_id` or baa.`object_id` = street4.`object_id`)
+        left join `street_string_culture` sc on sc.`id` = sa.`value_id`
+
+        left join `street_type` st on (st.`object_id` = sa.`value_id` and sa.`value_type_id` = 301)
+        left join `street_type_attribute` sta on (sta.`object_id` = st.`object_id` and sta.`value_type_id` = 1400)
+        left join `street_type_string_culture` stc on sc.`id` = sta.`value_id`
+    </sql>
+
+    <sql id="addressFields">
+        <if test="map.address == true">
+            , stc.`value` as `street_type`, sc.`value` as `street`, bac.`value` as `building`, ac.`value` as `apartment`, rc.`value` as `room`
+        </if>
     </sql>
 
     <select id="selectEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="EircAccount">
-        select e.* from `eirc_account` e
+        select e.*
+        <include refid="addressFields"/>
+        from `eirc_account` e
         <include refid="addressJoin"/>
         where e.`end_date` is null
         <include refid="addressCondition"/>
