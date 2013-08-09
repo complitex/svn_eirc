@@ -191,7 +191,7 @@
     <sql id="addressJoin">
         <choose>
             <when test="map.address == true">
-                <include refid="countryJoin"/>
+                <include refid="streetJoin"/>
                 <include refid="addressJoinCulture"/>
             </when>
             <when test="object.address != null and object.address.entity != null">
@@ -264,13 +264,13 @@
         left join `building_address_string_culture` bac on bac.`id` = baa.`value_id`
 
         left join `street_attribute` sa on
-            (sa.`object_id` = street1.`object_id` or baa.`object_id` = street2.`object_id` or
-             baa.`object_id` = street3.`object_id` or baa.`object_id` = street4.`object_id`)
+            ((sa.`object_id` = street1.`object_id` or sa.`object_id` = street2.`object_id` or
+             sa.`object_id` = street3.`object_id` or sa.`object_id` = street4.`object_id`) and sa.`value_type_id` = 301)
         left join `street_string_culture` sc on sc.`id` = sa.`value_id`
 
-        left join `street_type` st on (st.`object_id` = sa.`value_id` and sa.`value_type_id` = 301)
+        left join `street_type` st on st.`object_id` = sa.`value_id`
         left join `street_type_attribute` sta on (sta.`object_id` = st.`object_id` and sta.`value_type_id` = 1400)
-        left join `street_type_string_culture` stc on sc.`id` = sta.`value_id`
+        left join `street_type_string_culture` stc on stc.`id` = sta.`value_id`
     </sql>
 
     <sql id="addressFields">
