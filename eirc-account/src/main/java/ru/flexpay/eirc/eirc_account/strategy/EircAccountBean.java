@@ -25,7 +25,7 @@ public class EircAccountBean extends AbstractBean {
     public static final String RESOURCE_BUNDLE = EircAccountBean.class.getName();
     public static final String ENTITY_TABLE = "eirc_account";
 
-    private static final List<String> searchFilters = ImmutableList.of("country", "region", "city", "street", "building", "apartment", "room");
+    private static final List<String> searchFilters = ImmutableList.of("city", "street", "building", "apartment", "room");
 
     @EJB
     private SequenceBean sequenceBean;
