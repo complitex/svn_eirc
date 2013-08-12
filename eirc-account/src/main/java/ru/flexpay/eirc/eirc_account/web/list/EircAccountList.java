@@ -139,6 +139,7 @@ public class EircAccountList extends TemplatePage {
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
                 filterWrapper.setMap(ImmutableMap.<String, Object>of("address", Boolean.TRUE));
+                filterWrapper.setLocale(localeBean.convert(getLocale()));
 
                 return eircAccountBean.getEircAccounts(filterWrapper);
             }
