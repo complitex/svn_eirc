@@ -28,16 +28,24 @@
                         </span>
                     </th>
                     <th>
-                        <wicket:message key="address"/>
+                        <span wicket:id="header.address">
+                            <wicket:message key="address"/>
+                        </span>
                     </th>
                     <th style="width:110px">
                         <input wicket:id="reset" type="button" wicket:message="value:reset" class="btnSmall"/>
                     </th>
                 </tr>
                 <tr>
-                    <td class="filter-td"></td>
-                    <td class="filter-td"></td>
-                    <td class="filter-td"></td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="accountNumberFilter"></input>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="personFilter"></input>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="addressFilter"></input>
+                    </td>
                     <td class="filter-td">
                         <input wicket:id="submit" type="submit" wicket:message="value:find" class="btnSmall"/>
                     </td>

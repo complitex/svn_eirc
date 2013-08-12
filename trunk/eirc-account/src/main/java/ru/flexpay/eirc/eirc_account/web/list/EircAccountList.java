@@ -14,12 +14,10 @@ import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
+import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
-import org.apache.wicket.model.AbstractReadOnlyModel;
-import org.apache.wicket.model.IModel;
-import org.apache.wicket.model.Model;
-import org.apache.wicket.model.ResourceModel;
+import org.apache.wicket.model.*;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.complitex.address.entity.AddressEntity;
 import org.complitex.address.util.AddressRenderer;
@@ -32,12 +30,14 @@ import org.complitex.dictionary.web.component.paging.PagingNavigator;
 import org.complitex.dictionary.web.component.scroll.ScrollBookmarkablePageLink;
 import org.complitex.dictionary.web.component.search.CollapsibleSearchPanel;
 import org.complitex.dictionary.web.component.search.ISearchCallback;
+import org.complitex.dictionary.web.component.search.IToggleCallback;
 import org.complitex.template.web.component.toolbar.AddItemButton;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.search.CollapsibleSearchToolbarButton;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
 import ru.flexpay.eirc.dictionary.entity.Address;
+import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.eirc_account.strategy.EircAccountBean;
 import ru.flexpay.eirc.eirc_account.web.edit.EircAccountEdit;
@@ -65,6 +65,8 @@ public class EircAccountList extends TemplatePage {
 
     private EircAccount filterObject = new EircAccount();
     private Address filterAddress;
+
+    private Boolean toggle = false;
 
     public EircAccountList() {
         init();
@@ -114,7 +116,13 @@ public class EircAccountList extends TemplatePage {
                     filterObject.setAddress(null);
                 }
             }
-        }, ShowMode.ALL, true, showModeModel);
+        }, ShowMode.ALL, true, showModeModel, new IToggleCallback() {
+            @Override
+            public void visible(boolean newState, AjaxRequestTarget target) {
+                toggle = newState;
+                target.add(container);
+            }
+        });
         add(searchPanel);
         searchPanel.initialize();
 
@@ -156,10 +164,20 @@ public class EircAccountList extends TemplatePage {
 
                     @Override
                     public String getObject() {
-                        return eircAccount.getAddress() != null? AddressRenderer.displayAddress(
-                                eircAccount.getAddress().getStreetType(), eircAccount.getAddress().getStreet(),
-                                eircAccount.getAddress().getBuilding(), null, eircAccount.getAddress().getApartment(),
-                                eircAccount.getAddress().getRoom(), getLocale()) : "";
+                        return eircAccount.getAddress() != null?
+                                (
+                                        toggle?
+                                                AddressRenderer.displayAddress(
+                                                        eircAccount.getAddress().getCityType(), eircAccount.getAddress().getCity(),
+                                                        eircAccount.getAddress().getStreetType(), eircAccount.getAddress().getStreet(),
+                                                        eircAccount.getAddress().getBuilding(), null, eircAccount.getAddress().getApartment(),
+                                                        eircAccount.getAddress().getRoom(), getLocale())
+                                                :
+                                                AddressRenderer.displayAddress(
+                                                        eircAccount.getAddress().getStreetType(), eircAccount.getAddress().getStreet(),
+                                                        eircAccount.getAddress().getBuilding(), null, eircAccount.getAddress().getApartment(),
+                                                        eircAccount.getAddress().getRoom(), getLocale())
+                                ): "";
                     }
                 }));
 
@@ -179,7 +197,44 @@ public class EircAccountList extends TemplatePage {
         filterForm.add(dataView);
 
         //Sorting
-        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "accountNumber", "person"));
+        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "accountNumber", "person", "address"));
+
+        //Filters
+        filterForm.add(new TextField<>("accountNumberFilter", new PropertyModel<String>(filterObject, "accountNumber")));
+
+        filterForm.add(new TextField<>("personFilter", new Model<String>() {
+
+            @Override
+            public String getObject() {
+                return filterObject.getPerson() != null? filterObject.getPerson().toString() : "";
+            }
+
+            @Override
+            public void setObject(String fio) {
+                if (StringUtils.isBlank(fio)) {
+                    filterObject.setPerson(null);
+                } else {
+                    fio = fio.trim();
+                    String[] personFio = fio.split(" ", 3);
+
+                    Person person = new Person();
+
+                    if (personFio.length > 0) {
+                        person.setLastName(personFio[0]);
+                    }
+                    if (personFio.length > 1) {
+                        person.setFirstName(personFio[1]);
+                    }
+                    if (personFio.length > 2) {
+                        person.setMiddleName(personFio[2]);
+                    }
+
+                    filterObject.setPerson(person);
+                }
+            }
+        }));
+
+        filterForm.add(new TextField<>("addressFilter", new Model<String>()).setEnabled(false));
 
         //Reset Action
         AjaxLink reset = new AjaxLink("reset") {
@@ -188,6 +243,8 @@ public class EircAccountList extends TemplatePage {
             public void onClick(AjaxRequestTarget target) {
                 filterForm.clearInput();
                 filterObject.setAddress(null);
+                filterObject.setPerson(null);
+                filterObject.setAccountNumber(null);
 
                 target.add(container);
             }
