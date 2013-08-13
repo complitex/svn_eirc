@@ -39,7 +39,7 @@ import org.complitex.template.web.template.TemplatePage;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
-import ru.flexpay.eirc.eirc_account.strategy.EircAccountBean;
+import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
 import ru.flexpay.eirc.eirc_account.web.edit.EircAccountEdit;
 
 import javax.ejb.EJB;
@@ -59,6 +59,7 @@ public class EircAccountList extends TemplatePage {
 
     @EJB
     private LocaleBean localeBean;
+
     private WebMarkupContainer container;
     private DataView<EircAccount> dataView;
     private CollapsibleSearchPanel searchPanel;

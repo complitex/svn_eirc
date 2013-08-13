@@ -1,3 +1,5 @@
+INSERT INTO `sequence` (`sequence_name`, `sequence_value`) VALUES
+('eirc_account',1);
 
 -- --------------------------------
 -- Organization type

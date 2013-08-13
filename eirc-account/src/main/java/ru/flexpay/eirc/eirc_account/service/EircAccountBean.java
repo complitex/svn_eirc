@@ -1,4 +1,4 @@
-package ru.flexpay.eirc.eirc_account.strategy;
+package ru.flexpay.eirc.eirc_account.service;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.builder.EqualsBuilder;
@@ -21,7 +21,7 @@ import java.util.Locale;
 @Stateless
 public class EircAccountBean extends AbstractBean {
 
-    private static final String NS = EircAccountBean.class.getPackage().getName() + ".EircAccount";
+    private static final String NS = EircAccountBean.class.getPackage().getName() + ".EircAccountBean";
     public static final String RESOURCE_BUNDLE = EircAccountBean.class.getName();
     public static final String ENTITY_TABLE = "eirc_account";
 
