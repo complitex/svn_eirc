@@ -1,15 +1,17 @@
 package ru.flexpay.eirc.eirc_account.web.edit;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
-import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
+import org.apache.wicket.markup.html.form.Form;
+import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.IModel;
-import org.apache.wicket.model.StringResourceModel;
+import org.apache.wicket.model.PropertyModel;
+import org.apache.wicket.model.ResourceModel;
+import org.apache.wicket.request.mapper.parameter.PageParameters;
+import org.apache.wicket.util.string.StringValue;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.strategy.IStrategy;
 import org.complitex.dictionary.strategy.StrategyFactory;
@@ -20,9 +22,11 @@ import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.FormTemplatePage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.flexpay.eirc.dictionary.entity.Person;
+import ru.flexpay.eirc.eirc_account.entity.EircAccount;
+import ru.flexpay.eirc.eirc_account.strategy.EircAccountBean;
 
 import javax.ejb.EJB;
-import java.util.List;
 
 /**
  * @author Pavel Sknar
@@ -33,42 +37,67 @@ public class EircAccountEdit extends FormTemplatePage {
     @EJB
     private StrategyFactory strategyFactory;
 
-    private WebMarkupContainer container;
+    @EJB
+    private EircAccountBean eircAccountBean;
+
     private SearchComponentState componentState;
 
-    private Long cityId;
-    private Long streetTypeId;
-    private Long streetId;
-    private Long buildingId;
+    private EircAccount eircAccount;
 
 
     private static final Logger log = LoggerFactory.getLogger(EircAccountEdit.class);
 
+    public EircAccountEdit() {
+        init();
+    }
+
+    public EircAccountEdit(PageParameters parameters) {
+        StringValue eircAccountId = parameters.get("eircAccountId");
+        if (eircAccountId != null) {
+            eircAccount = eircAccountBean.getEircAccount(eircAccountId.toLong());
+            if (eircAccount == null) {
+                throw new RuntimeException("EircAccount by id='" + eircAccountId + "' not found");
+            }
+        }
+        init();
+    }
+
     private void init() {
 
-        IModel<String> labelModel = new StringResourceModel("label", null, null);
-        Label title = new Label("title", labelModel);
-        add(title);
-        final Label label = new Label("label", labelModel);
-        label.setOutputMarkupId(true);
-        add(label);
+        if (eircAccount == null) {
+            eircAccount = new EircAccount();
+        }
+        if (eircAccount.getPerson() == null) {
+            eircAccount.setPerson(new Person());
+        }
+
+        IModel<String> labelModel = new ResourceModel("label");
+
+        add(new Label("title", labelModel));
+        add(new Label("label", labelModel));
 
         final FeedbackPanel messages = new FeedbackPanel("messages");
         messages.setOutputMarkupId(true);
         add(messages);
 
-        //Form<Void> form = new Form<Void>("form");
+        Form form = new Form("form");
+        add(form);
 
-        container = new WebMarkupContainer("container");
-        container.setOutputMarkupPlaceholderTag(true);
-        container.setVisible(false);
-
-        //address
+        //address component
         componentState = new SearchComponentState();
         WiQuerySearchComponent searchComponent =
-                new WiQuerySearchComponent("searchComponent", componentState, Lists.<String>newArrayList(), null, ShowMode.ACTIVE, true);
-        container.add(searchComponent);
+                new WiQuerySearchComponent("searchComponent", componentState, eircAccountBean.getSearchFilters(), null, ShowMode.ACTIVE, true);
+        form.add(searchComponent);
 
+        //eirc account field
+        form.add(new TextField<>("accountNumber", new PropertyModel<String>(eircAccount, "accountNumber")));
+
+        // FIO fields
+        form.add(new TextField<>("lastName",   new PropertyModel<String>(eircAccount.getPerson(), "lastName")));
+        form.add(new TextField<>("firstName",  new PropertyModel<String>(eircAccount.getPerson(), "firstName")));
+        form.add(new TextField<>("middleName", new PropertyModel<String>(eircAccount.getPerson(), "middleName")));
+
+        // save button
         AjaxLink<Void> save = new AjaxLink<Void>("save") {
 
             @Override
@@ -76,8 +105,9 @@ public class EircAccountEdit extends FormTemplatePage {
                 //To change body of implemented methods use File | Settings | File Templates.
             }
         };
-        container.add(save);
+        form.add(save);
 
+        // cancel button
         AjaxLink<Void> cancel = new AjaxLink<Void>("cancel") {
 
             @Override
@@ -85,12 +115,12 @@ public class EircAccountEdit extends FormTemplatePage {
                 //To change body of implemented methods use File | Settings | File Templates.
             }
         };
-        container.add(cancel);
+        form.add(cancel);
     }
 
     private void initSearchComponentState(SearchComponentState componentState) {
         componentState.clear();
-
+        /*
         if (cityId != null) {
             componentState.put("city", findObject(cityId, "city"));
         }
@@ -101,7 +131,7 @@ public class EircAccountEdit extends FormTemplatePage {
 
         if (buildingId != null) {
             componentState.put("building", findObject(buildingId, "building"));
-        }
+        }*/
     }
 
     private DomainObject findObject(Long objectId, String entity) {
