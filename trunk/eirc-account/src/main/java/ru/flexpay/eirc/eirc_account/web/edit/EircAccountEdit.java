@@ -24,7 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
-import ru.flexpay.eirc.eirc_account.strategy.EircAccountBean;
+import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
+import ru.flexpay.eirc.eirc_account.web.list.EircAccountList;
 
 import javax.ejb.EJB;
 
@@ -84,7 +85,13 @@ public class EircAccountEdit extends FormTemplatePage {
         add(form);
 
         //address component
-        componentState = new SearchComponentState();
+        if (eircAccount.getId() == null) {
+            componentState = (SearchComponentState)getTemplateSession().getGlobalSearchComponentState().clone();
+        } else {
+            componentState = new SearchComponentState();
+            initSearchComponentState(componentState);
+        }
+
         WiQuerySearchComponent searchComponent =
                 new WiQuerySearchComponent("searchComponent", componentState, eircAccountBean.getSearchFilters(), null, ShowMode.ACTIVE, true);
         form.add(searchComponent);
@@ -102,7 +109,11 @@ public class EircAccountEdit extends FormTemplatePage {
 
             @Override
             public void onClick(AjaxRequestTarget target) {
-                //To change body of implemented methods use File | Settings | File Templates.
+                if (eircAccount.getId() == null) {
+                    eircAccountBean.save(eircAccount);
+                } else {
+                    eircAccountBean.update(eircAccount);
+                }
             }
         };
         form.add(save);
@@ -112,7 +123,7 @@ public class EircAccountEdit extends FormTemplatePage {
 
             @Override
             public void onClick(AjaxRequestTarget target) {
-                //To change body of implemented methods use File | Settings | File Templates.
+                setResponsePage(EircAccountList.class);
             }
         };
         form.add(cancel);
@@ -120,18 +131,18 @@ public class EircAccountEdit extends FormTemplatePage {
 
     private void initSearchComponentState(SearchComponentState componentState) {
         componentState.clear();
-        /*
-        if (cityId != null) {
-            componentState.put("city", findObject(cityId, "city"));
-        }
 
-        if (streetId != null) {
-            componentState.put("street", findObject(streetId, "street"));
+        switch (eircAccount.getAddress().getEntity()) {
+            case BUILDING:
+                componentState.put("building", findObject(eircAccount.getAddress().getId(), "building"));
+                break;
+            case APARTMENT:
+                componentState.put("apartment", findObject(eircAccount.getAddress().getId(), "apartment"));
+                break;
+            case ROOM:
+                componentState.put("room", findObject(eircAccount.getAddress().getId(), "room"));
+                break;
         }
-
-        if (buildingId != null) {
-            componentState.put("building", findObject(buildingId, "building"));
-        }*/
     }
 
     private DomainObject findObject(Long objectId, String entity) {
