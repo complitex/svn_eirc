@@ -1,33 +1,39 @@
 package ru.flexpay.eirc.eirc_account.web.edit;
 
-import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.ajax.markup.html.AjaxLink;
+import com.google.common.collect.ImmutableList;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.markup.html.basic.Label;
+import org.apache.wicket.markup.html.form.Button;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.TextField;
+import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.PropertyModel;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.string.StringValue;
+import org.complitex.address.entity.AddressEntity;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.strategy.IStrategy;
 import org.complitex.dictionary.strategy.StrategyFactory;
 import org.complitex.dictionary.web.component.ShowMode;
+import org.complitex.dictionary.web.component.search.CollapsibleInputSearchComponent;
 import org.complitex.dictionary.web.component.search.SearchComponentState;
-import org.complitex.dictionary.web.component.search.WiQuerySearchComponent;
+import org.complitex.template.web.component.toolbar.ToolbarButton;
+import org.complitex.template.web.component.toolbar.search.CollapsibleInputSearchToolbarButton;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.FormTemplatePage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
 import ru.flexpay.eirc.eirc_account.web.list.EircAccountList;
 
 import javax.ejb.EJB;
+import java.util.List;
 
 /**
  * @author Pavel Sknar
@@ -45,6 +51,8 @@ public class EircAccountEdit extends FormTemplatePage {
 
     private EircAccount eircAccount;
 
+    private static final List<String> addressDescription = ImmutableList.of("street", "city", "region", "country");
+
 
     private static final Logger log = LoggerFactory.getLogger(EircAccountEdit.class);
 
@@ -54,7 +62,7 @@ public class EircAccountEdit extends FormTemplatePage {
 
     public EircAccountEdit(PageParameters parameters) {
         StringValue eircAccountId = parameters.get("eircAccountId");
-        if (eircAccountId != null) {
+        if (eircAccountId != null && !eircAccountId.isNull()) {
             eircAccount = eircAccountBean.getEircAccount(eircAccountId.toLong());
             if (eircAccount == null) {
                 throw new RuntimeException("EircAccount by id='" + eircAccountId + "' not found");
@@ -86,14 +94,14 @@ public class EircAccountEdit extends FormTemplatePage {
 
         //address component
         if (eircAccount.getId() == null) {
-            componentState = (SearchComponentState)getTemplateSession().getGlobalSearchComponentState().clone();
+            componentState = (SearchComponentState)(getTemplateSession().getGlobalSearchComponentState().clone());
         } else {
             componentState = new SearchComponentState();
             initSearchComponentState(componentState);
         }
 
-        WiQuerySearchComponent searchComponent =
-                new WiQuerySearchComponent("searchComponent", componentState, eircAccountBean.getSearchFilters(), null, ShowMode.ACTIVE, true);
+        CollapsibleInputSearchComponent searchComponent = new CollapsibleInputSearchComponent("searchComponent",
+                componentState, eircAccountBean.getSearchFilters(), null, ShowMode.ACTIVE, true);
         form.add(searchComponent);
 
         //eirc account field
@@ -105,44 +113,112 @@ public class EircAccountEdit extends FormTemplatePage {
         form.add(new TextField<>("middleName", new PropertyModel<String>(eircAccount.getPerson(), "middleName")));
 
         // save button
-        AjaxLink<Void> save = new AjaxLink<Void>("save") {
+        Button save = new Button("save") {
 
             @Override
-            public void onClick(AjaxRequestTarget target) {
+            public void onSubmit() {
+                Address address = null;
+                DomainObject addressInput = componentState.get("room");
+
+                if (isNullAddressInput(addressInput)) {
+                    addressInput = componentState.get("apartment");
+                } else {
+                    address = new Address(addressInput.getId(), AddressEntity.ROOM);
+                }
+
+                if (isNullAddressInput(addressInput)) {
+                    addressInput = componentState.get("building");
+                } else if (address == null) {
+                    address = new Address(addressInput.getId(), AddressEntity.APARTMENT);
+                }
+
+                if (isNullAddressInput(addressInput)) {
+                    error(getString("failed_address"));
+                    return;
+                } else if (address == null) {
+                    address = new Address(addressInput.getId(), AddressEntity.BUILDING);
+                }
+
+                eircAccount.setAddress(address);
+
                 if (eircAccount.getId() == null) {
                     eircAccountBean.save(eircAccount);
                 } else {
                     eircAccountBean.update(eircAccount);
                 }
+
+                info(getString("saved"));
             }
         };
         form.add(save);
 
         // cancel button
-        AjaxLink<Void> cancel = new AjaxLink<Void>("cancel") {
+        Link<String> cancel = new Link<String>("cancel") {
 
             @Override
-            public void onClick(AjaxRequestTarget target) {
+            public void onClick() {
                 setResponsePage(EircAccountList.class);
             }
         };
         form.add(cancel);
     }
 
+    private boolean isNullAddressInput(DomainObject addressInput) {
+        return addressInput == null || addressInput.getId() == -1;
+    }
+
     private void initSearchComponentState(SearchComponentState componentState) {
         componentState.clear();
 
+        DomainObject room = null;
+        DomainObject apartment = null;
+        DomainObject building = null;
+
         switch (eircAccount.getAddress().getEntity()) {
-            case BUILDING:
-                componentState.put("building", findObject(eircAccount.getAddress().getId(), "building"));
-                break;
-            case APARTMENT:
-                componentState.put("apartment", findObject(eircAccount.getAddress().getId(), "apartment"));
-                break;
             case ROOM:
-                componentState.put("room", findObject(eircAccount.getAddress().getId(), "room"));
+                room = findObject(eircAccount.getAddress().getId(), "room");
+                componentState.put("room", room);
+            case APARTMENT:
+                Long apartmentId = null;
+                if (room != null && room.getParentEntityId() == 100) {
+                    apartmentId = room.getParentId();
+                } else if (room == null) {
+                    apartmentId = eircAccount.getAddress().getId();
+                }
+                if (apartmentId != null) {
+                    apartment = findObject(apartmentId, "apartment");
+                    componentState.put("apartment", apartment);
+                }
+            case BUILDING:
+                Long buildId = null;
+                if (apartment != null) {
+                    buildId = apartment.getParentId();
+                } else if (room != null) {
+                    buildId = room.getParentId();
+                } else {
+                    buildId = eircAccount.getAddress().getId();
+                }
+
+                building = findObject(buildId, "building");
+                componentState.put("building", building);
                 break;
         }
+
+        if (building == null) {
+            throw new RuntimeException("Failed EIRC Account`s address");
+        }
+
+        DomainObject child = findObject(building.getParentId(), "building_address");
+
+        for (String desc : addressDescription) {
+            child = findObject(child.getParentId(), desc);
+            componentState.put(desc, child);
+        }
+    }
+
+    @Override
+    protected List<? extends ToolbarButton> getToolbarButtons(String id) {
+        return ImmutableList.of(new CollapsibleInputSearchToolbarButton(id));
     }
 
     private DomainObject findObject(Long objectId, String entity) {

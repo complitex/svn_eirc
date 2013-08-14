@@ -402,7 +402,7 @@
     </insert>
 
     <update id="updateEndDate" parameterType="ru.flexpay.eirc.eirc_account.entity.EircAccount">
-        update `eirc_account` set `end_date` = #{endDate} where `pk_id` = #{id}
+        update `eirc_account` set `end_date` = #{endDate} where `pk_id` = #{pkId}
     </update>
 
 </mapper>

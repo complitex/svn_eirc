@@ -303,7 +303,7 @@ public class EircAccountList extends TemplatePage {
     private PageParameters getEditPageParams(Long id) {
         PageParameters parameters = new PageParameters();
         if (id != null) {
-            parameters.add("objectId", id);
+            parameters.add("eircAccountId", id);
         }
         return parameters;
     }

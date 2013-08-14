@@ -6,14 +6,12 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.service.SequenceBean;
-import org.complitex.dictionary.util.ResourceUtil;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * @author Pavel Sknar
@@ -22,7 +20,6 @@ import java.util.Locale;
 public class EircAccountBean extends AbstractBean {
 
     private static final String NS = EircAccountBean.class.getPackage().getName() + ".EircAccountBean";
-    public static final String RESOURCE_BUNDLE = EircAccountBean.class.getName();
     public static final String ENTITY_TABLE = "eirc_account";
 
     private static final List<String> searchFilters = ImmutableList.of("city", "street", "building", "apartment", "room");
@@ -39,7 +36,8 @@ public class EircAccountBean extends AbstractBean {
     }
 
     public EircAccount getEircAccount(long id) {
-       return sqlSession().selectOne(NS + ".selectEircAccount", id);
+        List<EircAccount> resultOrderByDescData = sqlSession().selectList(NS + ".selectEircAccount", id);
+        return resultOrderByDescData.size() > 0? resultOrderByDescData.get(0): null;
     }
 
     public List<EircAccount> getEircAccounts(FilterWrapper<EircAccount> filter) {
@@ -62,17 +60,13 @@ public class EircAccountBean extends AbstractBean {
         if (EqualsBuilder.reflectionEquals(oldObject, eircAccount)) {
             return;
         }
-        oldObject.setEndDate(eircAccount.getBeginDate());
         archive(oldObject);
-        save(eircAccount);
+        eircAccount.setBeginDate(oldObject.getEndDate());
+        sqlSession().insert(NS + ".insert", eircAccount);
     }
 
     public EircAccount getEricAccountByPkId(long pkId) {
         return sqlSession().selectOne(NS + ".selectEircAccountByPkId", pkId);
-    }
-
-    public String getPluralEntityLabel(Locale locale) {
-        return ResourceUtil.getString(RESOURCE_BUNDLE, ENTITY_TABLE, locale);
     }
 
     public List<String> getSearchFilters() {
