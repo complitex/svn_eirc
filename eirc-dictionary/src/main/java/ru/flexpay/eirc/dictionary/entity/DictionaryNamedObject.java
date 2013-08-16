@@ -1,6 +1,7 @@
 package ru.flexpay.eirc.dictionary.entity;
 
 import com.google.common.collect.Maps;
+import org.apache.commons.lang.StringUtils;
 import org.complitex.dictionary.entity.Locale;
 
 import java.util.Map;
@@ -10,7 +11,17 @@ import java.util.Map;
  */
 public class DictionaryNamedObject extends DictionaryObject {
 
+    private Long nameId;
+
     private Map<Locale, String> names = Maps.newHashMap();
+
+    public Long getNameId() {
+        return nameId;
+    }
+
+    public void setNameId(Long nameId) {
+        this.nameId = nameId;
+    }
 
     public Map<Locale, String> getNames() {
         return names;
@@ -25,6 +36,11 @@ public class DictionaryNamedObject extends DictionaryObject {
     }
 
     public String getName(Locale locale) {
-        return names.get(locale);
+        String name = names.get(locale);
+        return StringUtils.isNotEmpty(name)? name : "";
+    }
+
+    public String getName() {
+        return names.size() > 0? names.values().iterator().next() : "";
     }
 }

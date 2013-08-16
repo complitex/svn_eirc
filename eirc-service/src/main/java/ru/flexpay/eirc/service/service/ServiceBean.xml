@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ru.flexpay.eirc.service.service.ServiceBean">
+
+    <resultMap id="Service" type="ru.flexpay.eirc.service.entity.Service">
+        <result column="id" property="id"/>
+        <result column="code" property="code"/>
+        <result column="parent_id" property="parentId" />
+
+        <collection property="names" column="locale_id" notNullColumn="id" javaType="HashMap">
+            <result column="value" property="value"/>
+            <association property="key" resultMap="Locale">
+            </association>
+        </collection>
+    </resultMap>
+
+    <resultMap id="Locale" type="org.complitex.dictionary.entity.Locale">
+        <constructor>
+            <idArg column="locale_id" javaType="Long"/>
+            <arg column="locale" javaType="String"/>
+            <arg column="system" javaType="_boolean" jdbcType="TINYINT"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="serviceWhere">
+        <if test="object != null">
+            where sc.`value` like concat('%', #{object.name}, '%')
+            <if test="object.code != null and like == true">
+                and s.`code` like concat('%', #{object.code}, '%')
+            </if>
+            <if test="object.code != null and like == false">
+                and s.`code` = #{object.code}
+            </if>
+            <if test="object.parentId != null">
+                and s.`parent_id` = #{object.parentId}
+            </if>
+            <if test="locale != null">
+                and sc.`locale_id` == #{locale.id}
+            </if>
+        </if>
+    </sql>
+
+    <select id="selectServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="Service">
+        select s.*, sc.`value` as `value`, sc.`locale_id` as `locale_id`, l.`locale` as `locale`, l.`system` as `system`
+        from `service` s
+          left join `service_string_culture` sc on s.`name_id` = sc.`id`
+          left join `locales` l on sc.`locale_id` = l.`id`
+
+        <include refid="serviceWhere"/>
+
+        <if test="sortProperty != null">
+            ${sortProperty}
+
+            <if test="asc">
+                ${asc}
+            </if>
+        </if>
+        <if test="count > 0">
+            limit ${first},${count}
+        </if>
+    </select>
+
+    <select id="countServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+        select count(distinct s.`id`) from `service` s
+          left join `service_string_culture` sc on s.`name_id` = sc.`id`
+        <include refid="serviceWhere"/>
+    </select>
+
+    <select id="selectService" parameterType="long" resultMap="Service">
+        select * from `service` where `id` = #{id}
+    </select>
+
+    <insert id="insert" parameterType="ru.flexpay.eirc.service.entity.Service" keyProperty="id" useGeneratedKeys="true">
+        insert into `service` (`code`, `parent_id`, `name_id`)
+                            values (#{code}, #{parentId}, #{nameId})
+    </insert>
+
+    <update id="update" parameterType="ru.flexpay.eirc.service.entity.Service">
+        update `service` set `code` = #{code}, `parent_id` = #{parentId}, `name_id` = #{nameId} where `id` = #{id}
+    </update>
+
+</mapper>
