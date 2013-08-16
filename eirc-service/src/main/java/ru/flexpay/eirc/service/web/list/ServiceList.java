@@ -104,7 +104,7 @@ public class ServiceList extends TemplatePage {
                 return serviceBean.count(filterWrapper);
             }
         };
-        dataProvider.setSort("account_number", SortOrder.ASCENDING);
+        dataProvider.setSort("name", SortOrder.ASCENDING);
 
         //Data View
         dataView = new DataView<Service>("data", dataProvider, 1) {

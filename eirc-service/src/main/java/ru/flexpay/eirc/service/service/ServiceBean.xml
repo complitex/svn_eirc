@@ -9,7 +9,7 @@
         <result column="parent_id" property="parentId" />
 
         <collection property="names" column="locale_id" notNullColumn="id" javaType="HashMap">
-            <result column="value" property="value"/>
+            <result column="name" property="value"/>
             <association property="key" resultMap="Locale">
             </association>
         </collection>
@@ -36,13 +36,13 @@
                 and s.`parent_id` = #{object.parentId}
             </if>
             <if test="locale != null">
-                and sc.`locale_id` == #{locale.id}
+                and sc.`locale_id` = #{locale.id}
             </if>
         </if>
     </sql>
 
     <select id="selectServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="Service">
-        select s.*, sc.`value` as `value`, sc.`locale_id` as `locale_id`, l.`locale` as `locale`, l.`system` as `system`
+        select s.*, sc.`value` as `name`, sc.`locale_id` as `locale_id`, l.`locale` as `locale`, l.`system` as `system`
         from `service` s
           left join `service_string_culture` sc on s.`name_id` = sc.`id`
           left join `locales` l on sc.`locale_id` = l.`id`
@@ -50,7 +50,7 @@
         <include refid="serviceWhere"/>
 
         <if test="sortProperty != null">
-            ${sortProperty}
+            order by ${sortProperty}
 
             <if test="asc">
                 ${asc}
@@ -68,7 +68,11 @@
     </select>
 
     <select id="selectService" parameterType="long" resultMap="Service">
-        select * from `service` where `id` = #{id}
+        select s.*, sc.`value` as `name`, sc.`locale_id` as `locale_id`, l.`locale` as `locale`, l.`system` as `system`
+        from `service` s
+          left join `service_string_culture` sc on s.`name_id` = sc.`id`
+          left join `locales` l on sc.`locale_id` = l.`id`
+        where s.`id` = #{id}
     </select>
 
     <insert id="insert" parameterType="ru.flexpay.eirc.service.entity.Service" keyProperty="id" useGeneratedKeys="true">
@@ -79,5 +83,17 @@
     <update id="update" parameterType="ru.flexpay.eirc.service.entity.Service">
         update `service` set `code` = #{code}, `parent_id` = #{parentId}, `name_id` = #{nameId} where `id` = #{id}
     </update>
+
+    <insert id="insertName" parameterType="map">
+        insert into `service_string_culture` (`id`, `locale_id`, `value`) values (#{id}, #{localeId}, #{value})
+    </insert>
+
+    <update id="updateName" parameterType="map">
+        update `service_string_culture` set `value` = #{value} where id = #{id} and locale_id = #{localeId}
+    </update>
+
+    <delete id="deleteName" parameterType="map">
+        delete from `service_string_culture` where id = #{id} and locale_id = #{localeId}
+    </delete>
 
 </mapper>
