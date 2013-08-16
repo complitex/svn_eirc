@@ -23,7 +23,6 @@ import org.complitex.address.entity.AddressEntity;
 import org.complitex.address.util.AddressRenderer;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.LocaleBean;
-import org.complitex.dictionary.strategy.web.DomainObjectAccessUtil;
 import org.complitex.dictionary.web.component.ShowMode;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
@@ -273,10 +272,6 @@ public class EircAccountList extends TemplatePage {
         container.add(new PagingNavigator("navigator", dataView, getPreferencesPage(), container));
     }
 
-    protected String getBuildingStrategyName() {
-        return null;
-    }
-
     @Override
     protected List<? extends ToolbarButton> getToolbarButtons(String id) {
         return ImmutableList.of(new AddItemButton(id) {
@@ -284,14 +279,6 @@ public class EircAccountList extends TemplatePage {
             @Override
             protected void onClick() {
                 this.getPage().setResponsePage(getEditPage(), getEditPageParams(null));
-            }
-
-            @Override
-            protected void onBeforeRender() {
-                if (!DomainObjectAccessUtil.canAddNew(getBuildingStrategyName(), "building")) {
-                    setVisible(false);
-                }
-                super.onBeforeRender();
             }
         }, new CollapsibleSearchToolbarButton(id, searchPanel));
     }
