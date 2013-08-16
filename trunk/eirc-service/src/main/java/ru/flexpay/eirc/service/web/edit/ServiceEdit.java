@@ -37,6 +37,7 @@ public class ServiceEdit extends FormTemplatePage {
     private LocaleBean localeBean;
 
     private Service service;
+    private Service parentService;
 
     private static final Logger log = LoggerFactory.getLogger(ServiceEdit.class);
 
@@ -50,6 +51,8 @@ public class ServiceEdit extends FormTemplatePage {
             service = serviceBean.getService(serviceId.toLong());
             if (service == null) {
                 throw new RuntimeException("Service by id='" + serviceId + "' not found");
+            } else if (service.getParentId() != null) {
+                parentService = serviceBean.getService(service.getParentId());
             }
         }
         init();
@@ -113,7 +116,17 @@ public class ServiceEdit extends FormTemplatePage {
         if (service.getId() != null) {
             services.remove(service);
         }
-        form.add(new DropDownChoice<Service>("parent", services, new IChoiceRenderer<Service>() {
+        form.add(new DropDownChoice<>("parent", new Model<Service>() {
+            @Override
+            public Service getObject() {
+                return parentService;
+            }
+
+            @Override
+            public void setObject(Service object) {
+                parentService = object;
+            }
+        }, services, new IChoiceRenderer<Service>() {
             @Override
             public Object getDisplayValue(Service object) {
                 return object.getName(locale);
@@ -123,19 +136,19 @@ public class ServiceEdit extends FormTemplatePage {
             public String getIdValue(Service object, int index) {
                 return object.getId().toString();
             }
-        }) {
-            @Override
-            protected void onSelectionChanged(Service newSelection) {
-                service.setParentId(newSelection.getId());
-                super.onSelectionChanged(newSelection);
-            }
-        });
+        }));
 
         // save button
         Button save = new Button("save") {
 
             @Override
             public void onSubmit() {
+
+                if (parentService != null) {
+                    service.setParentId(parentService.getId());
+                } else {
+                    service.setParentId(null);
+                }
 
                 if (service.getId() == null) {
                     serviceBean.save(service);
