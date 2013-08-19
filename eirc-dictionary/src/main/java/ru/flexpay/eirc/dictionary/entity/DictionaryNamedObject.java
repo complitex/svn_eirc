@@ -31,6 +31,16 @@ public class DictionaryNamedObject extends DictionaryObject {
         this.names = names;
     }
 
+    /**
+     * MyBatis setter.
+     *
+     * @param name Content key and value. key is Locale, value is name.
+     */
+    public void setName(Map<String, Object> name) {
+        addName((Locale)name.get("key"), (String)name.get("value"));
+
+    }
+
     public void addName(Locale locale, String name) {
         names.put(locale, name);
     }
