@@ -6,10 +6,11 @@
     <resultMap id="Service" type="ru.flexpay.eirc.service.entity.Service">
         <result column="id" property="id"/>
         <result column="code" property="code"/>
-        <result column="parent_id" property="parentId" />
+        <result column="parent_id" property="parentId"/>
+        <result column="name_id" property="nameId"/>
 
-        <collection property="names" column="locale_id" notNullColumn="id" javaType="HashMap">
-            <result column="name" property="value"/>
+        <collection property="name" javaType="ArrayList" ofType="java.util.HashMap">
+            <result property="value" column="name"/>
             <association property="key" resultMap="Locale">
             </association>
         </collection>
@@ -25,7 +26,10 @@
 
     <sql id="serviceWhere">
         <if test="object != null">
-            where sc.`value` like concat('%', #{object.name}, '%')
+            where 1 = 1
+            <if test="object.name != null">
+                and sc.`value` like concat('%', #{object.name}, '%')
+            </if>
             <if test="object.code != null and like == true">
                 and s.`code` like concat('%', #{object.code}, '%')
             </if>
@@ -41,8 +45,13 @@
         </if>
     </sql>
 
+    <sql id="serviceColumns">
+        s.*, sc.`value` as `name`, sc.`locale_id` as `locale_id`, l.`locale` as `locale`, l.`system` as `system`
+    </sql>
+
     <select id="selectServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="Service">
-        select s.*, sc.`value` as `name`, sc.`locale_id` as `locale_id`, l.`locale` as `locale`, l.`system` as `system`
+        select
+        <include refid="serviceColumns"/>
         from `service` s
           left join `service_string_culture` sc on s.`name_id` = sc.`id`
           left join `locales` l on sc.`locale_id` = l.`id`
@@ -68,7 +77,8 @@
     </select>
 
     <select id="selectService" parameterType="long" resultMap="Service">
-        select s.*, sc.`value` as `name`, sc.`locale_id` as `locale_id`, l.`locale` as `locale`, l.`system` as `system`
+        select
+        <include refid="serviceColumns"/>
         from `service` s
           left join `service_string_culture` sc on s.`name_id` = sc.`id`
           left join `locales` l on sc.`locale_id` = l.`id`

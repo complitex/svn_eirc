@@ -94,7 +94,7 @@ public class ServiceEdit extends FormTemplatePage {
             public void setObject(String name) {
                 service.addName(localeRu, name);
             }
-        }));
+        }).setRequired(true));
 
         // Ukrainian service name
         final Locale localeUk = localeBean.convert(java.util.Locale.forLanguageTag("uk"));
@@ -116,6 +116,9 @@ public class ServiceEdit extends FormTemplatePage {
         if (service.getId() != null) {
             services.remove(service);
         }
+        if (parentService != null) {
+            services.add(null);
+        }
         form.add(new DropDownChoice<>("parent", new Model<Service>() {
             @Override
             public Service getObject() {
@@ -129,12 +132,12 @@ public class ServiceEdit extends FormTemplatePage {
         }, services, new IChoiceRenderer<Service>() {
             @Override
             public Object getDisplayValue(Service object) {
-                return object.getName(locale);
+                return object != null? object.getName(locale) : "";
             }
 
             @Override
             public String getIdValue(Service object, int index) {
-                return object.getId().toString();
+                return object != null? object.getId().toString(): "-1";
             }
         }));
 
