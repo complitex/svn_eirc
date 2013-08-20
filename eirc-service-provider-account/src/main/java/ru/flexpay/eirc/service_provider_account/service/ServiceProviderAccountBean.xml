@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean">
+
+    <resultMap id="ServiceProviderAccount" type="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount">
+        <id column="spc_pk_id" property="pkId"/>
+        <result column="spc_object_id" property="id"/>
+        <result column="spc_account_number" property="accountNumber"/>
+        <result column="spc_organization_id" property="organizationId"/>
+        <result column="spc_begin_date" property="beginDate"/>
+        <result column="spc_end_date" property="endDate"/>
+
+        <association property="service" resultMap="ru.flexpay.eirc.service.service.ServiceBean.Service"/>
+        <association property="person" resultMap="ru.flexpay.eirc.dictionary.entity.PersonBean.Person" />
+    </resultMap>
+
+    <select id="selectServiceProviderAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" 
+            resultMap="ServiceProviderAccount">
+        select spa.*,
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>
+
+        from `service_provider_account` spa
+        left join `service` s on s.`id` = spa.`service_id`
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
+        where spa.`end_date` is null
+
+        <if test="object.accountNumber != null">
+            and spa.`account_number` like concat('%', #{object.accountNumber}, '%')
+        </if>
+
+        <if test="object.person != null">
+            <if test="object.person.lastName != null">
+                and spa.`last_name` like concat('%', #{object.person.lastName}, '%')
+            </if>
+            <if test="object.person.firstName != null">
+                and spa.`first_name` like concat('%', #{object.person.firstName}, '%')
+            </if>
+            <if test="object.person.middleName != null">
+                and spa.`middle_name` like concat('%', #{object.person.middleName}, '%')
+            </if>
+        </if>
+
+        <if test="sortProperty != null">
+            order by
+            <choose>
+                <when test="sortProperty == 'person'">
+                    spa.`last_name`
+                    <if test="asc">
+                        ${asc}
+                    </if>,
+                    spa.`first_name`
+                    <if test="asc">
+                        ${asc}
+                    </if>,
+                    spa.`middle_name`
+                </when>
+
+                <otherwise>
+                    ${sortProperty}
+                </otherwise>
+            </choose>
+            <if test="asc">
+                ${asc}
+            </if>
+        </if>
+        <if test="count > 0">
+            limit ${first},${count}
+        </if>
+    </select>
+
+    <select id="countServiceProviderAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+        select count(distinct spa.`object_id`) from `service_provider_account` spa
+        where spa.`end_date` is null
+    </select>
+
+    <select id="selectServiceProviderAccount" parameterType="long" resultMap="ServiceProviderAccount">
+        select * from `service_provider_account` where `object_id` = #{id} order by `begin_date` desc
+    </select>
+
+    <select id="selectServiceProviderAccountByPkId" parameterType="long" resultMap="ServiceProviderAccount">
+        select * from `service_provider_account` where `pk_id` = #{pkId}
+    </select>
+
+    <select id="selectServiceProviderAccountsByPkId" parameterType="map" resultMap="ServiceProviderAccount">
+        select * from `service_provider_account` where `pk_id` in #{pkIds}
+    </select>
+
+    <insert id="insert" parameterType="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount" keyProperty="pkId" useGeneratedKeys="true">
+        insert into `service_provider_account` (`object_id`, `eirc_account_id`, `organization_id`, `account_number`, `service_id`,
+                                    `first_name`, `last_name`, `middle_name`, `begin_date`, `end_date`)
+                            values (#{id}, #{eircAccount.id}, #{organizationId}, #{accountNumber}, #{service.id},
+                                    #{person.firstName}, #{person.lastName}, #{person.middleName}, #{beginDate}, #{endDate})
+    </insert>
+
+    <update id="updateEndDate" parameterType="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount">
+        update `service_provider_account` set `end_date` = #{endDate} where `pk_id` = #{pkId}
+    </update>
+
+</mapper>

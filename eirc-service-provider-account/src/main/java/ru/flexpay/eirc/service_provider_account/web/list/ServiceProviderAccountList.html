@@ -10,19 +10,26 @@
 <wicket:extend>
     <h2 wicket:id="label"></h2>
 
+    <div wicket:id="searchPanel"></div>
+
     <div wicket:id="container">
         <form action="#" wicket:id="filterForm">
             <table class="tbColor bookContent" cellpadding="0" cellspacing="0" border="0">
                 <thead>
                 <tr>
                     <th>
-                        <span wicket:id="header.service_code">
-                            <wicket:message key="code"/>
+                        <span wicket:id="header.account_number">
+                            <wicket:message key="account_number"/>
                         </span>
                     </th>
                     <th>
-                        <span wicket:id="header.service_name">
-                            <wicket:message key="name"/>
+                        <span wicket:id="header.person">
+                            <wicket:message key="person_full_name"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.address">
+                            <wicket:message key="address"/>
                         </span>
                     </th>
                     <th style="width:110px">
@@ -31,10 +38,13 @@
                 </tr>
                 <tr>
                     <td class="filter-td">
-                        <input type="text" wicket:id="codeFilter"></input>
+                        <input type="text" wicket:id="accountNumberFilter"></input>
                     </td>
                     <td class="filter-td">
-                        <input type="text" wicket:id="nameFilter"></input>
+                        <input type="text" wicket:id="personFilter"></input>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="addressFilter"></input>
                     </td>
                     <td class="filter-td">
                         <input wicket:id="submit" type="submit" wicket:message="value:find" class="btnSmall"/>
@@ -44,12 +54,14 @@
                 <tbody>
                 <tr wicket:id="data">
                     <td>
-                        <span wicket:id="code"></span>
+                        <span wicket:id="accountNumber"></span>
                     </td>
                     <td>
-                        <span wicket:id="name"></span>
+                        <span wicket:id="person"></span>
                     </td>
-
+                    <td>
+                        <span wicket:id="address"></span>
+                    </td>
                     <td>
                         <a wicket:id="detailsLink">
                             <span wicket:id="editMessage"></span>
