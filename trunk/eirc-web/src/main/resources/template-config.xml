@@ -2,6 +2,7 @@
 <template xmlns="http://www.complitex.org/web/template">
     <sidebar>
         <menu class="ru.flexpay.eirc.eirc_account.web.EircAccountTemplateMenu"/>
+        <menu class="ru.flexpay.eirc.service_provider_account.web.ServiceProviderAccountTemplateMenu"/>
         <menu class="ru.flexpay.eirc.service.web.ServiceTemplateMenu"/>
         <menu class="ru.flexpay.eirc.organization.web.EircOrganizationTemplateMenu"/>
         <menu class="ru.flexpay.eirc.organization_type.web.OrganizationTypeMenu"/>

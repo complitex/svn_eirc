@@ -293,14 +293,7 @@
         </if>
     </sql>
 
-    <select id="selectEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="EircAccount">
-        select e.*
-        <include refid="addressFields"/>
-        from `eirc_account` e
-        <include refid="addressJoin"/>
-        where e.`end_date` is null
-        <include refid="addressCondition"/>
-
+    <sql id="otherConditions">
         <if test="object.accountNumber != null">
             and e.`account_number` like concat('%', #{object.accountNumber}, '%')
         </if>
@@ -316,6 +309,16 @@
                 and e.`middle_name` like concat('%', #{object.person.middleName}, '%')
             </if>
         </if>
+    </sql>
+
+    <select id="selectEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="EircAccount">
+        select e.*
+        <include refid="addressFields"/>
+        from `eirc_account` e
+        <include refid="addressJoin"/>
+        where e.`end_date` is null
+        <include refid="addressCondition"/>
+        <include refid="otherConditions"/>
 
         <if test="sortProperty != null">
             order by
@@ -380,6 +383,7 @@
         <include refid="addressJoin"/>
         where e.`end_date` is null
         <include refid="addressCondition"/>
+        <include refid="otherConditions"/>
     </select>
 
     <select id="selectEircAccount" parameterType="long" resultMap="EircAccount">

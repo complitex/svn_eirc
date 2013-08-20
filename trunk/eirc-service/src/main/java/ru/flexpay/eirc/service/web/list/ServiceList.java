@@ -50,9 +50,7 @@ public class ServiceList extends TemplatePage {
     private WebMarkupContainer container;
     private DataView<Service> dataView;
 
-    private Service filterObject = new Service();
-
-    private Boolean toggle = false;
+    private Service filterObject = new Service();;
 
     public ServiceList() {
         init();
@@ -104,7 +102,7 @@ public class ServiceList extends TemplatePage {
                 return serviceBean.count(filterWrapper);
             }
         };
-        dataProvider.setSort("name", SortOrder.ASCENDING);
+        dataProvider.setSort("service_name", SortOrder.ASCENDING);
 
         //Data View
         dataView = new DataView<Service>("data", dataProvider, 1) {
@@ -132,7 +130,7 @@ public class ServiceList extends TemplatePage {
         filterForm.add(dataView);
 
         //Sorting
-        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "code", "name"));
+        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "serviceCode", "serviceName"));
 
         //Filters
         filterForm.add(new TextField<>("codeFilter", new PropertyModel<String>(filterObject, "code")));

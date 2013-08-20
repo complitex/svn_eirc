@@ -4,13 +4,13 @@
 <mapper namespace="ru.flexpay.eirc.service.service.ServiceBean">
 
     <resultMap id="Service" type="ru.flexpay.eirc.service.entity.Service">
-        <result column="id" property="id"/>
-        <result column="code" property="code"/>
-        <result column="parent_id" property="parentId"/>
-        <result column="name_id" property="nameId"/>
+        <result column="service_id"        property="id"/>
+        <result column="service_code"      property="code"/>
+        <result column="service_parent_id" property="parentId"/>
+        <result column="service_name_id"   property="nameId"/>
 
         <collection property="name" javaType="ArrayList" ofType="java.util.HashMap">
-            <result property="value" column="name"/>
+            <result property="value" column="service_name"/>
             <association property="key" resultMap="Locale">
             </association>
         </collection>
@@ -18,9 +18,9 @@
 
     <resultMap id="Locale" type="org.complitex.dictionary.entity.Locale">
         <constructor>
-            <idArg column="locale_id" javaType="Long"/>
-            <arg column="locale" javaType="String"/>
-            <arg column="system" javaType="_boolean" jdbcType="TINYINT"/>
+            <idArg column="service_locale_id"     javaType="Long"/>
+            <arg   column="service_locale_name"   javaType="String"/>
+            <arg   column="service_locale_system" javaType="_boolean" jdbcType="TINYINT"/>
         </constructor>
     </resultMap>
 
@@ -46,15 +46,20 @@
     </sql>
 
     <sql id="serviceColumns">
-        s.*, sc.`value` as `name`, sc.`locale_id` as `locale_id`, l.`locale` as `locale`, l.`system` as `system`
+        s.`id` as `service_id`, s.`code` as `service_code`, s.`parent_id` as `service_parent_id`, s.`name_id` as `service_name_id`,
+        sc.`value` as `service_name`, sc.`locale_id` as `service_locale_id`, sl.`locale` as `service_locale_name`, sl.`system` as `service_locale_system`
+    </sql>
+
+    <sql id="serviceJoin">
+        left join `service_string_culture` sc on s.`name_id` = sc.`id`
+        left join `locales` sl on sc.`locale_id` = sl.`id`
     </sql>
 
     <select id="selectServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="Service">
         select
         <include refid="serviceColumns"/>
         from `service` s
-          left join `service_string_culture` sc on s.`name_id` = sc.`id`
-          left join `locales` l on sc.`locale_id` = l.`id`
+        <include refid="serviceJoin"/>
 
         <include refid="serviceWhere"/>
 
@@ -80,8 +85,7 @@
         select
         <include refid="serviceColumns"/>
         from `service` s
-          left join `service_string_culture` sc on s.`name_id` = sc.`id`
-          left join `locales` l on sc.`locale_id` = l.`id`
+        <include refid="serviceJoin"/>
         where s.`id` = #{id}
     </select>
 
