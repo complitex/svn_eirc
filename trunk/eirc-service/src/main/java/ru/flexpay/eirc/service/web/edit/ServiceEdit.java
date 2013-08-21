@@ -5,9 +5,9 @@ import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.*;
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.html.panel.FeedbackPanel;
+import org.apache.wicket.model.CompoundPropertyModel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
-import org.apache.wicket.model.PropertyModel;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.string.StringValue;
@@ -75,49 +75,22 @@ public class ServiceEdit extends FormTemplatePage {
         messages.setOutputMarkupId(true);
         add(messages);
 
-        Form form = new Form("form");
+        Form<Service> form = new Form<>("form", new CompoundPropertyModel<>(service));
         add(form);
 
         // Service code field
-        form.add(new TextField<>("code", new PropertyModel<String>(service, "code")));
+        form.add(new TextField<>("code"));
 
         // Russian service name
-        final Locale localeRu = localeBean.convert(java.util.Locale.forLanguageTag("ru"));
-        form.add(new TextField<>("nameRu", new Model<String>() {
-
-            @Override
-            public String getObject() {
-                return service.getName(localeRu);
-            }
-
-            @Override
-            public void setObject(String name) {
-                service.addName(localeRu, name);
-            }
-        }).setRequired(true));
+        form.add(new TextField<>("nameRu").setRequired(true));
 
         // Ukrainian service name
-        final Locale localeUk = localeBean.convert(java.util.Locale.forLanguageTag("uk"));
-        form.add(new TextField<>("nameUk", new Model<String>() {
-
-            @Override
-            public String getObject() {
-                return service.getName(localeUk);
-            }
-
-            @Override
-            public void setObject(String name) {
-                service.addName(localeUk, name);
-            }
-        }));
+        form.add(new TextField<>("nameUk"));
 
         // Parent service
         List<Service> services = serviceBean.getServices(null);
         if (service.getId() != null) {
             services.remove(service);
-        }
-        if (parentService != null) {
-            services.add(null);
         }
         form.add(new DropDownChoice<>("parent", new Model<Service>() {
             @Override
@@ -139,7 +112,7 @@ public class ServiceEdit extends FormTemplatePage {
             public String getIdValue(Service object, int index) {
                 return object != null? object.getId().toString(): "-1";
             }
-        }));
+        }).setNullValid(true));
 
         // save button
         Button save = new Button("save") {
@@ -153,11 +126,8 @@ public class ServiceEdit extends FormTemplatePage {
                     service.setParentId(null);
                 }
 
-                if (service.getId() == null) {
-                    serviceBean.save(service);
-                } else {
-                    serviceBean.update(service);
-                }
+                serviceBean.save(service);
+
 
                 info(getString("saved"));
             }

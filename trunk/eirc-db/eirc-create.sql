@@ -29,29 +29,29 @@ CREATE TABLE `eirc_account` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Service --
-DROP TABLE IF EXISTS `service_string_culture`;
-CREATE TABLE `service_string_culture` (
-  `pk_id` BIGINT(20) NOT NULL AUTO_INCREMENT,
-  `id` BIGINT(20) NOT NULL,
-  `locale_id` BIGINT(20) NOT NULL,
-  `value` VARCHAR(1000),
-  PRIMARY KEY (`pk_id`),
-  UNIQUE KEY `unique_id__locale` (`id`,`locale_id`),
-  KEY `key_locale` (`locale_id`),
-  KEY `key_value` (`value`),
-  CONSTRAINT `fk_service_string_culture__locales` FOREIGN KEY (`locale_id`) REFERENCES `locales` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 DROP TABLE IF EXISTS `service`;
 CREATE TABLE `service` (
   `id` BIGINT(20) NOT NULL AUTO_INCREMENT,
   `code` VARCHAR(128),
   `parent_id` BIGINT(20),
-  `name_id` BIGINT(20),
   PRIMARY KEY  (`id`),
-  CONSTRAINT `fk_parent_service` FOREIGN KEY (`parent_id`) REFERENCES `service` (`id`),
-  CONSTRAINT `fk_service__service_string__culture` FOREIGN KEY (`name_id`) REFERENCES `service_string_culture` (`id`)
+  CONSTRAINT `fk_parent_service` FOREIGN KEY (`parent_id`) REFERENCES `service` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS `service_string_culture`;
+CREATE TABLE `service_string_culture` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT,
+  `service_id` BIGINT(20) NOT NULL,
+  `locale_id` BIGINT(20) NOT NULL,
+  `value` VARCHAR(1000),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_id__locale` (`service_id`,`locale_id`),
+  KEY `key_locale` (`locale_id`),
+  KEY `key_value` (`value`),
+  CONSTRAINT `fk_service_string_culture__service` FOREIGN KEY (`service_id`) REFERENCES `service` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_service_string_culture__locales` FOREIGN KEY (`locale_id`) REFERENCES `locales` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 
 -- Service provider account --
 DROP TABLE IF EXISTS `service_provider_account`;

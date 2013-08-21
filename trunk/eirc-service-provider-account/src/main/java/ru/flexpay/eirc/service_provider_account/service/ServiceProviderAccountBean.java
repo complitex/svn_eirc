@@ -5,11 +5,11 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.service.SequenceBean;
+import org.complitex.dictionary.util.DateUtil;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -27,9 +27,9 @@ public class ServiceProviderAccountBean extends AbstractBean {
     @Transactional
     public void archive(ServiceProviderAccount object) {
         if (object.getEndDate() == null) {
-            object.setEndDate(new Date());
+            object.setEndDate(DateUtil.getCurrentDate());
         }
-        sqlSession().update("updateEndDate", object);
+        sqlSession().update(NS + ".updateServiceProviderAccountEndDate", object);
     }
 
     public ServiceProviderAccount getServiceProviderAccount(long id) {
@@ -47,19 +47,26 @@ public class ServiceProviderAccountBean extends AbstractBean {
 
     @Transactional
     public void save(ServiceProviderAccount serviceProviderAccount) {
-        serviceProviderAccount.setId(sequenceBean.nextId(ENTITY_TABLE));
-        sqlSession().insert(NS + ".insert", serviceProviderAccount);
+        if (serviceProviderAccount.getId() == null) {
+            saveNew(serviceProviderAccount);
+        } else {
+            update(serviceProviderAccount);
+        }
     }
 
-    @Transactional
-    public void update(ServiceProviderAccount serviceProviderAccount) {
+    private void saveNew(ServiceProviderAccount serviceProviderAccount) {
+        serviceProviderAccount.setId(sequenceBean.nextId(ENTITY_TABLE));
+        sqlSession().insert(NS + ".insertServiceProviderAccount", serviceProviderAccount);
+    }
+
+    private void update(ServiceProviderAccount serviceProviderAccount) {
         ServiceProviderAccount oldObject = getEricAccountByPkId(serviceProviderAccount.getPkId());
         if (EqualsBuilder.reflectionEquals(oldObject, serviceProviderAccount)) {
             return;
         }
         archive(oldObject);
         serviceProviderAccount.setBeginDate(oldObject.getEndDate());
-        sqlSession().insert(NS + ".insert", serviceProviderAccount);
+        sqlSession().insert(NS + ".insertServiceProviderAccount", serviceProviderAccount);
     }
 
     public ServiceProviderAccount getEricAccountByPkId(long pkId) {

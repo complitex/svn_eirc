@@ -11,17 +11,7 @@ import java.util.Map;
  */
 public class DictionaryNamedObject extends DictionaryObject {
 
-    private Long nameId;
-
     private Map<Locale, String> names = Maps.newHashMap();
-
-    public Long getNameId() {
-        return nameId;
-    }
-
-    public void setNameId(Long nameId) {
-        this.nameId = nameId;
-    }
 
     public Map<Locale, String> getNames() {
         return names;
@@ -52,5 +42,21 @@ public class DictionaryNamedObject extends DictionaryObject {
 
     public String getName() {
         return names.size() > 0? names.values().iterator().next() : "";
+    }
+
+    public void setNameRu(String name) {
+        addName(Locale.RU, name);
+    }
+
+    public String getNameRu() {
+        return getName(Locale.RU);
+    }
+
+    public void setNameUk(String name) {
+        addName(Locale.UK, name);
+    }
+
+    public String getNameUk() {
+        return getName(Locale.UK);
     }
 }
