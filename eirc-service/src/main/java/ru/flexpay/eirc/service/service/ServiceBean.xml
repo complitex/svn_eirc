@@ -7,7 +7,6 @@
         <result column="service_id"        property="id"/>
         <result column="service_code"      property="code"/>
         <result column="service_parent_id" property="parentId"/>
-        <result column="service_name_id"   property="nameId"/>
 
         <collection property="name" javaType="ArrayList" ofType="java.util.HashMap">
             <result property="value" column="service_name"/>
@@ -24,34 +23,38 @@
         </constructor>
     </resultMap>
 
+    <sql id="serviceCondition">
+        <if test="object.name != null">
+            and sc.`value` like concat('%', #{object.name}, '%')
+        </if>
+        <if test="object.code != null and like == true">
+            and s.`code` like concat('%', #{object.code}, '%')
+        </if>
+        <if test="object.code != null and like == false">
+            and s.`code` = #{object.code}
+        </if>
+        <if test="object.parentId != null">
+            and s.`parent_id` = #{object.parentId}
+        </if>
+        <if test="locale != null">
+            and sc.`locale_id` = #{locale.id}
+        </if>
+    </sql>
+
     <sql id="serviceWhere">
         <if test="object != null">
             where 1 = 1
-            <if test="object.name != null">
-                and sc.`value` like concat('%', #{object.name}, '%')
-            </if>
-            <if test="object.code != null and like == true">
-                and s.`code` like concat('%', #{object.code}, '%')
-            </if>
-            <if test="object.code != null and like == false">
-                and s.`code` = #{object.code}
-            </if>
-            <if test="object.parentId != null">
-                and s.`parent_id` = #{object.parentId}
-            </if>
-            <if test="locale != null">
-                and sc.`locale_id` = #{locale.id}
-            </if>
+            <include refid="serviceCondition"/>
         </if>
     </sql>
 
     <sql id="serviceColumns">
-        s.`id` as `service_id`, s.`code` as `service_code`, s.`parent_id` as `service_parent_id`, s.`name_id` as `service_name_id`,
+        s.`id` as `service_id`, s.`code` as `service_code`, s.`parent_id` as `service_parent_id`,
         sc.`value` as `service_name`, sc.`locale_id` as `service_locale_id`, sl.`locale` as `service_locale_name`, sl.`system` as `service_locale_system`
     </sql>
 
     <sql id="serviceJoin">
-        left join `service_string_culture` sc on s.`name_id` = sc.`id`
+        left join `service_string_culture` sc on s.`id` = sc.`service_id`
         left join `locales` sl on sc.`locale_id` = sl.`id`
     </sql>
 
@@ -77,7 +80,7 @@
 
     <select id="countServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
         select count(distinct s.`id`) from `service` s
-          left join `service_string_culture` sc on s.`name_id` = sc.`id`
+          left join `service_string_culture` sc on s.`id` = sc.`service_id`
         <include refid="serviceWhere"/>
     </select>
 
@@ -89,25 +92,25 @@
         where s.`id` = #{id}
     </select>
 
-    <insert id="insert" parameterType="ru.flexpay.eirc.service.entity.Service" keyProperty="id" useGeneratedKeys="true">
-        insert into `service` (`code`, `parent_id`, `name_id`)
-                            values (#{code}, #{parentId}, #{nameId})
+    <insert id="insertService" parameterType="ru.flexpay.eirc.service.entity.Service" keyProperty="id" useGeneratedKeys="true">
+        insert into `service` (`code`, `parent_id`)
+                            values (#{code}, #{parentId})
     </insert>
 
-    <update id="update" parameterType="ru.flexpay.eirc.service.entity.Service">
-        update `service` set `code` = #{code}, `parent_id` = #{parentId}, `name_id` = #{nameId} where `id` = #{id}
+    <update id="updateService" parameterType="ru.flexpay.eirc.service.entity.Service">
+        update `service` set `code` = #{code}, `parent_id` = #{parentId} where `id` = #{id}
     </update>
 
-    <insert id="insertName" parameterType="map">
-        insert into `service_string_culture` (`id`, `locale_id`, `value`) values (#{id}, #{localeId}, #{value})
+    <insert id="insertServiceName" parameterType="map">
+        insert into `service_string_culture` (`service_id`, `locale_id`, `value`) values (#{serviceId}, #{localeId}, #{value})
     </insert>
 
-    <update id="updateName" parameterType="map">
-        update `service_string_culture` set `value` = #{value} where id = #{id} and locale_id = #{localeId}
+    <update id="updateServiceName" parameterType="map">
+        update `service_string_culture` set `value` = #{value} where `service_id` = #{serviceId} and `locale_id` = #{localeId}
     </update>
 
-    <delete id="deleteName" parameterType="map">
-        delete from `service_string_culture` where id = #{id} and locale_id = #{localeId}
+    <delete id="deleteServiceName" parameterType="map">
+        delete from `service_string_culture` where `service_id` = #{serviceId} and `locale_id` = #{localeId}
     </delete>
 
 </mapper>

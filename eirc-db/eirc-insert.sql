@@ -1,5 +1,5 @@
 INSERT INTO `sequence` (`sequence_name`, `sequence_value`) VALUES
-('eirc_account',1), ('service_string_culture', 1);
+('eirc_account',1), ('service_provider_account', 1);
 
 -- --------------------------------
 -- Organization type

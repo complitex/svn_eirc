@@ -7,10 +7,8 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.entity.Locale;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
-import org.complitex.dictionary.service.SequenceBean;
 import ru.flexpay.eirc.service.entity.Service;
 
-import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import java.util.List;
 import java.util.Map;
@@ -21,19 +19,11 @@ import java.util.Map;
 @Stateless
 public class ServiceBean extends AbstractBean {
 
-    private static final String NS = ServiceBean.class.getPackage().getName() + ".ServiceBean";
-
-    private static final String ENTITY_LOCALIZED_TABLE = "service_string_culture";
-
-    @EJB
-    private SequenceBean sequenceBean;
+    private static final String NS = ServiceBean.class.getName();
 
     @Transactional
     public void delete(Service service) {
         sqlSession().delete("delete", service);
-        for (Map.Entry<Locale, String> entry : service.getNames().entrySet()) {
-            deleteName(service, entry.getKey());
-        }
     }
 
     public Service getService(long id) {
@@ -51,21 +41,29 @@ public class ServiceBean extends AbstractBean {
 
     @Transactional
     public void save(Service service) {
-        service.setNameId(sequenceBean.nextId(ENTITY_LOCALIZED_TABLE));
+        if (service.getId() == null) {
+            insert(service);
+        } else {
+            update(service);
+        }
+    }
+
+    private void insert(Service service) {
+        sqlSession().insert(NS + ".insertService", service);
         for (Map.Entry<Locale, String> entry : service.getNames().entrySet()) {
             saveName(service, entry.getKey(), entry.getValue());
         }
-        sqlSession().insert(NS + ".insert", service);
     }
 
-    @Transactional
-    public void update(Service service) {
+    private void update(Service service) {
+        // update service
         Service oldObject = getService(service.getId());
         if (EqualsBuilder.reflectionEquals(oldObject, service)) {
             return;
         }
-        sqlSession().update(NS + ".update", service);
+        sqlSession().update(NS + ".updateService", service);
 
+        // update service`s name
         Map<Locale, String> oldNames = oldObject.getNames();
         for (Map.Entry<Locale, String> entry : service.getNames().entrySet()) {
             if (oldNames.containsKey(entry.getKey())) {
@@ -78,11 +76,11 @@ public class ServiceBean extends AbstractBean {
 
     private void saveName(Service service, Locale locale, String value) {
         if (StringUtils.isNotEmpty(value)) {
-            sqlSession().insert(NS + ".insertName",
+            sqlSession().insert(NS + ".insertServiceName",
                 ImmutableMap.<String, Object>of(
-                        "id",       service.getNameId(),
-                        "localeId", locale.getId(),
-                        "value",    value));
+                        "serviceId", service.getId(),
+                        "localeId",  locale.getId(),
+                        "value",     value));
         }
     }
 
@@ -90,18 +88,18 @@ public class ServiceBean extends AbstractBean {
         if (StringUtils.isEmpty(newValue)) {
             deleteName(service, locale);
         } else if (!StringUtils.equals(newValue, oldValue)) {
-            sqlSession().update(NS + ".updateName",
+            sqlSession().update(NS + ".updateServiceName",
                     ImmutableMap.<String, Object>of(
-                            "id",       service.getNameId(),
-                            "localeId", locale.getId(),
-                            "value",    newValue));
+                            "serviceId", service.getId(),
+                            "localeId",  locale.getId(),
+                            "value",     newValue));
         }
     }
 
     private void deleteName(Service service, Locale locale) {
-        sqlSession().delete(NS + ".deleteName", ImmutableMap.<String, Object>of(
-                "id",       service.getNameId(),
-                "localeId", locale.getId()));
+        sqlSession().delete(NS + ".deleteServiceName", ImmutableMap.<String, Object>of(
+                "serviceId", service.getId(),
+                "localeId",  locale.getId()));
     }
 
 }

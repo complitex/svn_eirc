@@ -23,7 +23,11 @@
         from `service_provider_account` spa
         left join `service` s on s.`id` = spa.`service_id`
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
+        left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean."
         where spa.`end_date` is null
+
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceCondition"/>
 
         <if test="object.accountNumber != null">
             and spa.`account_number` like concat('%', #{object.accountNumber}, '%')
@@ -86,14 +90,16 @@
         select * from `service_provider_account` where `pk_id` in #{pkIds}
     </select>
 
-    <insert id="insert" parameterType="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount" keyProperty="pkId" useGeneratedKeys="true">
+    <insert id="insertServiceProviderAccount"
+            parameterType="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount" keyProperty="pkId" useGeneratedKeys="true">
         insert into `service_provider_account` (`object_id`, `eirc_account_id`, `organization_id`, `account_number`, `service_id`,
                                     `first_name`, `last_name`, `middle_name`, `begin_date`, `end_date`)
                             values (#{id}, #{eircAccount.id}, #{organizationId}, #{accountNumber}, #{service.id},
                                     #{person.firstName}, #{person.lastName}, #{person.middleName}, #{beginDate}, #{endDate})
     </insert>
 
-    <update id="updateEndDate" parameterType="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount">
+    <update id="updateServiceProviderAccountEndDate"
+            parameterType="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount">
         update `service_provider_account` set `end_date` = #{endDate} where `pk_id` = #{pkId}
     </update>
 
