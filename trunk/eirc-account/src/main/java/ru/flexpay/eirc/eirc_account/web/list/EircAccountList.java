@@ -150,7 +150,7 @@ public class EircAccountList extends TemplatePage {
                 return eircAccountBean.count(filterWrapper);
             }
         };
-        dataProvider.setSort("account_number", SortOrder.ASCENDING);
+        dataProvider.setSort("eirc_account_number", SortOrder.ASCENDING);
 
         //Data View
         dataView = new DataView<EircAccount>("data", dataProvider, 1) {
@@ -198,7 +198,7 @@ public class EircAccountList extends TemplatePage {
         filterForm.add(dataView);
 
         //Sorting
-        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "accountNumber", "person", "address"));
+        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "eircAccountNumber", "person", "address"));
 
         //Filters
         filterForm.add(new TextField<>("accountNumberFilter", new PropertyModel<String>(filterObject, "accountNumber")));
