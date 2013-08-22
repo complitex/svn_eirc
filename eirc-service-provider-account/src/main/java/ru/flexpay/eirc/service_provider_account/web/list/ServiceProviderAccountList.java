@@ -153,7 +153,7 @@ public class ServiceProviderAccountList extends TemplatePage {
                 return serviceProviderAccountBean.count(filterWrapper);
             }
         };
-        dataProvider.setSort("service_provider_account_number", SortOrder.ASCENDING);
+        dataProvider.setSort("spa_account_number", SortOrder.ASCENDING);
 
         //Data View
         dataView = new DataView<ServiceProviderAccount>("data", dataProvider, 1) {
@@ -201,7 +201,7 @@ public class ServiceProviderAccountList extends TemplatePage {
         filterForm.add(dataView);
 
         //Sorting
-        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "serviceProviderAccountNumber", "person", "address"));
+        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "spaAccountNumber", "spaPerson", "eircAccountAddress"));
 
         //Filters
         filterForm.add(new TextField<>("accountNumberFilter", new PropertyModel<String>(filterObject, "accountNumber")));

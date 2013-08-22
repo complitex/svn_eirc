@@ -49,7 +49,7 @@
         <include refid="serviceProviderAccountColumns"/>,
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>,
-        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressColumns"/>,
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressColumns"/>
         
         from `service_provider_account` spa
         left join `service` s on s.`id` = spa.`service_id`
@@ -69,7 +69,13 @@
         <if test="sortProperty != null">
             order by
             <choose>
-                <when test="sortProperty == 'person'">
+                <when test="sortProperty == 'eirc_account_person'">
+                    <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountPersonSort"/>
+                </when>
+                <when test="sortProperty == 'eirc_account_address'">
+                    <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountAddressSort"/>
+                </when>
+                <when test="sortProperty == 'spa_person'">
                     spa.`last_name`
                     <if test="asc">
                         ${asc}

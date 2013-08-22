@@ -26,7 +26,7 @@
     <sql id="serviceCondition">
         <if test="map.service != null">
             <if test="map.service.name != null">
-                and sc.`value` like concat('%', #{map.service.name}, '%')
+                and sn.`value` like concat('%', #{map.service.name}, '%')
             </if>
             <if test="map.service.code != null and like == true">
                 and s.`code` like concat('%', #{map.service.code}, '%')
@@ -38,7 +38,7 @@
                 and s.`parent_id` = #{map.service.parentId}
             </if>
             <if test="locale != null">
-                and sc.`locale_id` = #{locale.id}
+                and sn.`locale_id` = #{locale.id}
             </if>
         </if>
     </sql>
@@ -52,12 +52,12 @@
 
     <sql id="serviceColumns">
         s.`id` as `service_id`, s.`code` as `service_code`, s.`parent_id` as `service_parent_id`,
-        sc.`value` as `service_name`, sc.`locale_id` as `service_locale_id`, sl.`locale` as `service_locale_name`, sl.`system` as `service_locale_system`
+        sn.`value` as `service_name`, sn.`locale_id` as `service_locale_id`, sl.`locale` as `service_locale_name`, sl.`system` as `service_locale_system`
     </sql>
 
     <sql id="serviceJoin">
-        left join `service_string_culture` sc on s.`id` = sc.`service_id`
-        left join `locales` sl on sc.`locale_id` = sl.`id`
+        left join `service_string_culture` sn on s.`id` = sn.`service_id`
+        left join `locales` sl on sn.`locale_id` = sl.`id`
     </sql>
 
     <select id="selectServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="Service">
@@ -82,7 +82,7 @@
 
     <select id="countServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
         select count(distinct s.`id`) from `service` s
-          left join `service_string_culture` sc on s.`id` = sc.`service_id`
+          left join `service_string_culture` sn on s.`id` = sn.`service_id`
         <include refid="serviceWhere"/>
     </select>
 
