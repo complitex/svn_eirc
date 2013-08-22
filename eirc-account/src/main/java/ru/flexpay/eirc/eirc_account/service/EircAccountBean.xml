@@ -53,9 +53,9 @@
     </sql>
 
     <sql id="addressCultureJoin">
-        <include refid="buildingAddressCultureJoin"/>
-        <include refid="streetCultureJoin"/>
-        <include refid="streetTypeCultureJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.buildingAddressCultureJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.streetCultureJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.streetTypeCultureJoin"/>
     </sql>
 
     <select id="selectAddress" resultMap="Address" parameterType="map">
@@ -64,15 +64,15 @@
              <when test="entityId == 500">
                  , null as `apartment`, null as `room`
                  from `building` b
-                 <include refid="addressCultureJoin"/>
+                 <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressCultureJoin"/>
                  where b.`object_id` = #{id} and
              </when>
              <when test="entityId == 100">
                  , ac.`value` as `apartment`, null as `room`
                  from `apartment` a
-                 <include refid="apartmentCultureJoin"/>
+                 <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.apartmentCultureJoin"/>
                  inner join `building` b on b.`object_id` = a.`parent_id`
-                 <include refid="addressCultureJoin"/>
+                 <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressCultureJoin"/>
                  where a.`object_id` = #{id} and aa.`end_date` is null and
              </when>
              <when test="entityId == 200">
@@ -81,9 +81,9 @@
                  inner join `room_attribute` ra on r.`object_id` = ra.`object_id`
                  inner join `room_string_culture` rc on rc.`id` = ra.`value_id`
                  left inner join `apartment` a on a.`object_id` = r.`parent_id` and r.`parent_entity_id` = 100
-                 <include refid="apartmentCultureJoin"/>
+                 <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.apartmentCultureJoin"/>
                  inner join `building` b on (b.`object_id` = r.`parent_id` and r.`parent_entity_id` = 500 or b.`object_id` = a.`parent_id`)
-                 <include refid="addressCultureJoin"/>
+                 <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressCultureJoin"/>
                  where r.`object_id` = #{id} and ra.`end_date` is null and aa.`end_date` is null and
              </when>
          </choose>baa.`end_date` is null and
@@ -96,22 +96,22 @@
     </sql>
 
     <sql id="roomCondition">
-        room.`object_id` = #{object.address.id}
+        room.`object_id` = #{map.eircAccount.address.id}
     </sql>
 
     <sql id="apartmentJoin">
-        <include refid="roomJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.roomJoin"/>
 
         left join `apartment` apartment1 on apartment1.`object_id` = room.`parent_id` and room.`parent_entity_id` = 100
         left join `apartment` apartment2 on apartment2.`object_id` = e.`address_id` and e.`address_entity_id` = 100
     </sql>
 
     <sql id="apartmentCondition">
-        (apartment1.`object_id` = #{object.address.id} or apartment2.`object_id` = #{object.address.id})
+        (apartment1.`object_id` = #{map.eircAccount.address.id} or apartment2.`object_id` = #{map.eircAccount.address.id})
     </sql>
 
     <sql id="buildingJoin">
-        <include refid="apartmentJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.apartmentJoin"/>
 
         left join `building` building1 on building1.`object_id` = apartment1.`parent_id`
         left join `building` building2 on building2.`object_id` = apartment2.`parent_id`
@@ -120,12 +120,12 @@
     </sql>
 
     <sql id="buildingCondition">
-         (building1.`object_id` = #{object.address.id} or building2.`object_id` = #{object.address.id} or
-          building3.`object_id` = #{object.address.id} or building4.`object_id` = #{object.address.id})
+         (building1.`object_id` = #{map.eircAccount.address.id} or building2.`object_id` = #{map.eircAccount.address.id} or
+          building3.`object_id` = #{map.eircAccount.address.id} or building4.`object_id` = #{map.eircAccount.address.id})
     </sql>
 
     <sql id="buildingAddressJoin">
-        <include refid="buildingJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.buildingJoin"/>
 
         left join `building_address` building_a1 on building_a1.`object_id` = building1.`parent_id`
         left join `building_address` building_a2 on building_a2.`object_id` = building2.`parent_id`
@@ -134,12 +134,12 @@
     </sql>
 
     <sql id="buildingAddressCondition">
-        (building_a1.`object_id` = #{object.address.id} or building_a2.`object_id` = #{object.address.id} or
-         building_a3.`object_id` = #{object.address.id} or building_a4.`object_id` = #{object.address.id})
+        (building_a1.`object_id` = #{map.eircAccount.address.id} or building_a2.`object_id` = #{map.eircAccount.address.id} or
+         building_a3.`object_id` = #{map.eircAccount.address.id} or building_a4.`object_id` = #{map.eircAccount.address.id})
     </sql>
 
     <sql id="streetJoin">
-        <include refid="buildingAddressJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.buildingAddressJoin"/>
 
         left join `street` street1 on street1.`object_id` = building_a1.`parent_id`
         left join `street` street2 on street2.`object_id` = building_a2.`parent_id`
@@ -148,11 +148,11 @@
     </sql>
 
     <sql id="streetCondition">
-        (street1.`object_id` = #{object.address.id} or street2.`object_id` = #{object.address.id} or street3.`object_id` = #{object.address.id} or street4.`object_id` = #{object.address.id})
+        (street1.`object_id` = #{map.eircAccount.address.id} or street2.`object_id` = #{map.eircAccount.address.id} or street3.`object_id` = #{map.eircAccount.address.id} or street4.`object_id` = #{map.eircAccount.address.id})
     </sql>
 
     <sql id="cityJoin">
-        <include refid="streetJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.streetJoin"/>
 
         left join `city` city1 on city1.`object_id` = street1.`parent_id`
         left join `city` city2 on city2.`object_id` = street2.`parent_id`
@@ -161,11 +161,11 @@
     </sql>
 
     <sql id="cityCondition">
-        (city1.`object_id` = #{object.address.id} or city2.`object_id` = #{object.address.id} or city3.`object_id` = #{object.address.id} or city4.`object_id` = #{object.address.id})
+        (city1.`object_id` = #{map.eircAccount.address.id} or city2.`object_id` = #{map.eircAccount.address.id} or city3.`object_id` = #{map.eircAccount.address.id} or city4.`object_id` = #{map.eircAccount.address.id})
     </sql>
 
     <sql id="regionJoin">
-        <include refid="cityJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.cityJoin"/>
 
         left join `region` region1 on region1.`object_id` = city1.`parent_id`
         left join `region` region2 on region2.`object_id` = city2.`parent_id`
@@ -174,11 +174,11 @@
     </sql>
 
     <sql id="regionCondition">
-        (region1.`object_id` = #{object.address.id} or region2.`object_id` = #{object.address.id} or region3.`object_id` = #{object.address.id} or region4.`object_id` = #{object.address.id})
+        (region1.`object_id` = #{map.eircAccount.address.id} or region2.`object_id` = #{map.eircAccount.address.id} or region3.`object_id` = #{map.eircAccount.address.id} or region4.`object_id` = #{map.eircAccount.address.id})
     </sql>
 
     <sql id="countryJoin">
-        <include refid="regionJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.regionJoin"/>
 
         left join `country` country1 on country1.`object_id` = region1.`parent_id`
         left join `country` country2 on country2.`object_id` = region2.`parent_id`
@@ -187,31 +187,31 @@
     </sql>
 
     <sql id="countryCondition">
-        (country1.`object_id` = #{object.address.id} or country2.`object_id` = #{object.address.id} or country3.`object_id` = #{object.address.id} or country4.`object_id` = #{object.address.id})
+        (country1.`object_id` = #{map.eircAccount.address.id} or country2.`object_id` = #{map.eircAccount.address.id} or country3.`object_id` = #{map.eircAccount.address.id} or country4.`object_id` = #{map.eircAccount.address.id})
     </sql>
 
     <sql id="addressJoin">
         <choose>
             <when test="map.address == true">
-                <include refid="countryJoin"/>
-                <include refid="addressJoinCulture"/>
+                <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.countryJoin"/>
+                <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoinCulture"/>
             </when>
-            <when test="object.address != null and object.address.entity != null">
+            <when test="map.eircAccount != null and map.eircAccount.address != null and map.eircAccount.address.entity != null">
                 <choose>
-                    <when test="object.address.entity.id == 200">
-                        <include refid="roomJoin"/>
+                    <when test="map.eircAccount.address.entity.id == 200">
+                        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.roomJoin"/>
                     </when>
-                    <when test="object.address.entity.id == 100">
-                        <include refid="apartmentJoin"/>
+                    <when test="map.eircAccount.address.entity.id == 100">
+                        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.apartmentJoin"/>
                     </when>
-                    <when test="object.address.entity.id == 500">
-                        <include refid="buildingJoin"/>
+                    <when test="map.eircAccount.address.entity.id == 500">
+                        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.buildingJoin"/>
                     </when>
-                    <when test="object.address.entity.id == 400">
-                        <include refid="cityJoin"/>
+                    <when test="map.eircAccount.address.entity.id == 400">
+                        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.cityJoin"/>
                     </when>
-                    <when test="object.address.entity.id == 800">
-                        <include refid="countryJoin"/>
+                    <when test="map.eircAccount.address.entity.id == 800">
+                        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.countryJoin"/>
                     </when>
                 </choose>
             </when>
@@ -219,26 +219,26 @@
     </sql>
 
     <sql id="addressCondition">
-        <if test="object.address != null and object.address.entity != null">
+        <if test="map.eircAccount != null and map.eircAccount.address != null and map.eircAccount.address.entity != null">
             and
             <choose>
-                <when test="object.address.entity.id == 200">
-                    <include refid="roomCondition"/>
+                <when test="map.eircAccount.address.entity.id == 200">
+                    <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.roomCondition"/>
                 </when>
-                <when test="object.address.entity.id == 100">
-                    <include refid="apartmentCondition"/>
+                <when test="map.eircAccount.address.entity.id == 100">
+                    <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.apartmentCondition"/>
                 </when>
-                <when test="object.address.entity.id == 500">
-                    <include refid="buildingCondition"/>
+                <when test="map.eircAccount.address.entity.id == 500">
+                    <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.buildingCondition"/>
                 </when>
-                <when test="object.address.entity.id == 300">
-                    <include refid="streetCondition"/>
+                <when test="map.eircAccount.address.entity.id == 300">
+                    <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.streetCondition"/>
                 </when>
-                <when test="object.address.entity.id == 400">
-                    <include refid="cityCondition"/>
+                <when test="map.eircAccount.address.entity.id == 400">
+                    <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.cityCondition"/>
                 </when>
-                <when test="object.address.entity.id == 800">
-                    <include refid="countryCondition"/>
+                <when test="map.eircAccount.address.entity.id == 800">
+                    <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.countryCondition"/>
                 </when>
             </choose>
         </if>
@@ -301,19 +301,21 @@
     </sql>
 
     <sql id="otherConditions">
-        <if test="object.accountNumber != null">
-            and e.`account_number` like concat('%', #{object.accountNumber}, '%')
-        </if>
+        <if test="map.eircAccount != null">
+            <if test="map.eircAccount.accountNumber != null">
+                and e.`account_number` like concat('%', #{map.eircAccount.accountNumber}, '%')
+            </if>
 
-        <if test="object.person != null">
-            <if test="object.person.lastName != null">
-                and e.`last_name` like concat('%', #{object.person.lastName}, '%')
-            </if>
-            <if test="object.person.firstName != null">
-                and e.`first_name` like concat('%', #{object.person.firstName}, '%')
-            </if>
-            <if test="object.person.middleName != null">
-                and e.`middle_name` like concat('%', #{object.person.middleName}, '%')
+            <if test="map.eircAccount.person != null">
+                <if test="map.eircAccount.person.lastName != null">
+                    and e.`last_name` like concat('%', #{map.eircAccount.person.lastName}, '%')
+                </if>
+                <if test="map.eircAccount.person.firstName != null">
+                    and e.`first_name` like concat('%', #{map.eircAccount.person.firstName}, '%')
+                </if>
+                <if test="map.eircAccount.person.middleName != null">
+                    and e.`middle_name` like concat('%', #{map.eircAccount.person.middleName}, '%')
+                </if>
             </if>
         </if>
     </sql>
@@ -328,13 +330,13 @@
 
     <select id="selectEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="EircAccount">
         select
-        <include refid="eircAccountColumns"/>,
-        <include refid="addressColumns"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>,
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressColumns"/>
         from `eirc_account` e
-        <include refid="addressJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
         where e.`end_date` is null
-        <include refid="addressCondition"/>
-        <include refid="otherConditions"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressCondition"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.otherConditions"/>
 
         <if test="sortProperty != null">
             order by
@@ -351,31 +353,31 @@
                     e.`middle_name`
                 </when>
                 <when test="sortProperty == 'address'">
-                    `city_type`
+                    `eirc_account_city_type`
                     <if test="asc">
                         ${asc}
                     </if>,
-                    `city`
+                    `eirc_account_city`
                     <if test="asc">
                         ${asc}
                     </if>,
-                    `street_type`
+                    `eirc_account_street_type`
                     <if test="asc">
                         ${asc}
                     </if>,
-                    `street`
+                    `eirc_account_street`
                     <if test="asc">
                         ${asc}
                     </if>,
-                    `building`
+                    `eirc_account_building`
                     <if test="asc">
                         ${asc}
                     </if>,
-                    `apartment`
+                    `eirc_account_apartment`
                     <if test="asc">
                         ${asc}
                     </if>,
-                    `room`
+                    `eirc_account_room`
                     <if test="asc">
                         ${asc}
                     </if>,
@@ -396,22 +398,22 @@
 
     <select id="countEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
         select count(distinct e.`object_id`) from `eirc_account` e
-        <include refid="addressJoin"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
         where e.`end_date` is null
-        <include refid="addressCondition"/>
-        <include refid="otherConditions"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressCondition"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.otherConditions"/>
     </select>
 
     <select id="selectEircAccount" parameterType="long" resultMap="EircAccount">
-        select <include refid="eircAccountColumns"/> from `eirc_account` e where e.`object_id` = #{id} order by `eirc_account_begin_date` desc
+        select <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/> from `eirc_account` e where e.`object_id` = #{id} order by `eirc_account_begin_date` desc
     </select>
 
     <select id="selectEircAccountByPkId" parameterType="long" resultMap="EircAccount">
-        select <include refid="eircAccountColumns"/> from `eirc_account` e where e.`pk_id` = #{pkId}
+        select <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/> from `eirc_account` e where e.`pk_id` = #{pkId}
     </select>
 
     <select id="selectEircAccountsByPkId" parameterType="map" resultMap="EircAccount">
-        select <include refid="eircAccountColumns"/> from `eirc_account` e where e.`pk_id` in #{pkIds}
+        select <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/> from `eirc_account` e where e.`pk_id` in #{pkIds}
     </select>
 
     <insert id="insert" parameterType="ru.flexpay.eirc.eirc_account.entity.EircAccount" keyProperty="pkId" useGeneratedKeys="true">

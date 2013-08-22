@@ -4,46 +4,67 @@
 <mapper namespace="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean">
 
     <resultMap id="ServiceProviderAccount" type="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount">
-        <id column="spc_pk_id" property="pkId"/>
-        <result column="spc_object_id" property="id"/>
-        <result column="spc_account_number" property="accountNumber"/>
-        <result column="spc_organization_id" property="organizationId"/>
-        <result column="spc_begin_date" property="beginDate"/>
-        <result column="spc_end_date" property="endDate"/>
+        <id column="spa_pk_id" property="pkId"/>
+        <result column="spa_object_id" property="id"/>
+        <result column="spa_account_number" property="accountNumber"/>
+        <result column="spa_organization_id" property="organizationId"/>
+        <result column="spa_begin_date" property="beginDate"/>
+        <result column="spa_end_date" property="endDate"/>
 
+        <association property="eircAccount" resultMap="ru.flexpay.eirc.eirc_account.service.EircAccountBean.EircAccount"/>
         <association property="service" resultMap="ru.flexpay.eirc.service.service.ServiceBean.Service"/>
-        <association property="person" resultMap="ru.flexpay.eirc.dictionary.entity.PersonBean.Person" />
+        <association property="person" columnPrefix="spa_" resultMap="ru.flexpay.eirc.dictionary.entity.PersonBean.Person"/>
     </resultMap>
+
+    <sql id="serviceProviderAccountColumns">
+        spa.`pk_id` as `spa_pk_id`, spa.`object_id` as `spa_object_id`, spa.`eirc_account_id` as `spa_eirc_account_id`,
+        spa.`organization_id` as `spa_organization_id`, spa.`account_number` as `spa_account_number`,
+        spa.`service_id` as `spa_service_id`, spa.`first_name` as `spa_first_name`, spa.`last_name` as `spa_last_name`,
+        spa.`middle_name` as `spa_middle_name`, spa.`begin_date` as `spa_begin_date`, spa.`end_date` as `spa_end_date`
+    </sql>
+
+    <sql id="serviceProviderAccountCondition">
+        <if test="map.serviceProviderAccount != null">
+            <if test="map.serviceProviderAccount.accountNumber != null">
+                and spa.`account_number` like concat('%', #{map.serviceProviderAccount.accountNumber}, '%')
+            </if>
+
+            <if test="map.serviceProviderAccount.person != null">
+                <if test="map.serviceProviderAccount.person.lastName != null">
+                    and spa.`last_name` like concat('%', #{map.serviceProviderAccount.person.lastName}, '%')
+                </if>
+                <if test="map.serviceProviderAccount.person.firstName != null">
+                    and spa.`first_name` like concat('%', #{map.serviceProviderAccount.person.firstName}, '%')
+                </if>
+                <if test="map.serviceProviderAccount.person.middleName != null">
+                    and spa.`middle_name` like concat('%', #{map.serviceProviderAccount.person.middleName}, '%')
+                </if>
+            </if>
+        </if>
+    </sql>
 
     <select id="selectServiceProviderAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" 
             resultMap="ServiceProviderAccount">
-        select spa.*,
-        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>
-
+        select
+        <include refid="serviceProviderAccountColumns"/>,
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>,
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressColumns"/>,
+        
         from `service_provider_account` spa
         left join `service` s on s.`id` = spa.`service_id`
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
         left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
-        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean."
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
+
         where spa.`end_date` is null
 
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceCondition"/>
 
-        <if test="object.accountNumber != null">
-            and spa.`account_number` like concat('%', #{object.accountNumber}, '%')
-        </if>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressCondition"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.otherConditions"/>
 
-        <if test="object.person != null">
-            <if test="object.person.lastName != null">
-                and spa.`last_name` like concat('%', #{object.person.lastName}, '%')
-            </if>
-            <if test="object.person.firstName != null">
-                and spa.`first_name` like concat('%', #{object.person.firstName}, '%')
-            </if>
-            <if test="object.person.middleName != null">
-                and spa.`middle_name` like concat('%', #{object.person.middleName}, '%')
-            </if>
-        </if>
+        <include refid="serviceProviderAccountCondition"/>
 
         <if test="sortProperty != null">
             order by
@@ -75,7 +96,18 @@
 
     <select id="countServiceProviderAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
         select count(distinct spa.`object_id`) from `service_provider_account` spa
+        left join `service` s on s.`id` = spa.`service_id`
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
+        left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
         where spa.`end_date` is null
+
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceCondition"/>
+
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressCondition"/>
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.otherConditions"/>
+
+        <include refid="serviceProviderAccountCondition"/>
     </select>
 
     <select id="selectServiceProviderAccount" parameterType="long" resultMap="ServiceProviderAccount">

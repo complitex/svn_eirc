@@ -6,6 +6,8 @@ import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.service.SequenceBean;
 import org.complitex.dictionary.util.DateUtil;
+import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
+import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 
 import javax.ejb.EJB;
@@ -20,6 +22,8 @@ public class ServiceProviderAccountBean extends AbstractBean {
 
     private static final String NS = ServiceProviderAccountBean.class.getPackage().getName() + ".ServiceProviderAccountBean";
     public static final String ENTITY_TABLE = "service_provider_account";
+
+    public static final String FILTER_MAPPING_ATTRIBUTE_NAME = "serviceProviderAccount";
 
     @EJB
     private SequenceBean sequenceBean;
@@ -71,6 +75,23 @@ public class ServiceProviderAccountBean extends AbstractBean {
 
     public ServiceProviderAccount getEricAccountByPkId(long pkId) {
         return sqlSession().selectOne(NS + ".selectServiceProviderAccountByPkId", pkId);
+    }
+
+    private static void addFilterMappingObject(FilterWrapper<ServiceProviderAccount> filter) {
+        if (filter != null) {
+            if (filter.getObject() != null) {
+                ServiceBean.addFilterMappingObject(filter, filter.getObject().getService());
+                EircAccountBean.addFilterMappingObject(filter, filter.getObject().getEircAccount());
+            }
+            addFilterMappingObject(filter, filter.getObject());
+        }
+    }
+
+    public static void addFilterMappingObject(FilterWrapper<?> filter,
+                                              ServiceProviderAccount serviceProviderAccount) {
+        if (filter != null) {
+            filter.getMap().put(FILTER_MAPPING_ATTRIBUTE_NAME, serviceProviderAccount);
+        }
     }
 
 }

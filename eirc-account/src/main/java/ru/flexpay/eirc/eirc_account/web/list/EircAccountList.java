@@ -1,7 +1,6 @@
 package ru.flexpay.eirc.eirc_account.web.list;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.Page;
@@ -138,7 +137,7 @@ public class EircAccountList extends TemplatePage {
                 FilterWrapper<EircAccount> filterWrapper = FilterWrapper.of(filterObject, first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
-                filterWrapper.setMap(ImmutableMap.<String, Object>of("address", Boolean.TRUE));
+                filterWrapper.getMap().put("address", Boolean.TRUE);
                 filterWrapper.setLocale(localeBean.convert(getLocale()));
 
                 return eircAccountBean.getEircAccounts(filterWrapper);

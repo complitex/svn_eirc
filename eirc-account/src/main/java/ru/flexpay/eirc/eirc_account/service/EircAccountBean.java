@@ -22,6 +22,8 @@ public class EircAccountBean extends AbstractBean {
     private static final String NS = EircAccountBean.class.getPackage().getName() + ".EircAccountBean";
     public static final String ENTITY_TABLE = "eirc_account";
 
+    public static final String FILTER_MAPPING_ATTRIBUTE_NAME = "eircAccount";
+
     private static final List<String> searchFilters = ImmutableList.of("city", "street", "building", "apartment", "room");
 
     @EJB
@@ -41,10 +43,12 @@ public class EircAccountBean extends AbstractBean {
     }
 
     public List<EircAccount> getEircAccounts(FilterWrapper<EircAccount> filter) {
+        addFilterMappingObject(filter);
         return sqlSession().selectList(NS + ".selectEircAccounts", filter);
     }
 
     public int count(FilterWrapper<EircAccount> filter) {
+        addFilterMappingObject(filter);
         return sqlSession().selectOne(NS + ".countEircAccounts", filter);
     }
 
@@ -71,6 +75,18 @@ public class EircAccountBean extends AbstractBean {
 
     public List<String> getSearchFilters() {
         return searchFilters;
+    }
+
+    private static void addFilterMappingObject(FilterWrapper<EircAccount> filter) {
+        if (filter != null) {
+            addFilterMappingObject(filter, filter.getObject());
+        }
+    }
+
+    public static void addFilterMappingObject(FilterWrapper<?> filter, EircAccount eircAccount) {
+        if (filter != null) {
+            filter.getMap().put(FILTER_MAPPING_ATTRIBUTE_NAME, eircAccount);
+        }
     }
 
 }
