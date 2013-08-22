@@ -328,6 +328,52 @@
         e.`begin_date`        as `eirc_account_begin_date`,        e.`end_date`    as `eirc_account_end_date`
     </sql>
 
+
+
+    <sql id="eircAccountPersonSort">
+        e.`last_name`
+        <if test="asc">
+            ${asc}
+        </if>,
+        e.`first_name`
+        <if test="asc">
+            ${asc}
+        </if>,
+        e.`middle_name`
+    </sql>
+
+    <sql id="eircAccountAddressSort">
+        `eirc_account_city_type`
+        <if test="asc">
+            ${asc}
+        </if>,
+        `eirc_account_city`
+        <if test="asc">
+            ${asc}
+        </if>,
+        `eirc_account_street_type`
+        <if test="asc">
+            ${asc}
+        </if>,
+        `eirc_account_street`
+        <if test="asc">
+            ${asc}
+        </if>,
+        `eirc_account_building`
+        <if test="asc">
+            ${asc}
+        </if>,
+        `eirc_account_apartment`
+        <if test="asc">
+            ${asc}
+        </if>,
+        `eirc_account_room`
+        <if test="asc">
+            ${asc}
+        </if>,
+        e.`middle_name`
+    </sql>
+
     <select id="selectEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="EircAccount">
         select
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>,
@@ -341,47 +387,11 @@
         <if test="sortProperty != null">
             order by
             <choose>
-                <when test="sortProperty == 'person'">
-                    e.`last_name`
-                    <if test="asc">
-                        ${asc}
-                    </if>,
-                    e.`first_name`
-                    <if test="asc">
-                        ${asc}
-                    </if>,
-                    e.`middle_name`
+                <when test="sortProperty == 'eirc_account_person'">
+                    <include refid="eircAccountPersonSort"/>
                 </when>
-                <when test="sortProperty == 'address'">
-                    `eirc_account_city_type`
-                    <if test="asc">
-                        ${asc}
-                    </if>,
-                    `eirc_account_city`
-                    <if test="asc">
-                        ${asc}
-                    </if>,
-                    `eirc_account_street_type`
-                    <if test="asc">
-                        ${asc}
-                    </if>,
-                    `eirc_account_street`
-                    <if test="asc">
-                        ${asc}
-                    </if>,
-                    `eirc_account_building`
-                    <if test="asc">
-                        ${asc}
-                    </if>,
-                    `eirc_account_apartment`
-                    <if test="asc">
-                        ${asc}
-                    </if>,
-                    `eirc_account_room`
-                    <if test="asc">
-                        ${asc}
-                    </if>,
-                    e.`middle_name`
+                <when test="sortProperty == 'eirc_account_address'">
+                    <include refid="eircAccountAddressSort"/>
                 </when>
                 <otherwise>
                     ${sortProperty}
@@ -391,6 +401,7 @@
                 ${asc}
             </if>
         </if>
+
         <if test="count > 0">
             limit ${first},${count}
         </if>

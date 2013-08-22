@@ -197,7 +197,7 @@ public class EircAccountList extends TemplatePage {
         filterForm.add(dataView);
 
         //Sorting
-        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "eircAccountNumber", "person", "address"));
+        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "eircAccountNumber", "eircAccountPerson", "eircAccountAddress"));
 
         //Filters
         filterForm.add(new TextField<>("accountNumberFilter", new PropertyModel<String>(filterObject, "accountNumber")));
