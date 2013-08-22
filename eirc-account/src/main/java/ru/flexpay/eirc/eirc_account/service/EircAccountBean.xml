@@ -4,15 +4,17 @@
 <mapper namespace="ru.flexpay.eirc.eirc_account.service.EircAccountBean">
 
     <resultMap id="EircAccount" type="ru.flexpay.eirc.eirc_account.entity.EircAccount">
-        <id column="pk_id" property="pkId"/>
-        <result column="object_id" property="id"/>
-        <result column="account_number" property="accountNumber"/>
-        <result column="begin_date" property="beginDate"/>
-        <result column="end_date" property="endDate"/>
+        <id column="eirc_account_pk_id" property="pkId"/>
+        <result column="eirc_account_object_id" property="id"/>
+        <result column="eirc_account_number" property="accountNumber"/>
+        <result column="eirc_account_begin_date" property="beginDate"/>
+        <result column="eirc_account_end_date" property="endDate"/>
 
-        <association property="address" resultMap="Address"/>
+        <association property="address" resultMap="Address"
+                     columnPrefix="eirc_account_"/>
 
-        <association property="person" resultMap="ru.flexpay.eirc.dictionary.entity.PersonBean.Person" />
+        <association property="person" resultMap="ru.flexpay.eirc.dictionary.entity.PersonBean.Person"
+                     columnPrefix="eirc_account_"/>
     </resultMap>
 
     <resultMap id="Address" type="ru.flexpay.eirc.dictionary.entity.Address">
@@ -286,11 +288,16 @@
         left join `city_type_string_culture` ctc on (ctc.`id` = cta.`value_id` and ctc.`locale_id`  = #{locale.id})
     </sql>
 
-    <sql id="addressFields">
-        <if test="map.address == true">
-            , ctc.`value` as `city_type`, cc.`value` as `city`, stc.`value` as `street_type`, sc.`value` as `street`
-            , bac.`value` as `building`, ac.`value` as `apartment`, rc.`value` as `room`
-        </if>
+    <sql id="addressColumns">
+        <choose>
+            <when test="map.address == true">
+                ctc.`value` as `eirc_account_city_type`,   cc.`value` as `eirc_account_city`,
+                stc.`value` as `eirc_account_street_type`, sc.`value` as `eirc_account_street`,
+                bac.`value` as `eirc_account_building`,    ac.`value` as `eirc_account_apartment`,
+                rc.`value`  as `eirc_account_room`
+            </when>
+            <otherwise>1</otherwise>
+        </choose>
     </sql>
 
     <sql id="otherConditions">
@@ -311,9 +318,18 @@
         </if>
     </sql>
 
+    <sql id="eircAccountColumns">
+        e.`pk_id`             as `eirc_account_pk_id`,             e.`object_id`   as `eirc_account_object_id`,
+        e.`account_number`    as `eirc_account_number`,            e.`address_id`  as `eirc_account_address_id`,
+        e.`address_entity_id` as `eirc_account_address_entity_id`, e.`first_name`  as `eirc_account_first_name`,
+        e.`last_name`         as `eirc_account_last_name`,         e.`middle_name` as `eirc_account_middle_name`,
+        e.`begin_date`        as `eirc_account_begin_date`,        e.`end_date`    as `eirc_account_end_date`
+    </sql>
+
     <select id="selectEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="EircAccount">
-        select e.*
-        <include refid="addressFields"/>
+        select
+        <include refid="eircAccountColumns"/>,
+        <include refid="addressColumns"/>
         from `eirc_account` e
         <include refid="addressJoin"/>
         where e.`end_date` is null
@@ -387,15 +403,15 @@
     </select>
 
     <select id="selectEircAccount" parameterType="long" resultMap="EircAccount">
-        select * from `eirc_account` where `object_id` = #{id} order by `begin_date` desc
+        select <include refid="eircAccountColumns"/> from `eirc_account` e where e.`object_id` = #{id} order by `eirc_account_begin_date` desc
     </select>
 
     <select id="selectEircAccountByPkId" parameterType="long" resultMap="EircAccount">
-        select * from `eirc_account` where `pk_id` = #{pkId}
+        select <include refid="eircAccountColumns"/> from `eirc_account` e where e.`pk_id` = #{pkId}
     </select>
 
     <select id="selectEircAccountsByPkId" parameterType="map" resultMap="EircAccount">
-        select * from `eirc_account` where `pk_id` in #{pkIds}
+        select <include refid="eircAccountColumns"/> from `eirc_account` e where e.`pk_id` in #{pkIds}
     </select>
 
     <insert id="insert" parameterType="ru.flexpay.eirc.eirc_account.entity.EircAccount" keyProperty="pkId" useGeneratedKeys="true">
