@@ -20,18 +20,18 @@ import java.util.Locale;
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
 public class ServiceProviderAccountTemplateMenu extends ResourceTemplateMenu {
 
-    public static final String EIRC_ACCOUNT_MENU_ITEM = "eirc_account_item";
+    public static final String SERVICE_PROVIDER_ACCOUNT_MENU_ITEM = "service_provider_account_item";
 
     @EJB
-    private ServiceProviderAccountBean strategy;
+    private ServiceProviderAccountBean service;
 
-    protected ServiceProviderAccountBean getStrategy() {
-        return strategy;
+    protected ServiceProviderAccountBean getService() {
+        return service;
     }
 
     @Override
     public String getTitle(Locale locale) {
-        return getString(ServiceProviderAccountTemplateMenu.class, locale, "eirc_account_menu");
+        return getString(ServiceProviderAccountTemplateMenu.class, locale, "service_provider_account_menu");
     }
 
     @Override
@@ -40,7 +40,7 @@ public class ServiceProviderAccountTemplateMenu extends ResourceTemplateMenu {
 
             @Override
             public String getLabel(Locale locale) {
-                return getString(ServiceProviderAccountTemplateMenu.class, locale, "eirc_account_menu");
+                return getString(ServiceProviderAccountTemplateMenu.class, locale, "service_provider_account_menu");
             }
 
             @Override
@@ -55,7 +55,7 @@ public class ServiceProviderAccountTemplateMenu extends ResourceTemplateMenu {
 
             @Override
             public String getTagId() {
-                return EIRC_ACCOUNT_MENU_ITEM;
+                return SERVICE_PROVIDER_ACCOUNT_MENU_ITEM;
             }
         });
         return links;
@@ -63,6 +63,6 @@ public class ServiceProviderAccountTemplateMenu extends ResourceTemplateMenu {
 
     @Override
     public String getTagId() {
-        return "eirc_account_menu";
+        return "service_provider_account_menu";
     }
 }

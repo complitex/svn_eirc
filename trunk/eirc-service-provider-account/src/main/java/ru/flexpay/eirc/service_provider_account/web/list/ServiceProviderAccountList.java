@@ -37,6 +37,7 @@ import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.Person;
+import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 import ru.flexpay.eirc.service_provider_account.web.edit.ServiceProviderAccountEdit;
@@ -65,7 +66,7 @@ public class ServiceProviderAccountList extends TemplatePage {
     private DataView<ServiceProviderAccount> dataView;
     private CollapsibleSearchPanel searchPanel;
 
-    private ServiceProviderAccount filterObject = new ServiceProviderAccount();
+    private ServiceProviderAccount filterObject = new ServiceProviderAccount(new EircAccount());
     private Address filterAddress;
 
     private Boolean toggle = false;
@@ -152,7 +153,7 @@ public class ServiceProviderAccountList extends TemplatePage {
                 return serviceProviderAccountBean.count(filterWrapper);
             }
         };
-        dataProvider.setSort("account_number", SortOrder.ASCENDING);
+        dataProvider.setSort("service_provider_account_number", SortOrder.ASCENDING);
 
         //Data View
         dataView = new DataView<ServiceProviderAccount>("data", dataProvider, 1) {
@@ -200,7 +201,7 @@ public class ServiceProviderAccountList extends TemplatePage {
         filterForm.add(dataView);
 
         //Sorting
-        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "accountNumber", "person", "address"));
+        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "serviceProviderAccountNumber", "person", "address"));
 
         //Filters
         filterForm.add(new TextField<>("accountNumberFilter", new PropertyModel<String>(filterObject, "accountNumber")));

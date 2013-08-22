@@ -125,11 +125,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
                     address = new Address(addressInput.getId(), AddressEntity.BUILDING);
                 }
 
-                if (serviceProviderAccount.getId() == null) {
-                    serviceProviderAccountBean.save(serviceProviderAccount);
-                } else {
-                    serviceProviderAccountBean.update(serviceProviderAccount);
-                }
+                serviceProviderAccountBean.save(serviceProviderAccount);
 
                 info(getString("saved"));
             }
