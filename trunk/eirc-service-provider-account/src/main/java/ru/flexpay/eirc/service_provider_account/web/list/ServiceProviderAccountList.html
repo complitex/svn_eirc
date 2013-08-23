@@ -23,6 +23,21 @@
                         </span>
                     </th>
                     <th>
+                        <span wicket:id="header.service_name">
+                            <wicket:message key="service_name"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.spa_organization_id">
+                            <wicket:message key="spa_organization_id"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.spa_account_number">
+                            <wicket:message key="spa_account_number"/>
+                        </span>
+                    </th>
+                    <th>
                         <span wicket:id="header.spa_person">
                             <wicket:message key="person_full_name"/>
                         </span>
@@ -41,6 +56,12 @@
                         <input type="text" wicket:id="accountNumberFilter"></input>
                     </td>
                     <td class="filter-td">
+                        <select wicket:id="serviceFilter"></select>
+                    </td>
+                    <td class="filter-td">
+                        <select wicket:id="serviceProviderFilter"></select>
+                    </td>
+                    <td class="filter-td">
                         <input type="text" wicket:id="personFilter"></input>
                     </td>
                     <td class="filter-td">
@@ -55,6 +76,12 @@
                 <tr wicket:id="data">
                     <td>
                         <span wicket:id="accountNumber"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="service"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="serviceProvider"></span>
                     </td>
                     <td>
                         <span wicket:id="person"></span>
