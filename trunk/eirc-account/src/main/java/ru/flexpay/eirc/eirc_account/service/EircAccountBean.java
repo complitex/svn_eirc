@@ -6,6 +6,7 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.service.SequenceBean;
+import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 
 import javax.ejb.EJB;
@@ -40,6 +41,10 @@ public class EircAccountBean extends AbstractBean {
     public EircAccount getEircAccount(long id) {
         List<EircAccount> resultOrderByDescData = sqlSession().selectList(NS + ".selectEircAccount", id);
         return resultOrderByDescData.size() > 0? resultOrderByDescData.get(0): null;
+    }
+
+    public EircAccount getEircAccount(Address address) {
+        return sqlSession().selectOne(NS + ".selectEircAccountByAddress", address);
     }
 
     public List<EircAccount> getEircAccounts(FilterWrapper<EircAccount> filter) {

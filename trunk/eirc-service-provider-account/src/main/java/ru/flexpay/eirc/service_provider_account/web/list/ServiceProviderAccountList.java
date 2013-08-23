@@ -293,7 +293,7 @@ public class ServiceProviderAccountList extends TemplatePage {
     private PageParameters getEditPageParams(Long id) {
         PageParameters parameters = new PageParameters();
         if (id != null) {
-            parameters.add("eircAccountId", id);
+            parameters.add("serviceProviderAccountId", id);
         }
         return parameters;
     }

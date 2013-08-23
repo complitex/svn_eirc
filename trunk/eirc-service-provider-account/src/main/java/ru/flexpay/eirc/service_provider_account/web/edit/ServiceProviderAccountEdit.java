@@ -3,9 +3,7 @@ package ru.flexpay.eirc.service_provider_account.web.edit;
 import com.google.common.collect.ImmutableList;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.markup.html.form.Button;
-import org.apache.wicket.markup.html.form.Form;
-import org.apache.wicket.markup.html.form.TextField;
+import org.apache.wicket.markup.html.form.*;
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.IModel;
@@ -15,8 +13,10 @@ import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.string.StringValue;
 import org.complitex.address.entity.AddressEntity;
 import org.complitex.dictionary.entity.DomainObject;
-import org.complitex.dictionary.strategy.IStrategy;
-import org.complitex.dictionary.strategy.StrategyFactory;
+import org.complitex.dictionary.entity.Locale;
+import org.complitex.dictionary.service.LocaleBean;
+import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
+import org.complitex.dictionary.web.component.ShowMode;
 import org.complitex.dictionary.web.component.search.SearchComponentState;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.search.CollapsibleInputSearchToolbarButton;
@@ -26,6 +26,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.Person;
+import ru.flexpay.eirc.dictionary.web.CollapsibleInputSearchComponent;
+import ru.flexpay.eirc.eirc_account.entity.EircAccount;
+import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
+import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
+import ru.flexpay.eirc.service.entity.Service;
+import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 import ru.flexpay.eirc.service_provider_account.web.list.ServiceProviderAccountList;
@@ -40,16 +46,23 @@ import java.util.List;
 public class ServiceProviderAccountEdit extends FormTemplatePage {
 
     @EJB
-    private StrategyFactory strategyFactory;
+    private ServiceProviderAccountBean serviceProviderAccountBean;
 
     @EJB
-    private ServiceProviderAccountBean serviceProviderAccountBean;
+    private EircAccountBean eircAccountBean;
+
+    @EJB
+    private ServiceBean serviceBean;
+
+    @EJB
+    private LocaleBean localeBean;
+
+    @EJB(name = IOrganizationStrategy.BEAN_NAME, beanInterface = IOrganizationStrategy.class)
+    private EircOrganizationStrategy organizationStrategy;
 
     private SearchComponentState componentState;
 
     private ServiceProviderAccount serviceProviderAccount;
-
-    private static final List<String> addressDescription = ImmutableList.of("street", "city", "region", "country");
 
 
     private static final Logger log = LoggerFactory.getLogger(ServiceProviderAccountEdit.class);
@@ -59,11 +72,11 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
     }
 
     public ServiceProviderAccountEdit(PageParameters parameters) {
-        StringValue eircAccountId = parameters.get("eircAccountId");
-        if (eircAccountId != null && !eircAccountId.isNull()) {
-            serviceProviderAccount = serviceProviderAccountBean.getServiceProviderAccount(eircAccountId.toLong());
+        StringValue serviceProviderAccountId = parameters.get("serviceProviderAccountId");
+        if (serviceProviderAccountId != null && !serviceProviderAccountId.isNull()) {
+            serviceProviderAccount = serviceProviderAccountBean.getServiceProviderAccount(serviceProviderAccountId.toLong());
             if (serviceProviderAccount == null) {
-                throw new RuntimeException("ServiceProviderAccount by id='" + eircAccountId + "' not found");
+                throw new RuntimeException("ServiceProviderAccount by id='" + serviceProviderAccountId + "' not found");
             }
         }
         init();
@@ -77,6 +90,11 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
         if (serviceProviderAccount.getPerson() == null) {
             serviceProviderAccount.setPerson(new Person());
         }
+        if (serviceProviderAccount.getEircAccount() == null) {
+            serviceProviderAccount.setEircAccount(new EircAccount());
+        }
+
+        final Locale locale = localeBean.convert(getLocale());
 
         IModel<String> labelModel = new ResourceModel("label");
 
@@ -90,13 +108,83 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
         Form form = new Form("form");
         add(form);
 
+        //address component
+        if (serviceProviderAccount.getId() == null) {
+            componentState = (SearchComponentState)(getTemplateSession().getGlobalSearchComponentState().clone());
+        } else {
+            componentState = new SearchComponentState();
+        }
+
+        CollapsibleInputSearchComponent searchComponent = new CollapsibleInputSearchComponent("searchComponent",
+                 componentState, null, ShowMode.ACTIVE, true) {
+            @Override
+            protected Address getAddress() {
+                return serviceProviderAccount.getEircAccount().getAddress();
+            }
+        };
+        form.add(searchComponent);
+
         //eirc account field
-        form.add(new TextField<>("accountNumber", new PropertyModel<String>(serviceProviderAccount, "accountNumber")));
+        form.add(new TextField<>("accountNumber", new PropertyModel<String>(serviceProviderAccount, "accountNumber")).setRequired(true));
 
         // FIO fields
         form.add(new TextField<>("lastName",   new PropertyModel<String>(serviceProviderAccount.getPerson(), "lastName")));
         form.add(new TextField<>("firstName",  new PropertyModel<String>(serviceProviderAccount.getPerson(), "firstName")));
         form.add(new TextField<>("middleName", new PropertyModel<String>(serviceProviderAccount.getPerson(), "middleName")));
+
+        // service
+        form.add(new DropDownChoice<>("service",
+                new PropertyModel<Service>(serviceProviderAccount, "service"),
+                serviceBean.getServices(null),
+                new IChoiceRenderer<Service>() {
+                    @Override
+                    public Object getDisplayValue(Service service) {
+                        return service.getName(locale) + " (" + service.getCode() + ")";
+                    }
+
+                    @Override
+                    public String getIdValue(Service service, int i) {
+                        return service.getId().toString();
+                    }
+                }).setRequired(true));
+
+        // service provider
+        form.add(new DropDownChoice<>("serviceProvider",
+                new IModel<DomainObject>() {
+
+                    @Override
+                    public DomainObject getObject() {
+                        return serviceProviderAccount.getOrganizationId() != null ?
+                                organizationStrategy.findById(serviceProviderAccount.getOrganizationId(), false) :
+                                null;
+                    }
+
+                    @Override
+                    public void setObject(DomainObject domainObject) {
+                        if (domainObject != null) {
+                            serviceProviderAccount.setOrganizationId(domainObject.getId());
+                        } else {
+                            serviceProviderAccount.setOrganizationId(null);
+                        }
+                    }
+
+                    @Override
+                    public void detach() {
+
+                    }
+                },
+                organizationStrategy.getAllServiceProviders(getLocale()),
+                new IChoiceRenderer<DomainObject>() {
+                    @Override
+                    public Object getDisplayValue(DomainObject serviceProvider) {
+                        return  organizationStrategy.displayDomainObject(serviceProvider, getLocale());
+                    }
+
+                    @Override
+                    public String getIdValue(DomainObject serviceProvider, int i) {
+                        return serviceProvider.getId().toString();
+                    }
+                }).setRequired(true));
 
         // save button
         Button save = new Button("save") {
@@ -125,6 +213,14 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
                     address = new Address(addressInput.getId(), AddressEntity.BUILDING);
                 }
 
+                EircAccount eircAccount = eircAccountBean.getEircAccount(address);
+                if (eircAccount == null) {
+                    error(getString("eirc_account_not_found_by_address"));
+                    return;
+                }
+
+                serviceProviderAccount.setEircAccount(eircAccount);
+
                 serviceProviderAccountBean.save(serviceProviderAccount);
 
                 info(getString("saved"));
@@ -150,10 +246,5 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
     @Override
     protected List<? extends ToolbarButton> getToolbarButtons(String id) {
         return ImmutableList.of(new CollapsibleInputSearchToolbarButton(id));
-    }
-
-    private DomainObject findObject(Long objectId, String entity) {
-        IStrategy strategy = strategyFactory.getStrategy(entity);
-        return strategy.findById(objectId, true);
     }
 }
