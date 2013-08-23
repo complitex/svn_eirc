@@ -16,7 +16,7 @@
         <table class="tbForm">
             <tr>
                 <th>
-                    <wicket:message key="address"/>
+                    <wicket:message key="address"/> <b class="blue">*</b>
                     :
                 </th>
                 <td>
@@ -25,7 +25,25 @@
             </tr>
             <tr>
                 <th>
-                    <wicket:message key="eirc_account"/>
+                    <wicket:message key="service"/> <b class="blue">*</b>
+                    :
+                </th>
+                <td>
+                    <select wicket:id="service"></select>
+                </td>
+            </tr>
+            <tr>
+                <th>
+                    <wicket:message key="serviceProvider"/> <b class="blue">*</b>
+                    :
+                </th>
+                <td>
+                    <select wicket:id="serviceProvider"></select>
+                </td>
+            </tr>
+            <tr>
+                <th>
+                    <wicket:message key="accountNumber"/> <b class="blue">*</b>
                     :
                 </th>
                 <td>

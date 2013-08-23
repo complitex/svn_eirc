@@ -117,15 +117,43 @@
     </select>
 
     <select id="selectServiceProviderAccount" parameterType="long" resultMap="ServiceProviderAccount">
-        select * from `service_provider_account` where `object_id` = #{id} order by `begin_date` desc
+        select
+        <include refid="serviceProviderAccountColumns"/>,
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>
+
+        from `service_provider_account` spa
+        left join `service` s on s.`id` = spa.`service_id`
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
+        left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
+
+        where spa.`object_id` = #{id} order by `spa_begin_date` desc
     </select>
 
     <select id="selectServiceProviderAccountByPkId" parameterType="long" resultMap="ServiceProviderAccount">
-        select * from `service_provider_account` where `pk_id` = #{pkId}
+        select
+        <include refid="serviceProviderAccountColumns"/>,
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>
+
+        from `service_provider_account` spa
+        left join `service` s on s.`id` = spa.`service_id`
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
+        left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
+        where spa.`pk_id` = #{pkId}
     </select>
 
     <select id="selectServiceProviderAccountsByPkId" parameterType="map" resultMap="ServiceProviderAccount">
-        select * from `service_provider_account` where `pk_id` in #{pkIds}
+        select
+        <include refid="serviceProviderAccountColumns"/>,
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>
+
+        from `service_provider_account` spa
+        left join `service` s on s.`id` = spa.`service_id`
+        <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
+        left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
+        where spa.`pk_id` in #{pkIds}
     </select>
 
     <insert id="insertServiceProviderAccount"
