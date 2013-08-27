@@ -37,9 +37,9 @@
             <if test="map.service.parentId != null">
                 and s.`parent_id` = #{map.service.parentId}
             </if>
-            <if test="locale != null">
-                and sn.`locale_id` = #{locale.id}
-            </if>
+        </if>
+        <if test="locale != null">
+            and sn.`locale_id` = #{locale.id}
         </if>
     </sql>
 

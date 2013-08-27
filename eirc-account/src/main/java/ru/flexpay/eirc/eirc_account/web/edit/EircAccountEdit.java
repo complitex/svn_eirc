@@ -23,7 +23,7 @@ import org.complitex.dictionary.web.component.search.SearchComponentState;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.search.CollapsibleInputSearchToolbarButton;
 import org.complitex.template.web.security.SecurityRole;
-import org.complitex.template.web.template.FormTemplatePage;
+import org.complitex.template.web.template.TemplatePage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.dictionary.entity.Address;
@@ -39,7 +39,7 @@ import java.util.List;
  * @author Pavel Sknar
  */
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
-public class EircAccountEdit extends FormTemplatePage {
+public class EircAccountEdit extends TemplatePage {
 
     @EJB
     private StrategyFactory strategyFactory;
@@ -139,13 +139,18 @@ public class EircAccountEdit extends FormTemplatePage {
                     address = new Address(addressInput.getId(), AddressEntity.BUILDING);
                 }
 
-                eircAccount.setAddress(address);
-
-                if (eircAccount.getId() == null) {
-                    eircAccountBean.save(eircAccount);
-                } else {
-                    eircAccountBean.update(eircAccount);
+                if (eircAccountBean.eircAccountExists(eircAccount.getId(), address)) {
+                    error(getString("error_eirc_account_by_address_exists"));
+                    return;
                 }
+
+                if (eircAccountBean.eircAccountExists(eircAccount.getId(), eircAccount.getAccountNumber())) {
+                    error(getString("error_eirc_account_exists"));
+                    return;
+                }
+
+                eircAccount.setAddress(address);
+                eircAccountBean.save(eircAccount);
 
                 info(getString("saved"));
             }

@@ -16,6 +16,8 @@ public class ServiceProviderAccount extends DictionaryTemporalObject {
 
     private Long organizationId;
 
+    private String organizationName;
+
     private Service service;
 
     private Person person;
@@ -49,6 +51,14 @@ public class ServiceProviderAccount extends DictionaryTemporalObject {
 
     public void setOrganizationId(Long organizationId) {
         this.organizationId = organizationId;
+    }
+
+    public String getOrganizationName() {
+        return organizationName;
+    }
+
+    public void setOrganizationName(String organizationName) {
+        this.organizationName = organizationName;
     }
 
     public Service getService() {

@@ -8,6 +8,7 @@
         <result column="spa_object_id" property="id"/>
         <result column="spa_account_number" property="accountNumber"/>
         <result column="spa_organization_id" property="organizationId"/>
+        <result column="spa_organization_name" property="organizationName"/>
         <result column="spa_begin_date" property="beginDate"/>
         <result column="spa_end_date" property="endDate"/>
 
@@ -18,7 +19,8 @@
 
     <sql id="serviceProviderAccountColumns">
         spa.`pk_id` as `spa_pk_id`, spa.`object_id` as `spa_object_id`, spa.`eirc_account_id` as `spa_eirc_account_id`,
-        spa.`organization_id` as `spa_organization_id`, spa.`account_number` as `spa_account_number`,
+        spa.`organization_id` as `spa_organization_id`, oc.`value` as `spa_organization_name`,
+        spa.`account_number` as `spa_account_number`,
         spa.`service_id` as `spa_service_id`, spa.`first_name` as `spa_first_name`, spa.`last_name` as `spa_last_name`,
         spa.`middle_name` as `spa_middle_name`, spa.`begin_date` as `spa_begin_date`, spa.`end_date` as `spa_end_date`
     </sql>
@@ -40,6 +42,13 @@
                     and spa.`middle_name` like concat('%', #{map.serviceProviderAccount.person.middleName}, '%')
                 </if>
             </if>
+
+            <if test="map.serviceProviderAccount.organizationId != null">
+                and spa.`organization_id` =  #{map.serviceProviderAccount.organizationId}
+            </if>
+        </if>
+        <if test="map.serviceProviderName != null">
+            and oc.`value` like concat('%', #{map.serviceProviderName}, '%')
         </if>
     </sql>
 
@@ -52,12 +61,14 @@
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressColumns"/>
         
         from `service_provider_account` spa
+        left join `organization_attribute` oa on oa.`object_id` = spa.`organization_id` and oa.`value_type_id` = 900
+        left join `organization_string_culture` oc on oc.`id` = oa.`value_id` and oc.`locale_id` = #{locale.id}
         left join `service` s on s.`id` = spa.`service_id`
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
         left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
 
-        where spa.`end_date` is null
+        where spa.`end_date` is null and oa.`end_date` is null
 
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceCondition"/>
 
@@ -102,11 +113,13 @@
 
     <select id="countServiceProviderAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
         select count(distinct spa.`object_id`) from `service_provider_account` spa
+        left join `organization_attribute` oa on oa.`object_id` = spa.`organization_id` and oa.`value_type_id` = 900
+        left join `organization_string_culture` oc on oc.`id` = oa.`value_id` and oc.`locale_id` = #{locale.id}
         left join `service` s on s.`id` = spa.`service_id`
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
         left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
-        where spa.`end_date` is null
+        where spa.`end_date` is null and oa.`end_date` is null
 
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceCondition"/>
 

@@ -219,7 +219,7 @@
     </sql>
 
     <sql id="addressCondition">
-        <if test="map.eircAccount != null and map.eircAccount.address != null and map.eircAccount.address.entity != null">
+        <if test="map.eircAccount != null and map.eircAccount.address != null and map.eircAccount.address.entity != null and map.eircAccount.address.id != null">
             and
             <choose>
                 <when test="map.eircAccount.address.entity.id == 200">
@@ -368,10 +368,6 @@
             ${asc}
         </if>,
         `eirc_account_room`
-        <if test="asc">
-            ${asc}
-        </if>,
-        e.`middle_name`
     </sql>
 
     <select id="selectEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="EircAccount">
@@ -426,6 +422,21 @@
     <select id="selectEircAccountsByPkId" parameterType="map" resultMap="EircAccount">
         select <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/> from `eirc_account` e where e.`pk_id` in #{pkIds}
     </select>
+
+    <select id="eircAccountNumberExists" parameterType="map" resultType="integer">
+        select 1 from `eirc_account` e where e.`end_date` is null and e.`account_number` = #{accountNumber}
+        <if test="objectId != null">
+            and e.`object_id` != #{objectId}
+        </if>
+    </select>
+
+    <select id="eircAccountByAddressExists" parameterType="map" resultType="integer">
+        select 1 from `eirc_account` e where e.`address_id` = #{addressId} and e.`address_entity_id` = #{addressEntityId} and e.`end_date` is null
+        <if test="objectId != null">
+            and e.`object_id` != #{objectId}
+        </if>
+    </select>
+
 
     <select id="selectEircAccountByAddress" parameterType="ru.flexpay.eirc.dictionary.entity.Address" resultMap="EircAccount">
         select <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/> from `eirc_account` e where e.`address_id` = #{id} and e.`address_entity_id` = #{entity.id} and e.`end_date` is null
