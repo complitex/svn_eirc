@@ -1,7 +1,6 @@
 package ru.flexpay.eirc.service_provider_account.web.list;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.Page;
@@ -43,7 +42,6 @@ import org.complitex.template.web.template.TemplatePage;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
-import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
@@ -158,7 +156,7 @@ public class ServiceProviderAccountList extends TemplatePage {
                 FilterWrapper<ServiceProviderAccount> filterWrapper = FilterWrapper.of(filterObject, first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
-                filterWrapper.setMap(ImmutableMap.<String, Object>of("address", Boolean.TRUE));
+                filterWrapper.getMap().put("address", Boolean.TRUE);
                 filterWrapper.setLocale(locale);
 
                 return serviceProviderAccountBean.getServiceProviderAccounts(filterWrapper);
@@ -178,11 +176,10 @@ public class ServiceProviderAccountList extends TemplatePage {
             @Override
             protected void populateItem(Item<ServiceProviderAccount> item) {
                 final ServiceProviderAccount serviceProviderAccount = item.getModelObject();
-                final DomainObject serviceProvider = organizationStrategy.findById(serviceProviderAccount.getOrganizationId(), false);
 
                 item.add(new Label("accountNumber", serviceProviderAccount.getAccountNumber()));
                 item.add(new Label("service", serviceProviderAccount.getService().getName(locale)));
-                item.add(new Label("serviceProvider", organizationStrategy.displayDomainObject(serviceProvider, getLocale())));
+                item.add(new Label("serviceProvider", serviceProviderAccount.getOrganizationName()));
                 item.add(new Label("person", serviceProviderAccount.getPerson() != null? serviceProviderAccount.getPerson().toString(): ""));
                 item.add(new Label("address", new AbstractReadOnlyModel<String>() {
 
@@ -221,7 +218,7 @@ public class ServiceProviderAccountList extends TemplatePage {
         filterForm.add(dataView);
 
         //Sorting
-        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "spaAccountNumber", "serviceName", "spaOrganizationId", "spaPerson", "eircAccountAddress"));
+        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true, "spaAccountNumber", "serviceName", "spaOrganizationName", "spaPerson", "eircAccountAddress"));
 
         //Filters
         filterForm.add(new TextField<>("accountNumberFilter", new PropertyModel<String>(filterObject, "accountNumber")));
@@ -260,7 +257,7 @@ public class ServiceProviderAccountList extends TemplatePage {
 
         filterForm.add(new TextField<>("addressFilter", new Model<String>()).setEnabled(false));
 
-        filterForm.add(new DropDownChoice<>("serviceNameFilter",
+        filterForm.add(new DropDownChoice<>("serviceFilter",
                 new PropertyModel<Service>(filterObject, "service"),
                 serviceBean.getServices(null),
                 new IChoiceRenderer<Service>() {
@@ -273,14 +270,16 @@ public class ServiceProviderAccountList extends TemplatePage {
                     public String getIdValue(Service service, int i) {
                         return service.getId().toString();
                     }
-                }).setRequired(true));
+                }).setNullValid(true));
 
         filterForm.add(new DropDownChoice<>("serviceProviderFilter",
                 new IModel<DomainObject>() {
 
                     @Override
                     public DomainObject getObject() {
-                        return null;
+                        return filterObject.getOrganizationId() != null?
+                                organizationStrategy.findById(filterObject.getOrganizationId(), false) :
+                                null;
                     }
 
                     @Override
@@ -308,7 +307,7 @@ public class ServiceProviderAccountList extends TemplatePage {
                     public String getIdValue(DomainObject serviceProvider, int i) {
                         return serviceProvider.getId().toString();
                     }
-                }).setRequired(true));
+                }).setNullValid(true));
 
         //Reset Action
         AjaxLink reset = new AjaxLink("reset") {
@@ -319,6 +318,9 @@ public class ServiceProviderAccountList extends TemplatePage {
                 filterObject.getEircAccount().setAddress(null);
                 filterObject.setPerson(null);
                 filterObject.setAccountNumber(null);
+                filterObject.setService(null);
+                filterObject.setOrganizationId(null);
+                filterObject.setOrganizationName(null);
 
                 target.add(container);
             }

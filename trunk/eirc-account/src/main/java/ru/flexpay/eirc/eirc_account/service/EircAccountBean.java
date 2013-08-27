@@ -1,6 +1,7 @@
 package ru.flexpay.eirc.eirc_account.service;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
@@ -13,6 +14,7 @@ import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Pavel Sknar
@@ -47,6 +49,25 @@ public class EircAccountBean extends AbstractBean {
         return sqlSession().selectOne(NS + ".selectEircAccountByAddress", address);
     }
 
+    public Boolean eircAccountExists(Long eircAccountId, String accountNumber) {
+        Map<String, Object> params = Maps.newHashMap();
+        if (eircAccountId != null) {
+            params.put("objectId", eircAccountId);
+        }
+        params.put("accountNumber", accountNumber);
+        return sqlSession().<Integer>selectOne(NS + ".eircAccountNumberExists", params) != null;
+    }
+
+    public Boolean eircAccountExists(Long eircAccountId, Address address) {
+        Map<String, Object> params = Maps.newHashMap();
+        if (eircAccountId != null) {
+            params.put("objectId", eircAccountId);
+        }
+        params.put("addressId", address.getId());
+        params.put("addressEntityId", address.getEntity().getId());
+        return sqlSession().<Integer>selectOne(NS + ".eircAccountByAddressExists", params) != null;
+    }
+
     public List<EircAccount> getEircAccounts(FilterWrapper<EircAccount> filter) {
         addFilterMappingObject(filter);
         return sqlSession().selectList(NS + ".selectEircAccounts", filter);
@@ -59,12 +80,19 @@ public class EircAccountBean extends AbstractBean {
 
     @Transactional
     public void save(EircAccount eircAccount) {
+        if (eircAccount.getId() == null) {
+            saveNew(eircAccount);
+        } else {
+            update(eircAccount);
+        }
+    }
+
+    private void saveNew(EircAccount eircAccount) {
         eircAccount.setId(sequenceBean.nextId(ENTITY_TABLE));
         sqlSession().insert(NS + ".insert", eircAccount);
     }
 
-    @Transactional
-    public void update(EircAccount eircAccount) {
+    private void update(EircAccount eircAccount) {
         EircAccount oldObject = getEricAccountByPkId(eircAccount.getPkId());
         if (EqualsBuilder.reflectionEquals(oldObject, eircAccount)) {
             return;

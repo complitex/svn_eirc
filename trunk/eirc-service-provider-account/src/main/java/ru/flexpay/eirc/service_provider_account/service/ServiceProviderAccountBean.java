@@ -42,10 +42,12 @@ public class ServiceProviderAccountBean extends AbstractBean {
     }
 
     public List<ServiceProviderAccount> getServiceProviderAccounts(FilterWrapper<ServiceProviderAccount> filter) {
+        addFilterMappingObject(filter);
         return sqlSession().selectList(NS + ".selectServiceProviderAccounts", filter);
     }
 
     public int count(FilterWrapper<ServiceProviderAccount> filter) {
+        addFilterMappingObject(filter);
         return sqlSession().selectOne(NS + ".countServiceProviderAccounts", filter);
     }
 
