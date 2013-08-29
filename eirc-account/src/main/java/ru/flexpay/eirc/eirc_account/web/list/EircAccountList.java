@@ -14,6 +14,7 @@ import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.TextField;
+import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.model.*;
@@ -87,6 +88,10 @@ public class EircAccountList extends TemplatePage {
 
         container = new WebMarkupContainer("container");
         container.setOutputMarkupPlaceholderTag(true);
+
+        final FeedbackPanel messages = new FeedbackPanel("messages");
+        messages.setOutputMarkupId(true);
+        add(messages);
 
         //Search
         final List<String> searchFilters = eircAccountBean.getSearchFilters();
@@ -234,7 +239,7 @@ public class EircAccountList extends TemplatePage {
             }
         }));
 
-        filterForm.add(new TextField<>("addressFilter", new Model<String>()).setEnabled(false));
+        filterForm.add(new TextField<>("addressFilter", new Model<String>()));
 
         //Reset Action
         AjaxLink reset = new AjaxLink("reset") {

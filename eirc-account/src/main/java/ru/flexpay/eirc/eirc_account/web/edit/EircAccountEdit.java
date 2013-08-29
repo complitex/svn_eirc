@@ -105,7 +105,7 @@ public class EircAccountEdit extends TemplatePage {
         form.add(searchComponent);
 
         //eirc account field
-        form.add(new TextField<>("accountNumber", new PropertyModel<String>(eircAccount, "accountNumber")));
+        form.add(new TextField<>("accountNumber", new PropertyModel<String>(eircAccount, "accountNumber")).setRequired(true));
 
         // FIO fields
         form.add(new TextField<>("lastName",   new PropertyModel<String>(eircAccount.getPerson(), "lastName")));
@@ -152,7 +152,9 @@ public class EircAccountEdit extends TemplatePage {
                 eircAccount.setAddress(address);
                 eircAccountBean.save(eircAccount);
 
-                info(getString("saved"));
+                getSession().info(getString("saved"));
+
+                setResponsePage(EircAccountList.class);
             }
         };
         form.add(save);

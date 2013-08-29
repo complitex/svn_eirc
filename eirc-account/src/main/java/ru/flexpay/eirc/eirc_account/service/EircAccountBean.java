@@ -99,7 +99,7 @@ public class EircAccountBean extends AbstractBean {
         }
         archive(oldObject);
         eircAccount.setBeginDate(oldObject.getEndDate());
-        sqlSession().insert(NS + ".insert", eircAccount);
+        sqlSession().insert(NS + ".insertEircAccount", eircAccount);
     }
 
     public EircAccount getEricAccountByPkId(long pkId) {
