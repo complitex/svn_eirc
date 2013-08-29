@@ -68,7 +68,7 @@
         left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
 
-        where spa.`end_date` is null and oa.`end_date` is null
+        where spa.`end_date` is null and oa.`end_date` is null and e.`end_date` is null
 
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceCondition"/>
 
@@ -119,7 +119,7 @@
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
         left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
-        where spa.`end_date` is null and oa.`end_date` is null
+        where spa.`end_date` is null and oa.`end_date` is null and e.`end_date` is null
 
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceCondition"/>
 
@@ -136,6 +136,8 @@
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>
 
         from `service_provider_account` spa
+        left join `organization_attribute` oa on oa.`object_id` = spa.`organization_id` and oa.`value_type_id` = 900
+        left join `organization_string_culture` oc on oc.`id` = oa.`value_id` and oc.`locale_id` = #{locale.id}
         left join `service` s on s.`id` = spa.`service_id`
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
         left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`

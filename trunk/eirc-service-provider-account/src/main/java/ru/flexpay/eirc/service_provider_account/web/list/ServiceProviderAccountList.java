@@ -16,6 +16,7 @@ import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.form.TextField;
+import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.model.*;
@@ -101,6 +102,10 @@ public class ServiceProviderAccountList extends TemplatePage {
 
         add(new Label("title", labelModel));
         add(new Label("label", labelModel));
+
+        final FeedbackPanel messages = new FeedbackPanel("messages");
+        messages.setOutputMarkupId(true);
+        add(messages);
 
         container = new WebMarkupContainer("container");
         container.setOutputMarkupPlaceholderTag(true);
@@ -255,7 +260,7 @@ public class ServiceProviderAccountList extends TemplatePage {
             }
         }));
 
-        filterForm.add(new TextField<>("addressFilter", new Model<String>()).setEnabled(false));
+        filterForm.add(new TextField<>("addressFilter", new Model<String>()));
 
         filterForm.add(new DropDownChoice<>("serviceFilter",
                 new PropertyModel<Service>(filterObject, "service"),
@@ -277,7 +282,7 @@ public class ServiceProviderAccountList extends TemplatePage {
 
                     @Override
                     public DomainObject getObject() {
-                        return filterObject.getOrganizationId() != null?
+                        return filterObject.getOrganizationId() != null ?
                                 organizationStrategy.findById(filterObject.getOrganizationId(), false) :
                                 null;
                     }
@@ -307,7 +312,8 @@ public class ServiceProviderAccountList extends TemplatePage {
                     public String getIdValue(DomainObject serviceProvider, int i) {
                         return serviceProvider.getId().toString();
                     }
-                }).setNullValid(true));
+                }
+        ).setNullValid(true));
 
         //Reset Action
         AjaxLink reset = new AjaxLink("reset") {

@@ -223,7 +223,9 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
                 serviceProviderAccountBean.save(serviceProviderAccount);
 
-                info(getString("saved"));
+                getSession().info(getString("saved"));
+
+                setResponsePage(ServiceProviderAccountList.class);
             }
         };
         form.add(save);

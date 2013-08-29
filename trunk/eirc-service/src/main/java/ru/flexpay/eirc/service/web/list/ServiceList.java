@@ -12,6 +12,7 @@ import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.TextField;
+import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.model.*;
@@ -70,6 +71,10 @@ public class ServiceList extends TemplatePage {
 
         add(new Label("title", labelModel));
         add(new Label("label", labelModel));
+
+        final FeedbackPanel messages = new FeedbackPanel("messages");
+        messages.setOutputMarkupId(true);
+        add(messages);
 
         container = new WebMarkupContainer("container");
         container.setOutputMarkupPlaceholderTag(true);

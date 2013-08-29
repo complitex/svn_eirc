@@ -128,8 +128,9 @@ public class ServiceEdit extends FormTemplatePage {
 
                 serviceBean.save(service);
 
+                getSession().info(getString("saved"));
 
-                info(getString("saved"));
+                setResponsePage(ServiceList.class);
             }
         };
         form.add(save);
