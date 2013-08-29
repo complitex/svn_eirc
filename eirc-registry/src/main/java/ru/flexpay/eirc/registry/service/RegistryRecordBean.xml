@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ru.flexpay.eirc.registry.service.RegistryRecordBean">
+
+    <resultMap id="RegistryRecord" type="ru.flexpay.eirc.registry.entity.RegistryRecord">
+        <result column="registry_record_id"                         property="id"/>
+        <result column="registry_record_service_code"               property="serviceCode"/>
+        <result column="registry_record_personal_account_ext"       property="personalAccountExt"/>
+        <result column="registry_record_town_type"                  property="townType"/>
+        <result column="registry_record_town_name"                  property="townName"/>
+        <result column="registry_record_street_type"                property="streetType"/>
+        <result column="registry_record_street_name"                property="streetName"/>
+        <result column="registry_record_building_num"               property="buildingNum"/>
+        <result column="registry_record_building_bulk_num"          property="buildingBulkNum"/>
+        <result column="registry_record_apartment_num"              property="apartmentNum"/>
+        <result column="registry_record_first_name"                 property="firstName"/>
+        <result column="registry_record_middle_name"                property="middleName"/>
+        <result column="registry_record_last_name"                  property="lastName"/>
+        <result column="registry_record_operation_date"             property="operationDate"/>
+        <result column="registry_record_unique_operation_number"    property="uniqueOperationNumber"/>
+        <result column="registry_record_amount"                     property="amount"/>
+        <result column="registry_record_registry_id"                property="registry_id"/>
+
+        <association property="recordStatus" columnPrefix="registry_record_"
+                     javaType="ru.flexpay.eirc.registry.entity.RegistryRecordStatus">
+            <constructor>
+                <arg column="status" javaType="Long"/>
+            </constructor>
+        </association>
+
+        <association property="containers" columnPrefix="registry_record_container_"
+                     resultMap="ru.flexpay.eirc.registry.service.ContainerBean.Container"/>
+        
+        <association property="importErrorType"
+                     javaType="ru.flexpay.eirc.registry.entity.ImportErrorType">
+            <constructor>
+                <arg column="import_error_type" javaType="Long"/>
+            </constructor>
+        </association>
+
+    </resultMap>
+
+    <sql id="registryRecordColumns">
+        rr.`id`                       as `registry_record_id`,
+        rr.`service_code`             as `registry_record_service_code`,
+        rr.`personal_account_ext`     as `registry_record_personal_account_ext`,
+        rr.`town_type`                as `registry_record_town_type`,
+        rr.`town_name`                as `registry_record_town_name`,
+        rr.`street_type`              as `registry_record_street_type`,
+        rr.`street_name`              as `registry_record_street_name`,
+        rr.`building_number`          as `registry_record_building_number`,
+        rr.`bulk_number`              as `registry_record_bulk_number`,
+        rr.`apartment_number`         as `registry_record_apartment_number`,
+        rr.`first_name`               as `registry_record_first_name`,
+        rr.`middle_name`              as `registry_record_middle_name`,
+        rr.`last_name`                as `registry_record_last_name`,
+        rr.`operation_date`           as `registry_record_operation_date`,
+        rr.`unique_operation_number`  as `registry_record_unique_operation_number`,
+        rr.`amount`                   as `registry_record_amount`,
+        rr.`status`                   as `registry_record_status`,
+        rr.`import_error_type`        as `registry_record_import_error_type`,
+        rr.`registry_id`              as `registry_record_registry_id`,
+        rrc.`id`                      as `registry_record_container_id`,
+        rrc.`data`                    as `registry_record_container_data`,
+        rrc.`type`                    as `registry_record_container_type`
+    </sql>
+
+    <sql id="registryRecordJoin">
+        left join `registry_record_container` rrc on rrc.`registry_record_id` = rr.`id`
+    </sql>
+
+    <select id="selectRegistryRecords" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="RegistryRecord">
+
+        select
+         <include refid="registryRecordColumns"/>
+        from `registry_record` rr
+         <include refid="registryRecordJoin"/>
+        where 1=1
+
+        <if test="object != null">
+            <if test="object.townName != null">
+                and rr.`town_name` <choose><when test="like">like concat('%', #{object.townName}, '%') </when><otherwise>= #{object.townName}</otherwise></choose>
+            </if>
+            <if test="object.streetName != null">
+                and rr.`street_name` <choose><when test="like">like concat('%', #{object.streetName}, '%') </when><otherwise>= #{object.streetName}</otherwise></choose>
+            </if>
+            <if test="object.buildingNumber != null">
+                and rr.`building_number` <choose><when test="like">like concat('%', #{object.buildingNumber}, '%') </when><otherwise>= #{object.buildingNumber}</otherwise></choose>
+            </if>
+            <if test="object.apartmentNumber != null">
+                and rr.`apartment_number` <choose><when test="like">like concat('%', #{object.apartmentNumber}, '%') </when><otherwise>= #{object.apartmentNumber}</otherwise></choose>
+            </if>
+
+            <if test="object.firstName != null">
+                and rr.`first_name` <choose><when test="like">like concat('%', #{object.firstName}, '%') </when><otherwise>= #{object.firstName}</otherwise></choose>
+            </if>
+            <if test="object.lastName != null">
+                and rr.`last_name` <choose><when test="like">like concat('%', #{object.lastName}, '%') </when><otherwise>= #{object.lastName}</otherwise></choose>
+            </if>
+            <if test="object.middleName != null">
+                and rr.`middle_name` <choose><when test="like">like concat('%', #{object.middleName}, '%') </when><otherwise>= #{object.middleName}</otherwise></choose>
+            </if>
+
+            <if test="object.status != null">
+                and rr.`status` = #{object.status.id}
+            </if>
+        </if>
+
+        <if test="count > 0">
+            limit ${first},${count}
+        </if>
+
+    </select>
+
+    <insert id="insertRegistryRecord" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecord" keyProperty="id" useGeneratedKeys="true">
+        insert into `registry_record`
+        (
+            service_code,
+            personal_account_ext,
+            town_type,
+            town_name,
+            street_type,
+            street_name,
+            building_number,
+            bulk_number,
+            apartment_number,
+            first_name,
+            middle_name,
+            last_name,
+            operation_date,
+            unique_operation_number,
+            amount,
+            status,
+            import_error_type,
+            registry_id
+        ) values (
+            #{serviceCode}, #{personalAccountExt}, #{townType}, #{townName}, #{streetType}, #{streetName}, #{buildingNum},
+            #{buildingBulkNum}, #{apartmentNum}, #{firstName}, #{middleName}, #{lastName}, #{operationDate}, #{uniqueOperationNumber},
+            #{amount}, #{status.id},
+            <choose>
+                <when test="importErrorType != null">#{importErrorType.id}</when>
+                <otherwise>null</otherwise>
+            </choose>,
+            #{registryId}
+        )
+    </insert>
+
+    <insert id="insertRegistryRecordContainer" parameterType="map" keyProperty="container.id" useGeneratedKeys="true">
+        insert into `registry_record_container` (`data`, `registry_record_id`, `type`) value (#{container.data}, #{registryRecordId}, #{container.type.id})
+    </insert>
+
+</mapper>

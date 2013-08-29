@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ru.flexpay.eirc.registry.service.RegistryBean">
+
+    <resultMap id="Service" type="ru.flexpay.eirc.service.entity.Service">
+        <result column="service_id"        property="id"/>
+        <result column="service_code"      property="code"/>
+        <result column="service_parent_id" property="parentId"/>
+
+        <collection property="name" javaType="ArrayList" ofType="java.util.HashMap">
+            <result property="value" column="service_name"/>
+            <association property="key" resultMap="Locale">
+            </association>
+        </collection>
+    </resultMap>
+
+</mapper>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ru.flexpay.eirc.registry.service.ContainerBean">
+
+    <resultMap id="Container" type="ru.flexpay.eirc.registry.entity.Container">
+
+        <result column="id"     property="id"/>
+        <result column="data"   property="data"/>
+
+        <association property="type" javaType="ru.flexpay.eirc.registry.entity.ContainerType">
+            <constructor>
+                <arg column="type" javaType="Long"/>
+            </constructor>
+        </association>
+
+    </resultMap>
+</mapper>

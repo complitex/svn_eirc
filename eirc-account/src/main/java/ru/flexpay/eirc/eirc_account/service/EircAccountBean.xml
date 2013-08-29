@@ -442,7 +442,7 @@
         select <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/> from `eirc_account` e where e.`address_id` = #{id} and e.`address_entity_id` = #{entity.id} and e.`end_date` is null
     </select>
 
-    <insert id="insert" parameterType="ru.flexpay.eirc.eirc_account.entity.EircAccount" keyProperty="pkId" useGeneratedKeys="true">
+    <insert id="insertEircAccount" parameterType="ru.flexpay.eirc.eirc_account.entity.EircAccount" keyProperty="pkId" useGeneratedKeys="true">
         insert into `eirc_account` (`object_id`, `account_number`, `address_id`, `address_entity_id`,
                                     `first_name`, `last_name`, `middle_name`, `begin_date`, `end_date`)
                             values (#{id}, #{accountNumber}, #{address.id}, #{address.entity.id},

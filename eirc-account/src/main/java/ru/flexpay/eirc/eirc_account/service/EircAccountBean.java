@@ -89,7 +89,7 @@ public class EircAccountBean extends AbstractBean {
 
     private void saveNew(EircAccount eircAccount) {
         eircAccount.setId(sequenceBean.nextId(ENTITY_TABLE));
-        sqlSession().insert(NS + ".insert", eircAccount);
+        sqlSession().insert(NS + ".insertEircAccount", eircAccount);
     }
 
     private void update(EircAccount eircAccount) {
