@@ -3,16 +3,130 @@
 
 <mapper namespace="ru.flexpay.eirc.registry.service.RegistryBean">
 
-    <resultMap id="Service" type="ru.flexpay.eirc.service.entity.Service">
-        <result column="service_id"        property="id"/>
-        <result column="service_code"      property="code"/>
-        <result column="service_parent_id" property="parentId"/>
+    <resultMap id="Registry" type="ru.flexpay.eirc.service.entity.Service">
+        <result column="registry_id"                        property="id"/>
+        <result column="registry_number"                    property="registryNumber"/>
+        <result column="registry_type"                      property="type"/>
+        <result column="registry_status"                    property="status"/>
 
-        <collection property="name" javaType="ArrayList" ofType="java.util.HashMap">
-            <result property="value" column="service_name"/>
-            <association property="key" resultMap="Locale">
-            </association>
-        </collection>
+        <result column="registry_records_count"             property="recordsCount"/>
+        <result column="registry_errors_count"              property="errorsCount"/>
+
+        <result column="registry_creation_date"             property="creationDate"/>
+        <result column="registry_from_date"                 property="fromDate"/>
+        <result column="registry_till_date"                 property="tillDate"/>
+
+        <result column="registry_sender_organization_id"    property="senderOrganizationId"/>
+        <result column="registry_recipient_organization_id" property="recipientOrganizationId"/>
+        <result column="registry_amount"                    property="amount"/>
+
+        <association property="containers" columnPrefix="registry_container_"
+                     resultMap="ru.flexpay.eirc.registry.service.ContainerBean.Container"/>
+
     </resultMap>
+
+    <sql id="registryColumns">
+        r.`id`                        as `registry_id`,
+        r.`registry_number`           as `registry_number`,
+        r.`type`                      as `registry_type`,
+        r.`status`                    as `registry_status`,
+        r.`records_count`             as `registry_records_count`,
+        r.`errors_count`              as `registry_errors_count`,
+        r.`creation_date`             as `registry_creation_date`,
+        r.`from_date`                 as `registry_from_date`,
+        r.`till_date`                 as `registry_till_date`,
+        r.`sender_organization_id`    as `registry_sender_organization_id`,
+        r.`recipient_organization_id` as `registry_recipient_organization_id`,
+        r.`amount`                    as `registry_amount`
+    </sql>
+
+    <sql id="registryContainersColumns">
+        rc.`id`                      as `registry_container_id`,
+        rc.`data`                    as `registry_container_data`,
+        rc.`type`                    as `registry_container_type`
+    </sql>
+
+    <sql id="registryContainerJoin">
+        left join `registry_container` rc on rc.`registry_id` = r.`id`
+    </sql>
+
+    <select id="selectRegistries" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="Registry">
+
+        select r.*,
+        <include refid="registryContainersColumns"/>
+        from (
+            select
+              <include refid="registryColumns"/>
+            from `registry` r
+            where 1=1
+                <if test="object != null">
+
+                    <if test="object.type != null">
+                        and r.`type` = #{object.type.id}
+                    </if>
+
+                    <if test="object.status != null">
+                        and r.`status` = #{object.status.id}
+                    </if>
+
+                    <if test="object.fromDate != null">
+                        and r.`from_date` >= #{object.fromDate}
+                    </if>
+
+                    <if test="object.tillDate != null">
+                        and #{object.tillDate} >= r.`till_date`
+                    </if>
+
+                    <if test="object.senderOrganizationId != null">
+                        and r.`sender_organization_id` = #{object.senderOrganizationId}
+                    </if>
+
+                    <if test="object.recipientOrganizationId != null">
+                        and r.`recipient_organization_id` = #{object.recipientOrganizationId}
+                    </if>
+
+                </if>
+
+                <if test="count > 0">
+                    limit ${first},${count}
+                </if>
+        ) r
+        <include refid="registryContainerJoin"/>
+
+    </select>
+
+    <insert id="insertRegistry" parameterType="ru.flexpay.eirc.registry.entity.Registry" keyProperty="id" useGeneratedKeys="true">
+        insert into `registry_record`
+        (
+            `registry_number`,
+            `type`,
+            `status`,
+            `records_count`,
+            `errors_count`,
+            `creation_date`,
+            `from_date`,
+            `till_date`,
+            `sender_organization_id`,
+            `recipient_organization_id`,
+            `amount`
+        ) values (
+            #{registryNumber},
+            #{type},
+            #{status},
+            #{recordsCount},
+            #{errorsCount},
+            #{creationDate},
+            #{fromDate},
+            #{tillDate},
+            #{senderOrganizationId},
+            #{recipientOrganizationId},
+            #{amount}
+        )
+    </insert>
+
+    <insert id="insertRegistryContainer" parameterType="ru.flexpay.eirc.registry.service.RegistryBean.RegistryContainer"
+            keyProperty="id" useGeneratedKeys="true">
+        insert into `registry_container` (`data`, `registry_record_id`, `type`) value (#{data}, #{registryId}, #{type.id})
+    </insert>
 
 </mapper>

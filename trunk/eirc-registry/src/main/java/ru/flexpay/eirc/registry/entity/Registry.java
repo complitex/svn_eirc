@@ -12,8 +12,8 @@ import java.util.List;
  */
 public class Registry extends DictionaryObject {
     private Long registryNumber;
-    private RegistryType registryType;
-    private RegistryStatus registryStatus;
+    private RegistryType type;
+    private RegistryStatus status;
 
     private int recordsCount;
     private int errorsCount = -1;
@@ -36,20 +36,20 @@ public class Registry extends DictionaryObject {
         this.registryNumber = registryNumber;
     }
 
-    public RegistryType getRegistryType() {
-        return registryType;
+    public RegistryType getType() {
+        return type;
     }
 
-    public void setRegistryType(RegistryType registryType) {
-        this.registryType = registryType;
+    public void setType(RegistryType type) {
+        this.type = type;
     }
 
-    public RegistryStatus getRegistryStatus() {
-        return registryStatus;
+    public RegistryStatus getStatus() {
+        return status;
     }
 
-    public void setRegistryStatus(RegistryStatus registryStatus) {
-        this.registryStatus = registryStatus;
+    public void setStatus(RegistryStatus status) {
+        this.status = status;
     }
 
     public int getRecordsCount() {
