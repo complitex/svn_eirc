@@ -22,13 +22,13 @@ public class RegistryBean extends AbstractBean {
 
     @Transactional
     public void save(Registry registry) {
-        getSqlSessionManager().insert(NS + ".insertRegistry", registry);
+        sqlSession().insert(NS + ".insertRegistry", registry);
 
         RegistryContainer registryContainer = new RegistryContainer(registry.getId());
 
         for (Container container : registry.getContainers()) {
             registryContainer.setContainer(container);
-            getSqlSessionManager().insert(NS + ".insertRegistryContainer", registryContainer);
+            sqlSession().insert(NS + ".insertRegistryContainer", registryContainer);
         }
     }
 
