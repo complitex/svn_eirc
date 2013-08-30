@@ -96,7 +96,7 @@
     </select>
 
     <insert id="insertRegistry" parameterType="ru.flexpay.eirc.registry.entity.Registry" keyProperty="id" useGeneratedKeys="true">
-        insert into `registry_record`
+        insert into `registry`
         (
             `registry_number`,
             `type`,
@@ -128,5 +128,9 @@
             keyProperty="id" useGeneratedKeys="true">
         insert into `registry_container` (`data`, `registry_record_id`, `type`) value (#{data}, #{registryId}, #{type.id})
     </insert>
+
+    <update id="updateRegistry" parameterType="ru.flexpay.eirc.registry.entity.Registry">
+        update `registry` (`status`, `records_count`, `errors_count`) values (#{status}, #{recordsCount}, #{errorsCount})
+    </update>
 
 </mapper>

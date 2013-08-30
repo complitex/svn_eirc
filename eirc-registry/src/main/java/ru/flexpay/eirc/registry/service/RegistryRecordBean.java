@@ -1,5 +1,7 @@
 package ru.flexpay.eirc.registry.service;
 
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
@@ -23,20 +25,35 @@ public class RegistryRecordBean extends AbstractBean {
 
     @Transactional
     public void saveBulk(List<RegistryRecord> registryRecords) {
+        SqlSession sqlSession = getSqlSessionManager().openSession(ExecutorType.BATCH);
         for (RegistryRecord registryRecord : registryRecords) {
-            save(registryRecord);
+            saveRegistryRecord(sqlSession, registryRecord);
         }
+        sqlSession.flushStatements();
+
+        for (RegistryRecord registryRecord : registryRecords) {
+            saveRegistryRecordContainers(sqlSession, registryRecord);
+        }
+        sqlSession.flushStatements();
     }
 
     @Transactional
     public void save(RegistryRecord registryRecord) {
-        getSqlSessionManager().insert(NS + ".insertRegistryRecord", registryRecord);
+        SqlSession session = sqlSession();
+        saveRegistryRecord(session, registryRecord);
+        saveRegistryRecordContainers(session, registryRecord);
+    }
 
+    private void saveRegistryRecord(SqlSession session, RegistryRecord registryRecord) {
+        session.insert(NS + ".insertRegistryRecord", registryRecord);
+    }
+
+    private void saveRegistryRecordContainers(SqlSession session, RegistryRecord registryRecord) {
         RegistryRecordContainer registryContainer = new RegistryRecordContainer(registryRecord.getId());
 
         for (Container container : registryRecord.getContainers()) {
             registryContainer.setContainer(container);
-            getSqlSessionManager().insert(NS + ".insertRegistryRecordContainer", registryContainer);
+            session.insert(NS + ".insertRegistryRecordContainer", registryContainer);
         }
     }
 
