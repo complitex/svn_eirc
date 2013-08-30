@@ -146,8 +146,9 @@
         )
     </insert>
 
-    <insert id="insertRegistryRecordContainer" parameterType="map" keyProperty="container.id" useGeneratedKeys="true">
-        insert into `registry_record_container` (`data`, `registry_record_id`, `type`) value (#{container.data}, #{registryRecordId}, #{container.type.id})
+    <insert id="insertRegistryRecordContainer" parameterType="ru.flexpay.eirc.registry.service.RegistryRecordBean.RegistryRecordContainer"
+            keyProperty="container.id" useGeneratedKeys="true">
+        insert into `registry_record_container` (`data`, `registry_record_id`, `type`) value (#{data}, #{registryRecordId}, #{type.id})
     </insert>
 
 </mapper>
