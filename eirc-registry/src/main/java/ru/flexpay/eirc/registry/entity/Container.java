@@ -21,6 +21,7 @@ public class Container extends DictionaryObject {
 
     private String data;
     private ContainerType type;
+    private Long parentId;
 
     public String getData() {
         return data;
@@ -36,5 +37,13 @@ public class Container extends DictionaryObject {
 
     public void setType(ContainerType type) {
         this.type = type;
+    }
+
+    public Long getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(Long parentId) {
+        this.parentId = parentId;
     }
 }

@@ -49,23 +49,14 @@ public class RegistryRecordBean extends AbstractBean {
     }
 
     private void saveRegistryRecordContainers(SqlSession session, RegistryRecord registryRecord) {
-        RegistryRecordContainer registryContainer = new RegistryRecordContainer(registryRecord.getId());
 
         for (Container container : registryRecord.getContainers()) {
-            registryContainer.setContainer(container);
-            session.insert(NS + ".insertRegistryRecordContainer", registryContainer);
+            container.setParentId(registryRecord.getId());
+            session.insert(NS + ".insertRegistryRecordContainer", container);
         }
     }
 
-    public class RegistryRecordContainer extends ContainerProxy {
-        private Long registryRecordId;
-
-        public RegistryRecordContainer(Long registryRecordId) {
-            this.registryRecordId = registryRecordId;
-        }
-
-        public Long getRegistryRecordId() {
-            return registryRecordId;
-        }
+    public boolean hasRecordsToProcessing(Registry registry) {
+        return sqlSession().selectOne(NS + ".hasRecordsToProcessing", registry.getId()) != null;
     }
 }

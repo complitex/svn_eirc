@@ -17,30 +17,24 @@ public class RegistryBean extends AbstractBean {
     private static final String NS = RegistryBean.class.getName();
 
     public List<Registry> getRegistries(FilterWrapper<Registry> filter) {
-        return getSqlSessionManager().selectList(NS + ".selectRegistries", filter);
+        return sqlSession().selectList(NS + ".selectRegistries", filter);
+    }
+
+    public int count(FilterWrapper<Registry> filter) {
+        return sqlSession().selectOne(NS + ".countRegistries", filter);
     }
 
     @Transactional
     public void save(Registry registry) {
         sqlSession().insert(NS + ".insertRegistry", registry);
 
-        RegistryContainer registryContainer = new RegistryContainer(registry.getId());
-
         for (Container container : registry.getContainers()) {
-            registryContainer.setContainer(container);
-            sqlSession().insert(NS + ".insertRegistryContainer", registryContainer);
+            container.setParentId(registry.getId());
+            sqlSession().insert(NS + ".insertRegistryContainer", container);
         }
     }
 
-    public class RegistryContainer extends ContainerProxy {
-        private Long registryId;
-
-        public RegistryContainer(Long registryId) {
-            this.registryId = registryId;
-        }
-
-        public Long getRegistryId() {
-            return registryId;
-        }
+    public void update(Registry registry) {
+        sqlSession().update(NS + ".updateRegistry", registry);
     }
 }

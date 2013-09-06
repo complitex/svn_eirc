@@ -142,7 +142,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
             example.setLocaleId(localeBean.convert(locale).getId());
             example.setAsc(true);
         }
-        example.addAdditionalParam(ORGANIZATION_TYPE_PARAMETER, ImmutableList.of(OrganizationType.SERVICE_PROVIDER.getId()));
+//        example.addAdditionalParam(ORGANIZATION_TYPE_PARAMETER, ImmutableList.of(OrganizationType.SERVICE_PROVIDER.getId()));
         configureExample(example, ImmutableMap.<String, Long>of(), null);
         return (List<DomainObject>) find(example);
     }
