@@ -105,12 +105,20 @@
             <if test="object.status != null">
                 and rr.`status` = #{object.status.id}
             </if>
+
+            <if test="object.registryId != null">
+                and rr.`registry_id` = #{object.registryId}
+            </if>
         </if>
 
         <if test="count > 0">
             limit ${first},${count}
         </if>
 
+    </select>
+
+    <select id="hasRecordsToProcessing" parameterType="Long" resultType="Integer">
+        select 1 from `registry_record` where 4 > `status` and `registry_id` = #{registryId} limit 0, 1
     </select>
 
     <insert id="insertRegistryRecord" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecord" keyProperty="id" useGeneratedKeys="true">
@@ -146,9 +154,9 @@
         )
     </insert>
 
-    <insert id="insertRegistryRecordContainer" parameterType="ru.flexpay.eirc.registry.service.RegistryRecordBean.RegistryRecordContainer"
+    <insert id="insertRegistryRecordContainer" parameterType="ru.flexpay.eirc.registry.entity.Container"
             keyProperty="container.id" useGeneratedKeys="true">
-        insert into `registry_record_container` (`data`, `registry_record_id`, `type`) value (#{data}, #{registryRecordId}, #{type.id})
+        insert into `registry_record_container` (`data`, `registry_record_id`, `type`) value (#{data}, #{parentId}, #{type.id})
     </insert>
 
 </mapper>

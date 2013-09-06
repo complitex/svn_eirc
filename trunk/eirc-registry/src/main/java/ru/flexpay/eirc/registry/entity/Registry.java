@@ -1,11 +1,13 @@
 package ru.flexpay.eirc.registry.entity;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import ru.flexpay.eirc.dictionary.entity.DictionaryObject;
 
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Pavel Sknar
@@ -21,12 +23,17 @@ public class Registry extends DictionaryObject {
     private Date creationDate;
     private Date fromDate;
     private Date tillDate;
+    private Date loadDate;
 
     private Long senderOrganizationId;
     private Long recipientOrganizationId;
     private BigDecimal amount;
 
+    private ImportErrorType importErrorType;
+
     private List<Container> containers = Lists.newArrayList();
+
+    private Map<RegistryFileType, RegistryFile> files = Maps.newHashMap();
 
     public Long getRegistryNumber() {
         return registryNumber;
@@ -92,6 +99,14 @@ public class Registry extends DictionaryObject {
         this.tillDate = tillDate;
     }
 
+    public Date getLoadDate() {
+        return loadDate;
+    }
+
+    public void setLoadDate(Date loadDate) {
+        this.loadDate = loadDate;
+    }
+
     public Long getSenderOrganizationId() {
         return senderOrganizationId;
     }
@@ -116,11 +131,37 @@ public class Registry extends DictionaryObject {
         this.amount = amount;
     }
 
+    public ImportErrorType getImportErrorType() {
+        return importErrorType;
+    }
+
+    public void setImportErrorType(ImportErrorType importErrorType) {
+        this.importErrorType = importErrorType;
+    }
+
     public List<Container> getContainers() {
         return containers;
     }
 
     public void setContainers(List<Container> containers) {
         this.containers = containers;
+    }
+
+    public Map<RegistryFileType, RegistryFile> getFiles() {
+        return files;
+    }
+
+    public void setFiles(Map<RegistryFileType, RegistryFile> files) {
+        this.files = files;
+    }
+
+    /**
+     * MyBatis setter.
+     *
+     * @param registryFile Content key and value. key is type of registry file, value is registry file.
+     */
+    public void setName(Map<String, Object> registryFile) {
+        files.put((RegistryFileType)registryFile.get("registryFileType"), (RegistryFile)registryFile.get("registryFile"));
+
     }
 }

@@ -51,7 +51,7 @@ public class ServiceList extends TemplatePage {
     private WebMarkupContainer container;
     private DataView<Service> dataView;
 
-    private Service filterObject = new Service();;
+    private Service filterObject = new Service();
 
     public ServiceList() {
         init();

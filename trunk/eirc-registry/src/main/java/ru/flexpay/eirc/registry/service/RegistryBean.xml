@@ -3,11 +3,11 @@
 
 <mapper namespace="ru.flexpay.eirc.registry.service.RegistryBean">
 
-    <resultMap id="Registry" type="ru.flexpay.eirc.service.entity.Service">
+    <resultMap id="Registry" type="ru.flexpay.eirc.registry.entity.Registry">
         <result column="registry_id"                        property="id"/>
         <result column="registry_number"                    property="registryNumber"/>
-        <result column="registry_type"                      property="type"/>
-        <result column="registry_status"                    property="status"/>
+        <result column="registry_type"                      property="type" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
+        <result column="registry_status"                    property="status" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
 
         <result column="registry_records_count"             property="recordsCount"/>
         <result column="registry_errors_count"              property="errorsCount"/>
@@ -15,10 +15,18 @@
         <result column="registry_creation_date"             property="creationDate"/>
         <result column="registry_from_date"                 property="fromDate"/>
         <result column="registry_till_date"                 property="tillDate"/>
+        <result column="registry_load_date"                 property="loadDate"/>
 
         <result column="registry_sender_organization_id"    property="senderOrganizationId"/>
         <result column="registry_recipient_organization_id" property="recipientOrganizationId"/>
         <result column="registry_amount"                    property="amount"/>
+
+        <association property="importErrorType" columnPrefix="registry_"
+                     javaType="ru.flexpay.eirc.registry.entity.ImportErrorType">
+            <constructor>
+                <arg column="import_error_type" javaType="Long"/>
+            </constructor>
+        </association>
 
         <association property="containers" columnPrefix="registry_container_"
                      resultMap="ru.flexpay.eirc.registry.service.ContainerBean.Container"/>
@@ -35,63 +43,111 @@
         r.`creation_date`             as `registry_creation_date`,
         r.`from_date`                 as `registry_from_date`,
         r.`till_date`                 as `registry_till_date`,
+        r.`load_date`                 as `registry_load_date`,
         r.`sender_organization_id`    as `registry_sender_organization_id`,
         r.`recipient_organization_id` as `registry_recipient_organization_id`,
-        r.`amount`                    as `registry_amount`
+        r.`amount`                    as `registry_amount`,
+        r.`import_error_type`         as `registry_import_error_type`
     </sql>
 
-    <sql id="registryContainersColumns">
+    <sql id="registryContainerColumns">
         rc.`id`                      as `registry_container_id`,
         rc.`data`                    as `registry_container_data`,
         rc.`type`                    as `registry_container_type`
     </sql>
 
+    <sql id="registryFileColumns">
+        rf.`id` as `registry_file_id`,
+        rf.`name_on_server` as `registry_file_name_on_server`,
+        rf.`original_name` as `registry_file_original_name`,
+        rf.`user_id` as `registry_file_user_id`,
+        rf.`description` as `registry_file_description`,
+        rf.`size` as `registry_file_size`,
+        rf.`creation_date` as `registry_file_creation_date`
+    </sql>
+
     <sql id="registryContainerJoin">
-        left join `registry_container` rc on rc.`registry_id` = r.`id`
+        left join `registry_container` rc on rc.`registry_id` = r.`registry_id`
+    </sql>
+
+    <sql id="registryFileJoin">
+        left join `registry_file` rf on rf.`registry_id` = r.`registry_id`
+    </sql>
+
+    <sql id="registryCondition">
+        <if test="object != null">
+
+            <if test="object.type != null">
+                and r.`type` = #{object.type.id}
+            </if>
+
+            <if test="object.status != null">
+                and r.`status` = #{object.status.id}
+            </if>
+
+            <if test="object.creationDate != null">
+                and r.`creation_date` = #{object.creationDate}
+            </if>
+
+            <if test="object.fromDate != null">
+                and r.`from_date` >= #{object.fromDate}
+            </if>
+
+            <if test="object.tillDate != null">
+                and #{object.tillDate} >= r.`till_date`
+            </if>
+
+            <if test="object.loadDate != null">
+                and #{object.loadDate} == r.`load_date`
+            </if>
+
+            <if test="object.senderOrganizationId != null">
+                and r.`sender_organization_id` = #{object.senderOrganizationId}
+            </if>
+
+            <if test="object.recipientOrganizationId != null">
+                and r.`recipient_organization_id` = #{object.recipientOrganizationId}
+            </if>
+
+            <if test="object.registryNumber != null">
+                and r.`registry_number` = #{object.registryNumber}
+            </if>
+
+        </if>
     </sql>
 
     <select id="selectRegistries" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="Registry">
 
         select r.*,
-        <include refid="registryContainersColumns"/>
+        <include refid="registryContainerColumns"/>,
+        <include refid="registryFileColumns"/>
         from (
             select
               <include refid="registryColumns"/>
             from `registry` r
             where 1=1
-                <if test="object != null">
-
-                    <if test="object.type != null">
-                        and r.`type` = #{object.type.id}
-                    </if>
-
-                    <if test="object.status != null">
-                        and r.`status` = #{object.status.id}
-                    </if>
-
-                    <if test="object.fromDate != null">
-                        and r.`from_date` >= #{object.fromDate}
-                    </if>
-
-                    <if test="object.tillDate != null">
-                        and #{object.tillDate} >= r.`till_date`
-                    </if>
-
-                    <if test="object.senderOrganizationId != null">
-                        and r.`sender_organization_id` = #{object.senderOrganizationId}
-                    </if>
-
-                    <if test="object.recipientOrganizationId != null">
-                        and r.`recipient_organization_id` = #{object.recipientOrganizationId}
-                    </if>
-
-                </if>
+                <include refid="registryCondition"/>
 
                 <if test="count > 0">
                     limit ${first},${count}
                 </if>
         ) r
         <include refid="registryContainerJoin"/>
+        <include refid="registryFileJoin"/>
+
+    </select>
+
+    <select id="countRegistries" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+
+        select
+          count(r.id)
+        from `registry` r
+        where 1=1
+            <include refid="registryCondition"/>
+
+            <if test="count > 0">
+                limit ${first},${count}
+            </if>
 
     </select>
 
@@ -124,9 +180,9 @@
         )
     </insert>
 
-    <insert id="insertRegistryContainer" parameterType="ru.flexpay.eirc.registry.service.RegistryBean.RegistryContainer"
+    <insert id="insertRegistryContainer" parameterType="ru.flexpay.eirc.registry.entity.Container"
             keyProperty="id" useGeneratedKeys="true">
-        insert into `registry_container` (`data`, `registry_record_id`, `type`) value (#{data}, #{registryId}, #{type.id})
+        insert into `registry_container` (`data`, `registry_record_id`, `type`) value (#{data}, #{parentId}, #{type.id})
     </insert>
 
     <update id="updateRegistry" parameterType="ru.flexpay.eirc.registry.entity.Registry">

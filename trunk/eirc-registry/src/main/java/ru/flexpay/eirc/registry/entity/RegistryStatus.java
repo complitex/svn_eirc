@@ -1,6 +1,9 @@
 package ru.flexpay.eirc.registry.entity;
 
 import org.complitex.dictionary.mybatis.IFixedIdType;
+import org.complitex.dictionary.util.ResourceUtil;
+
+import java.util.Locale;
 
 /**
  * @author Pavel Sknar
@@ -31,6 +34,8 @@ public enum  RegistryStatus implements IFixedIdType {
 
     START_PROCESSING(18L);
 
+    private static final String RESOURCE_BUNDLE = RegistryStatus.class.getName();
+
     private Long id;
 
     private RegistryStatus(Long id) {
@@ -40,5 +45,9 @@ public enum  RegistryStatus implements IFixedIdType {
     @Override
     public Long getId() {
         return id;
+    }
+
+    public String getLabel(Locale locale) {
+        return ResourceUtil.getString(RESOURCE_BUNDLE, String.valueOf(getId()), locale);
     }
 }

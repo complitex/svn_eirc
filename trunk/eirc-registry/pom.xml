@@ -14,9 +14,17 @@
     <name>EIRC - Registry</name>
 
     <dependencies>
-	<dependency>
+	    <dependency>
             <groupId>ru.flexpay.eirc</groupId>
             <artifactId>eirc-dictionary</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ru.flexpay.eirc</groupId>
+            <artifactId>eirc-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ru.flexpay.eirc</groupId>
+            <artifactId>eirc-organization</artifactId>
         </dependency>
     </dependencies>
 </project>

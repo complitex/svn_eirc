@@ -7,7 +7,7 @@ import org.complitex.dictionary.mybatis.IFixedIdType;
  */
 public enum  ImportErrorType implements IFixedIdType {
 
-    ;
+    FIXED(1L);
 
     private Long id;
 
