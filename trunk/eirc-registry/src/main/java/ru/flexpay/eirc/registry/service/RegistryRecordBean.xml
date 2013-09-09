@@ -11,9 +11,9 @@
         <result column="registry_record_town_name"                  property="townName"/>
         <result column="registry_record_street_type"                property="streetType"/>
         <result column="registry_record_street_name"                property="streetName"/>
-        <result column="registry_record_building_num"               property="buildingNum"/>
-        <result column="registry_record_building_bulk_num"          property="buildingBulkNum"/>
-        <result column="registry_record_apartment_num"              property="apartmentNum"/>
+        <result column="registry_record_building_number"            property="buildingNum"/>
+        <result column="registry_record_bulk_number"                property="buildingBulkNum"/>
+        <result column="registry_record_apartment_number"           property="apartmentNum"/>
         <result column="registry_record_first_name"                 property="firstName"/>
         <result column="registry_record_middle_name"                property="middleName"/>
         <result column="registry_record_last_name"                  property="lastName"/>
@@ -21,23 +21,12 @@
         <result column="registry_record_unique_operation_number"    property="uniqueOperationNumber"/>
         <result column="registry_record_amount"                     property="amount"/>
         <result column="registry_record_registry_id"                property="registry_id"/>
+        <result column="registry_record_status"                     property="status" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
+        <result column="registry_record_import_error_type"          property="importErrorType" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
 
-        <association property="recordStatus" columnPrefix="registry_record_"
-                     javaType="ru.flexpay.eirc.registry.entity.RegistryRecordStatus">
-            <constructor>
-                <arg column="status" javaType="Long"/>
-            </constructor>
-        </association>
 
         <association property="containers" columnPrefix="registry_record_container_"
                      resultMap="ru.flexpay.eirc.registry.service.ContainerBean.Container"/>
-        
-        <association property="importErrorType"
-                     javaType="ru.flexpay.eirc.registry.entity.ImportErrorType">
-            <constructor>
-                <arg column="import_error_type" javaType="Long"/>
-            </constructor>
-        </association>
 
     </resultMap>
 
@@ -60,36 +49,41 @@
         rr.`amount`                   as `registry_record_amount`,
         rr.`status`                   as `registry_record_status`,
         rr.`import_error_type`        as `registry_record_import_error_type`,
-        rr.`registry_id`              as `registry_record_registry_id`,
+        rr.`registry_id`              as `registry_record_registry_id`
+    </sql>
+
+    <sql id="registryRecordContainerColumns">
         rrc.`id`                      as `registry_record_container_id`,
         rrc.`data`                    as `registry_record_container_data`,
         rrc.`type`                    as `registry_record_container_type`
     </sql>
 
-    <sql id="registryRecordJoin">
-        left join `registry_record_container` rrc on rrc.`registry_record_id` = rr.`id`
+    <sql id="registryRecordContainerJoin">
+        left join `registry_record_container` rrc on rrc.`record_id` = rr.`registry_record_id`
     </sql>
 
-    <select id="selectRegistryRecords" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="RegistryRecord">
-
-        select
-         <include refid="registryRecordColumns"/>
-        from `registry_record` rr
-         <include refid="registryRecordJoin"/>
-        where 1=1
-
+    <sql id="registryRecordCondition">
         <if test="object != null">
+            <if test="object.townType != null">
+                and rr.`town_type` <choose><when test="like">like concat('%', #{object.townType}, '%') </when><otherwise>= #{object.townType}</otherwise></choose>
+            </if>
             <if test="object.townName != null">
                 and rr.`town_name` <choose><when test="like">like concat('%', #{object.townName}, '%') </when><otherwise>= #{object.townName}</otherwise></choose>
+            </if>
+            <if test="object.streetType != null">
+                and rr.`street_type` <choose><when test="like">like concat('%', #{object.streetType}, '%') </when><otherwise>= #{object.streetType}</otherwise></choose>
             </if>
             <if test="object.streetName != null">
                 and rr.`street_name` <choose><when test="like">like concat('%', #{object.streetName}, '%') </when><otherwise>= #{object.streetName}</otherwise></choose>
             </if>
-            <if test="object.buildingNumber != null">
-                and rr.`building_number` <choose><when test="like">like concat('%', #{object.buildingNumber}, '%') </when><otherwise>= #{object.buildingNumber}</otherwise></choose>
+            <if test="object.buildingNum != null">
+                and rr.`building_number` <choose><when test="like">like concat('%', #{object.buildingNum}, '%') </when><otherwise>= #{object.buildingNum}</otherwise></choose>
             </if>
-            <if test="object.apartmentNumber != null">
-                and rr.`apartment_number` <choose><when test="like">like concat('%', #{object.apartmentNumber}, '%') </when><otherwise>= #{object.apartmentNumber}</otherwise></choose>
+            <if test="object.buildingBulkNum != null">
+                and rr.`bulk_number` <choose><when test="like">like concat('%', #{object.buildingBulkNum}, '%') </when><otherwise>= #{object.buildingBulkNum}</otherwise></choose>
+            </if>
+            <if test="object.apartmentNum != null">
+                and rr.`apartment_number` <choose><when test="like">like concat('%', #{object.apartmentNum}, '%') </when><otherwise>= #{object.apartmentNum}</otherwise></choose>
             </if>
 
             <if test="object.firstName != null">
@@ -110,12 +104,64 @@
                 and rr.`registry_id` = #{object.registryId}
             </if>
         </if>
+    </sql>
+
+    <sql id="registryRecordFioSort">
+        rr.`last_name`
+        <if test="asc">
+            ${asc}
+        </if>,
+        rr.`first_name`
+        <if test="asc">
+            ${asc}
+        </if>,
+        rr.`middle_name`
+    </sql>
+
+    <select id="selectRegistryRecords" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="RegistryRecord">
+
+        select rr.*,
+        <include refid="registryRecordContainerColumns"/>
+        from (
+        select
+        <include refid="registryRecordColumns"/>
+        from `registry_record` rr
+        where 1=1
+        <include refid="registryRecordCondition"/>
+
+        <if test="sortProperty != null">
+            order by
+            <choose>
+                <when test="sortProperty == 'registry_record_fio'">
+                    <include refid="registryRecordFioSort"/>
+                </when>
+                <otherwise>
+                    ${sortProperty}
+                </otherwise>
+            </choose>
+            <if test="asc">
+                ${asc}
+            </if>
+        </if>
 
         <if test="count > 0">
             limit ${first},${count}
         </if>
+        ) rr
+        <include refid="registryRecordContainerJoin"/>
 
     </select>
+
+    <select id="countRegistryRecords" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+
+        select
+          count(rr.`id`)
+        from `registry` rr
+        where 1=1
+        <include refid="registryRecordCondition"/>
+
+    </select>
+
 
     <select id="hasRecordsToProcessing" parameterType="Long" resultType="Integer">
         select 1 from `registry_record` where 4 > `status` and `registry_id` = #{registryId} limit 0, 1

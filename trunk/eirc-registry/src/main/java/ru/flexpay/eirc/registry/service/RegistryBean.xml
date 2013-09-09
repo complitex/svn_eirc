@@ -21,12 +21,7 @@
         <result column="registry_recipient_organization_id" property="recipientOrganizationId"/>
         <result column="registry_amount"                    property="amount"/>
 
-        <association property="importErrorType" columnPrefix="registry_"
-                     javaType="ru.flexpay.eirc.registry.entity.ImportErrorType">
-            <constructor>
-                <arg column="import_error_type" javaType="Long"/>
-            </constructor>
-        </association>
+        <result column="registry_import_error_type"         property="importErrorType" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
 
         <association property="containers" columnPrefix="registry_container_"
                      resultMap="ru.flexpay.eirc.registry.service.ContainerBean.Container"/>
@@ -128,6 +123,13 @@
             where 1=1
                 <include refid="registryCondition"/>
 
+                <if test="sortProperty != null">
+                    order by ${sortProperty}
+                    <if test="asc">
+                        ${asc}
+                    </if>
+                </if>
+
                 <if test="count > 0">
                     limit ${first},${count}
                 </if>
@@ -140,14 +142,10 @@
     <select id="countRegistries" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
 
         select
-          count(r.id)
+          count(r.`id`)
         from `registry` r
         where 1=1
             <include refid="registryCondition"/>
-
-            <if test="count > 0">
-                limit ${first},${count}
-            </if>
 
     </select>
 
