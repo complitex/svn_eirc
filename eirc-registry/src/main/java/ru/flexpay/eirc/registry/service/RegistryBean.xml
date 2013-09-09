@@ -160,6 +160,7 @@
             `creation_date`,
             `from_date`,
             `till_date`,
+            `load_date`,
             `sender_organization_id`,
             `recipient_organization_id`,
             `amount`
@@ -172,6 +173,7 @@
             #{creationDate},
             #{fromDate},
             #{tillDate},
+            #{loadDate},
             #{senderOrganizationId},
             #{recipientOrganizationId},
             #{amount}

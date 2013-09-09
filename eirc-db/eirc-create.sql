@@ -84,7 +84,7 @@ CREATE TABLE `registry_status` (
   `code` BIGINT(20) NOT NULL UNIQUE comment 'Registry status code',
   `name` VARCHAR(255),
   PRIMARY KEY (`pk_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Registry type --
 DROP TABLE IF EXISTS `registry_type`;
@@ -93,7 +93,7 @@ CREATE TABLE `registry_type` (
   `code` BIGINT(20) NOT NULL UNIQUE comment 'Registry type code',
   `name` VARCHAR(255),
   PRIMARY KEY (`pk_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Import error type --
 DROP TABLE IF EXISTS `import_error_type`;
@@ -102,7 +102,7 @@ CREATE TABLE `import_error_type` (
   `code` BIGINT(20) NOT NULL UNIQUE comment 'Import error type code',
   `name` VARCHAR(255),
   PRIMARY KEY (`pk_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Registry --
 DROP TABLE IF EXISTS `registry`;
@@ -127,7 +127,7 @@ CREATE TABLE `registry` (
   CONSTRAINT `fk_registry__sender_organization` FOREIGN KEY (`sender_organization_id`) REFERENCES `organization` (`object_id`),
   CONSTRAINT `fk_registry__recipient_organization` FOREIGN KEY (`recipient_organization_id`) REFERENCES `organization` (`object_id`),
   CONSTRAINT `fk_registry__import_error_type` FOREIGN KEY (`import_error_type`) REFERENCES `import_error_type` (`code`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Container type --
 DROP TABLE IF EXISTS `container_type`;
@@ -136,7 +136,7 @@ CREATE TABLE `container_type` (
   `code` BIGINT(20) NOT NULL UNIQUE comment 'Registry container type code',
   `name` VARCHAR(255),
   PRIMARY KEY (`pk_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Registry containers --
 DROP TABLE IF EXISTS `registry_container`;
@@ -148,7 +148,7 @@ CREATE TABLE `registry_container` (
   PRIMARY KEY (id),
   CONSTRAINT `fk_registry_container__container_type` FOREIGN KEY (`type`) REFERENCES `container_type` (`code`),
   CONSTRAINT `fk_registry_container__registry` FOREIGN KEY (`registry_id`) REFERENCES `registry` (`id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Type of registry file --
 DROP TABLE IF EXISTS `registry_file_type`;
@@ -157,7 +157,7 @@ CREATE TABLE `registry_file_type` (
   `code` BIGINT(20) NOT NULL UNIQUE,
   `name` VARCHAR(255),
   PRIMARY KEY (`pk_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Registry files --
 DROP TABLE IF EXISTS `registry_file`;
@@ -175,7 +175,7 @@ CREATE TABLE `registry_file` (
   UNIQUE KEY `unique_registry_id__registry_file_type` (`registry_id`, `registry_file_type`),
   CONSTRAINT `fk_registry_file__registry` FOREIGN KEY (`registry_id`) REFERENCES `registry` (`id`),
   CONSTRAINT `fk_registry_file__registry_file_type` FOREIGN KEY (`registry_file_type`) REFERENCES `registry_file_type` (`code`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Registry record status --
 DROP TABLE IF EXISTS `registry_record_status`;
@@ -184,7 +184,7 @@ CREATE TABLE `registry_record_status` (
   `code` BIGINT(20) NOT NULL UNIQUE comment 'Registry record status code',
   `name` VARCHAR(255),
   PRIMARY KEY (`pk_id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Registry record --
 DROP TABLE IF EXISTS `registry_record`;
@@ -212,7 +212,7 @@ CREATE TABLE `registry_record` (
   CONSTRAINT `fk_registry_record__registry_record_status` FOREIGN KEY (`status`) REFERENCES `registry_record_status` (`code`),
   CONSTRAINT `fk_registry_record__import_error_type` FOREIGN KEY (`import_error_type`) REFERENCES `import_error_type` (`code`),
   CONSTRAINT `fk_registry_record__registry` FOREIGN KEY (`registry_id`) REFERENCES `registry` (`id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Registry record containers --
 DROP TABLE IF EXISTS `registry_record_container`;
@@ -224,7 +224,7 @@ CREATE TABLE `registry_record_container` (
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_registry_record_container__container_type` FOREIGN KEY (`type`) REFERENCES `container_type` (`code`),
   CONSTRAINT `fk_registry_record_container__registry` FOREIGN KEY (`record_id`) REFERENCES `registry_record` (`id`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

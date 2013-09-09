@@ -12,7 +12,7 @@ public enum  ImportErrorType implements IFixedIdType {
 
     FIXED(1L);
 
-    private static final String RESOURCE_BUNDLE = RegistryRecordStatus.class.getName();
+    private static final String RESOURCE_BUNDLE = ImportErrorType.class.getName();
 
     private Long id;
 

@@ -20,7 +20,7 @@
         <result column="registry_record_operation_date"             property="operationDate"/>
         <result column="registry_record_unique_operation_number"    property="uniqueOperationNumber"/>
         <result column="registry_record_amount"                     property="amount"/>
-        <result column="registry_record_registry_id"                property="registry_id"/>
+        <result column="registry_record_registry_id"                property="registryId"/>
         <result column="registry_record_status"                     property="status" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
         <result column="registry_record_import_error_type"          property="importErrorType" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
 
@@ -98,6 +98,10 @@
 
             <if test="object.status != null">
                 and rr.`status` = #{object.status.id}
+            </if>
+
+            <if test="object.importErrorType != null">
+                and rr.`import_error_type` = #{object.importErrorType.id}
             </if>
 
             <if test="object.registryId != null">

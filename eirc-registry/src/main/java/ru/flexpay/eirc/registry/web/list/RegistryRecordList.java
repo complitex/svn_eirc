@@ -110,6 +110,8 @@ public class RegistryRecordList extends TemplatePage {
             protected void populateItem(Item<RegistryRecord> item) {
                 final RegistryRecord registryRecord = item.getModelObject();
 
+                item.setModel(new CompoundPropertyModel<>(item.getModel()));
+
                 item.add(new Label("serviceCode"));
                 item.add(new Label("personalAccountExt"));
                 item.add(new Label("townType"));
@@ -125,7 +127,6 @@ public class RegistryRecordList extends TemplatePage {
                 item.add(new Label("operationDate", registryRecord.getOperationDate() != null ?
                         OPERATION_DATE_FORMAT.format(registryRecord.getOperationDate()) : ""));
                 item.add(new Label("amount"));
-                item.add(new Label("amount"));
                 StringBuilder unitContainers = new StringBuilder();
                 for (Container registryContainer : registryRecord.getContainers()) {
                     if (unitContainers.length() > 0) {
@@ -134,7 +135,8 @@ public class RegistryRecordList extends TemplatePage {
                     unitContainers.append(registryContainer.getData());
                 }
                 item.add(new Label("containers", unitContainers.toString()));
-                item.add(new Label("importErrorType", registryRecord.getImportErrorType().getLabel(getLocale())));
+                item.add(new Label("importErrorType", registryRecord.getImportErrorType() != null?
+                        registryRecord.getImportErrorType().getLabel(getLocale()) : ""));
                 item.add(new Label("status", registryRecord.getStatus().getLabel(getLocale())));
 
                 ScrollBookmarkablePageLink<WebPage> detailsLink = new ScrollBookmarkablePageLink<>("detailsLink",
