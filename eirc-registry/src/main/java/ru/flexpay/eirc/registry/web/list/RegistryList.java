@@ -23,8 +23,6 @@ import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.entity.Locale;
-import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.DatePicker;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
@@ -63,17 +61,10 @@ public class RegistryList extends TemplatePage {
     @EJB
     private RegistryBean registryBean;
 
-    @EJB
-    private LocaleBean localeBean;
-
     @EJB(name = IOrganizationStrategy.BEAN_NAME, beanInterface = IOrganizationStrategy.class)
     private EircOrganizationStrategy organizationStrategy;
-
-    private WebMarkupContainer container;
-    private DataView<Registry> dataView;
-
     private IModel<Registry> filterModel = new CompoundPropertyModel<>(new Registry());
-    
+
     public RegistryList() throws ExecutionException, InterruptedException {
         init();
     }
@@ -88,9 +79,7 @@ public class RegistryList extends TemplatePage {
         messages.setOutputMarkupId(true);
         add(messages);
 
-        final Locale locale = localeBean.convert(getLocale());
-
-        container = new WebMarkupContainer("container");
+        final WebMarkupContainer container = new WebMarkupContainer("container");
         container.setOutputMarkupPlaceholderTag(true);
         container.setVisible(true);
         add(container);
@@ -121,7 +110,7 @@ public class RegistryList extends TemplatePage {
         dataProvider.setSort("creation_date", SortOrder.ASCENDING);
 
         //Data View
-        dataView = new DataView<Registry>("data", dataProvider, 1) {
+        DataView<Registry> dataView = new DataView<Registry>("data", dataProvider, 1) {
 
             @Override
             protected void populateItem(Item<Registry> item) {
@@ -130,12 +119,12 @@ public class RegistryList extends TemplatePage {
                 Organization senderOrganization = organizationStrategy.findById(registry.getSenderOrganizationId(), false);
                 Organization recipientOrganization = organizationStrategy.findById(registry.getRecipientOrganizationId(), false);
 
-                item.add(new Label("creationDate", registry.getCreationDate() != null? CREATE_DATE_FORMAT.format(registry.getCreationDate()) : ""));
+                item.add(new Label("creationDate", registry.getCreationDate() != null ? CREATE_DATE_FORMAT.format(registry.getCreationDate()) : ""));
                 item.add(new Label("registryNumber", String.valueOf(registry.getRegistryNumber())));
                 item.add(new Label("sender", organizationStrategy.displayDomainObject(senderOrganization, getLocale())));
                 item.add(new Label("recipient", organizationStrategy.displayDomainObject(recipientOrganization, getLocale())));
                 item.add(new Label("type", registry.getType().getLabel(getLocale())));
-                item.add(new Label("loadDate", registry.getLoadDate() != null? LOAD_DATE_FORMAT.format(registry.getLoadDate()) : ""));
+                item.add(new Label("loadDate", registry.getLoadDate() != null ? LOAD_DATE_FORMAT.format(registry.getLoadDate()) : ""));
                 item.add(new Label("recordsCount", String.valueOf(registry.getRecordsCount())));
                 item.add(new Label("status", registry.getStatus().getLabel(getLocale())));
 

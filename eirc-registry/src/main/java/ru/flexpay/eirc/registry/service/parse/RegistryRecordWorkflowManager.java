@@ -43,11 +43,11 @@ public class RegistryRecordWorkflowManager {
      * @return <code>true</code> if registry processing allowed, or <code>false</code> otherwise
      */
     public boolean canTransit(RegistryRecord record, RegistryRecordStatus nextStatus) {
-        return transitions.get(record.getRecordStatus()).contains(nextStatus);
+        return transitions.get(record.getStatus()).contains(nextStatus);
     }
 
     public boolean hasSuccessTransition(RegistryRecord record) {
-        return !transitions.get(record.getRecordStatus()).isEmpty();
+        return !transitions.get(record.getStatus()).isEmpty();
     }
 
     /**
@@ -61,7 +61,7 @@ public class RegistryRecordWorkflowManager {
             throw new TransitionNotAllowed("Registry processing not allowed");
         }
 
-        if (record.getRecordStatus() == PROCESSED_WITH_ERROR) {
+        if (record.getStatus() == PROCESSED_WITH_ERROR) {
             setNextSuccessStatus(record);
         }
     }
@@ -74,13 +74,13 @@ public class RegistryRecordWorkflowManager {
      */
     public void setNextErrorStatus(RegistryRecord record, Registry registry) throws TransitionNotAllowed {
 
-        if (record.getRecordStatus() == PROCESSED_WITH_ERROR) {
+        if (record.getStatus() == PROCESSED_WITH_ERROR) {
             return;
         }
 
-        List<RegistryRecordStatus> allowedCodes = transitions.get(record.getRecordStatus());
+        List<RegistryRecordStatus> allowedCodes = transitions.get(record.getStatus());
         if (allowedCodes.size() < 2) {
-            throw new TransitionNotAllowed("No error transition, current is", record.getRecordStatus());
+            throw new TransitionNotAllowed("No error transition, current is", record.getStatus());
         }
 
         markRegistryAsHavingError(record, registry);
@@ -95,9 +95,9 @@ public class RegistryRecordWorkflowManager {
      * @throws TransitionNotAllowed if error transition is not allowed
      */
     public void setNextErrorStatus(RegistryRecord record, Registry registry, ImportErrorType importErrorType) throws TransitionNotAllowed {
-        List<RegistryRecordStatus> allowedCodes = transitions.get(record.getRecordStatus());
+        List<RegistryRecordStatus> allowedCodes = transitions.get(record.getStatus());
         if (allowedCodes.size() < 2) {
-            throw new TransitionNotAllowed("No error transition, current is: '", record.getRecordStatus());
+            throw new TransitionNotAllowed("No error transition, current is: '", record.getStatus());
         }
 
         markRegistryAsHavingError(record, registry);
@@ -119,12 +119,12 @@ public class RegistryRecordWorkflowManager {
      * @throws TransitionNotAllowed if success transition is not allowed
      */
     public void setNextSuccessStatus(RegistryRecord record) throws TransitionNotAllowed {
-        List<RegistryRecordStatus> allowedCodes = transitions.get(record.getRecordStatus());
+        List<RegistryRecordStatus> allowedCodes = transitions.get(record.getStatus());
         if (allowedCodes.size() < 1) {
             throw new TransitionNotAllowed("No success transition");
         }
 
-        if (record.getRecordStatus() == PROCESSED_WITH_ERROR) {
+        if (record.getStatus() == PROCESSED_WITH_ERROR) {
             record = removeError(record);
         }
 
@@ -173,15 +173,15 @@ public class RegistryRecordWorkflowManager {
      * @throws TransitionNotAllowed if registry already has a status
      */
     public RegistryRecord setInitialStatus(RegistryRecord record) throws TransitionNotAllowed {
-        if (record.getRecordStatus() != null) {
-            if (record.getRecordStatus() != LOADED) {
+        if (record.getStatus() != null) {
+            if (record.getStatus() != LOADED) {
                 throw new TransitionNotAllowed("Registry was already processed, cannot set initial status");
             }
 
             return record;
         }
 
-        record.setRecordStatus(LOADED);
+        record.setStatus(LOADED);
         return record;
     }
 
@@ -194,9 +194,9 @@ public class RegistryRecordWorkflowManager {
      */
     public void setNextStatus(RegistryRecord record, RegistryRecordStatus status) throws TransitionNotAllowed {
         if (!canTransit(record, status)) {
-            throw new TransitionNotAllowed("Invalid transition request, was " + record.getRecordStatus() + ", requested " + status);
+            throw new TransitionNotAllowed("Invalid transition request, was " + record.getStatus() + ", requested " + status);
         }
 
-        record.setRecordStatus(status);
+        record.setStatus(status);
     }
 }

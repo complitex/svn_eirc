@@ -19,8 +19,12 @@ import java.util.List;
 public class RegistryRecordBean extends AbstractBean {
     private static final String NS = RegistryRecordBean.class.getName();
 
-    public List<Registry> getRegistryRecords(FilterWrapper<RegistryRecord> filter) {
+    public List<RegistryRecord> getRegistryRecords(FilterWrapper<RegistryRecord> filter) {
         return getSqlSessionManager().selectList(NS + ".selectRegistryRecords", filter);
+    }
+
+    public int count(FilterWrapper<RegistryRecord> filter) {
+        return getSqlSessionManager().selectOne(NS + ".countRegistryRecords", filter);
     }
 
     @Transactional

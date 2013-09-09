@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns:wicket>
+<head>
+    <wicket:head>
+        <title wicket:id="title"></title>
+    </wicket:head>
+</head>
+<body>
+<wicket:extend>
+    <h2 wicket:id="label"></h2>
+
+    <div wicket:id="messages"></div>
+
+    <div wicket:id="container">
+        <form action="#" wicket:id="filterForm">
+            <table class="tbColor bookContent" cellpadding="0" cellspacing="0" border="0">
+                <thead>
+                <tr>
+                    <th>
+                        <span wicket:id="header.registry_record_service_code">
+                            <wicket:message key="registry_record_service_code"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_personal_account_ext">
+                            <wicket:message key="registry_record_personal_account_ext"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_town_type">
+                            <wicket:message key="registry_record_town_type"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_town_name">
+                            <wicket:message key="registry_record_town_name"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_street_type">
+                            <wicket:message key="registry_record_street_type"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_street_name">
+                            <wicket:message key="registry_record_street_name"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_building_number">
+                            <wicket:message key="registry_record_building_number"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_bulk_number">
+                            <wicket:message key="registry_record_bulk_number"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_apartment_number">
+                            <wicket:message key="registry_record_apartment_number"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_fio">
+                            <wicket:message key="registry_record_fio"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_operation_date">
+                            <wicket:message key="registry_record_operation_date"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_amount">
+                            <wicket:message key="registry_record_amount"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span>
+                            <wicket:message key="registry_record_containers"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_import_error_type">
+                            <wicket:message key="registry_record_error"/>
+                        </span>
+                    </th>
+                    <th>
+                        <span wicket:id="header.registry_record_status">
+                            <wicket:message key="registry_record_status"/>
+                        </span>
+                    </th>
+                    <th style="width:110px">
+                        <input wicket:id="reset" type="button" wicket:message="value:reset" class="btnSmall"/>
+                    </th>
+                </tr>
+                <tr>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="serviceCode"/>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="personalAccountExt"/>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="townType"/>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="townName"/>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="streetType"/>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="streetName"/>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="buildingNum"/>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="buildingBulkNum"/>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="apartmentNum"/>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="FIO"/>
+                    </td>
+                    <td class="filter-td">
+                        <div style="width:102px">
+                            <input type="text" wicket:id="operationDate" style="width: 80px"/>
+                        </div>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text" wicket:id="amount"/>
+                    </td>
+                    <td class="filter-td">
+                        <input type="text"/>
+                    </td>
+                    <td class="filter-td">
+                        <select wicket:id="importErrorType"></select>
+                    </td>
+                    <td class="filter-td">
+                        <select wicket:id="status"></select>
+                    </td>
+                    <td class="filter-td">
+                        <input wicket:id="submit" type="submit" wicket:message="value:find" class="btnSmall"/>
+                    </td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr wicket:id="data">
+                    <td>
+                        <span wicket:id="serviceCode"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="personalAccountExt"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="townType"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="townName"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="streetType"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="streetName"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="buildingNum"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="buildingBulkNum"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="apartmentNum"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="lastName"></span>&nbsp;
+                        <span wicket:id="firstName"></span>&nbsp;
+                        <span wicket:id="middleName"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="operationDate"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="amount"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="containers"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="importErrorType"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="status"></span>
+                    </td>
+                    <td>
+                        <a wicket:id="detailsLink">
+                            <span wicket:id="editMessage"></span>
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </form>
+        <div wicket:id="navigator"></div>
+    </div>
+
+</wicket:extend>
+</body>
+</html>

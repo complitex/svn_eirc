@@ -29,7 +29,7 @@ public class RegistryRecord extends DictionaryObject {
     private Long uniqueOperationNumber;
     private BigDecimal amount;
 
-    private RegistryRecordStatus recordStatus;
+    private RegistryRecordStatus status;
 
     private List<Container> containers = Lists.newArrayList();
 
@@ -157,12 +157,12 @@ public class RegistryRecord extends DictionaryObject {
         this.amount = amount;
     }
 
-    public RegistryRecordStatus getRecordStatus() {
-        return recordStatus;
+    public RegistryRecordStatus getStatus() {
+        return status;
     }
 
-    public void setRecordStatus(RegistryRecordStatus recordStatus) {
-        this.recordStatus = recordStatus;
+    public void setStatus(RegistryRecordStatus status) {
+        this.status = status;
     }
 
     public List<Container> getContainers() {
