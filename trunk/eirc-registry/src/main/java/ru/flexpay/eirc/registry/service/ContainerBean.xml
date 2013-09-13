@@ -8,11 +8,7 @@
         <result column="id"     property="id"/>
         <result column="data"   property="data"/>
 
-        <association property="type" javaType="ru.flexpay.eirc.registry.entity.ContainerType">
-            <constructor>
-                <arg column="type" javaType="Long"/>
-            </constructor>
-        </association>
+        <result property="type"  column="type" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
 
     </resultMap>
 </mapper>

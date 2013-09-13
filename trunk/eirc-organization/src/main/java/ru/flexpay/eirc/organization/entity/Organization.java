@@ -21,9 +21,9 @@ public class Organization extends DomainObject {
         List<Attribute> types = getAttributes(IOrganizationStrategy.ORGANIZATION_TYPE);
         List<OrganizationType> result = Lists.newArrayListWithExpectedSize(types.size());
         for (Attribute type : types) {
-            if (type.getAttributeTypeId().equals(OrganizationType.SERVICE_PROVIDER.getId())) {
+            if (type.getValueId().equals(OrganizationType.SERVICE_PROVIDER.getId())) {
                 result.add(OrganizationType.SERVICE_PROVIDER);
-            } else if (type.getAttributeTypeId().equals(OrganizationType.USER_ORGANIZATION.getId())) {
+            } else if (type.getValueId().equals(OrganizationType.USER_ORGANIZATION.getId())) {
                 result.add(OrganizationType.USER_ORGANIZATION);
             }
         }
@@ -33,7 +33,7 @@ public class Organization extends DomainObject {
     public boolean isServiceProvider() {
         List<Attribute> types = getAttributes(IOrganizationStrategy.ORGANIZATION_TYPE);
         for (Attribute type : types) {
-            if (type.getAttributeTypeId().equals(OrganizationType.SERVICE_PROVIDER)) {
+            if (type.getValueId().equals(OrganizationType.SERVICE_PROVIDER.getId())) {
                 return true;
             }
         }

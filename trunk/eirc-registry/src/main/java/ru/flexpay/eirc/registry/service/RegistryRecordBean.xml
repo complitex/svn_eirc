@@ -160,7 +160,7 @@
 
         select
           count(rr.`id`)
-        from `registry` rr
+        from `registry_record` rr
         where 1=1
         <include refid="registryRecordCondition"/>
 
@@ -206,7 +206,7 @@
 
     <insert id="insertRegistryRecordContainer" parameterType="ru.flexpay.eirc.registry.entity.Container"
             keyProperty="container.id" useGeneratedKeys="true">
-        insert into `registry_record_container` (`data`, `registry_record_id`, `type`) value (#{data}, #{parentId}, #{type.id})
+        insert into `registry_record_container` (`data`, `record_id`, `type`) value (#{data}, #{parentId}, #{type.id})
     </insert>
 
 </mapper>

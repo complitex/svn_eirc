@@ -1,44 +1,73 @@
 package ru.flexpay.eirc.registry.service.parse;
 
+import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
+import org.complitex.dictionary.entity.FilterWrapper;
+import org.complitex.dictionary.service.ConfigBean;
+import org.complitex.dictionary.service.executor.ExecuteException;
+import org.complitex.dictionary.util.DateUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.flexpay.eirc.organization.entity.Organization;
+import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
+import ru.flexpay.eirc.registry.entity.*;
+import ru.flexpay.eirc.registry.service.*;
+import ru.flexpay.eirc.registry.util.StringUtil;
+import ru.flexpay.eirc.service.entity.Service;
+import ru.flexpay.eirc.service.service.ServiceBean;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+import java.io.*;
+import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.util.List;
+
+import static ru.flexpay.eirc.registry.service.parse.FileReader.Message;
+
 /**
  * @author Pavel Sknar
  */
-public class ParseFPRegistry {
-/*
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+@Stateless
+public class RegistryParser implements Serializable {
 
+    private static final Logger log = LoggerFactory.getLogger(RegistryParser.class);
+
+    @EJB
     private RegistryRecordBean registryRecordService;
 
+    @EJB
     private RegistryBean registryService;
+    @EJB
     private ServiceBean serviceBean;
 
-    private RegistryFPFileTypeService registryFPFileTypeService;
     @EJB
     private RegistryWorkflowManager registryWorkflowManager;
     @EJB
     private RegistryRecordWorkflowManager recordWorkflowManager;
 
-    private OrganizationService organizationService;
-    private ServiceProviderService providerService;
+    @EJB
+    private EircOrganizationStrategy organizationStrategy;
 
-    private CorrectionsService correctionsService;
-    private ClassToTypeRegistry typeRegistry;
+    @EJB
+    private ConfigBean configBean;
 
-    private String moduleName;
+    @EJB
+    private JobProcessor processor;
 
-    private static final Long DEFAULT_NUMBER_READ_CHARS = 32000L;
-    private static final Long DEFAULT_NUMBER_FLUSH_REGISTRY_RECORDS = 50L;
-
-    public String parse(File file) throws ExecuteException {
-        return parse(file, DEFAULT_NUMBER_READ_CHARS, DEFAULT_NUMBER_FLUSH_REGISTRY_RECORDS);
+    public Registry parse(File file) throws ExecuteException {
+        int numberReadChars = configBean.getInteger(RegistryConfig.NUMBER_READ_CHARS, true);
+        int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
+        return parse(file, numberReadChars, numberFlushRegistryRecords);
     }
 
-    public String parse(File file, Long numberReadChars, Long numberFlushRegistryRecords) throws ExecuteException {
+    public Registry parse(File file, int numberReadChars, int numberFlushRegistryRecords) throws ExecuteException {
         log.debug("start action");
 
         Logger processLog = log;
 
-        List<RegistryRecord> records = Lists.newArrayList();
+        Context context = new Context(numberFlushRegistryRecords);
 
         FileReader reader;
         try {
@@ -48,17 +77,17 @@ public class ParseFPRegistry {
         }
 
         try {
-            List<FileReader.Message> listMessage = Lists.newArrayList();
+            List<Message> listMessage = Lists.newArrayList();
             boolean nextIterate;
+            Registry registry = null;
             do {
                 listMessage = getMessages(reader, listMessage, numberReadChars);
 
                 int i = 0;
-                for (FileReader.Message message : listMessage) {
+                for (Message message : listMessage) {
                     if (message == null) {
-                        finalizeRegistry(parameters, records, numberFlushRegistryRecords, processLog);
-                        reader.setInputStream(null);
-                        return ParseRegistryConstants.RESULT_END;
+                        finalizeRegistry(context, processLog);
+                        return registry;
                     }
                     i++;
                     String messageValue = message.getBody();
@@ -70,30 +99,22 @@ public class ParseFPRegistry {
 
                     Integer messageType = message.getType();
 
-                    if (messageType.equals(FileReader.Message.MESSAGE_TYPE_HEADER)) {
-                        Registry registry = processHeader(file, messageFieldList, processLog);
+                    if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_HEADER)) {
+                        registry = processHeader(file, messageFieldList, processLog);
                         if (registry == null) {
-                            reader.setInputStream(null);
-                            return ProcessInstanceExecuteHandler.RESULT_ERROR;
+                            return null;
                         }
-                        parameters.put(ParseRegistryConstants.PARAM_REGISTRY_ID, registry.getId());
-                        parameters.put(ParseRegistryConstants.PARAM_SERVICE_PROVIDER_ID, ((EircRegistryProperties)registry.getProperties()).getServiceProvider().getId());
+                        context.setRegistry(registry);
                         log.debug("Create registry {}. Add it to process parameters", registry.getId());
-                    } else if (messageType.equals(SpFileReader.Message.MESSAGE_TYPE_RECORD)) {
-                        RegistryRecord record = processRecord(parameters, messageFieldList, processLog);
+                    } else if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_RECORD)) {
+                        RegistryRecord record = processRecord(registry, messageFieldList, processLog);
                         if (record == null) {
                             reader.setInputStream(null);
-                            return ProcessInstanceExecuteHandler.RESULT_ERROR;
+                            return null;
                         }
-                        records.add(record);
-                        if (flushRecordStack(parameters, records, flushNumberRegistryRecords, processLog)) {
-                            List<Message> outgoingMessages = listMessage.subList(i, listMessage.size());
-                            parameters.put(ParseRegistryConstants.PARAM_MESSAGES, CollectionUtils.list(outgoingMessages));
-                            reader.setInputStream(null);
-                            parameters.put(ParseRegistryConstants.PARAM_READER, reader);
-                            return ProcessInstanceExecuteHandler.RESULT_NEXT;
-                        }
-                    } else if (messageType.equals(SpFileReader.Message.MESSAGE_TYPE_FOOTER)) {
+                        context.add(record);
+                        flushRecordStack(context, processLog);
+                    } else if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_FOOTER)) {
                         processFooter(messageFieldList, processLog);
                     }
                 }
@@ -107,23 +128,18 @@ public class ParseFPRegistry {
             processLog.error("Inner error");
         } finally {
             try {
-                is.close();
+                reader.close();
             } catch (IOException e) {
                 log.error("Failed reader", e);
                 processLog.error("Inner error");
             }
         }
-        try {
-            reader.setInputStream(null);
-        } catch (IOException e) {
-            log.error("Inner error", e);
-            processLog.error("Inner error");
-        }
-        return ProcessInstanceExecuteHandler.RESULT_ERROR;
+
+        return null;
     }
 
     @SuppressWarnings ({"unchecked"})
-    private List<FileReader.Message> getMessages(FileReader reader, List<FileReader.Message> listMessage, Long minReadChars)
+    private List<Message> getMessages(FileReader reader, List<Message> listMessage, Integer minReadChars)
             throws ExecuteException, RegistryFormatException {
         if (listMessage == null) {
             listMessage = Lists.newArrayList();
@@ -133,7 +149,7 @@ public class ParseFPRegistry {
 
         try {
             Long startPoint = reader.getPosition();
-            FileReader.Message message;
+            Message message;
 
             do {
                 message = reader.readMessage();
@@ -147,47 +163,48 @@ public class ParseFPRegistry {
         }
     }
 
-    private int flushRecordStack(Map<String, Object> parameters, List<RegistryRecord> records,
-                                     Long flushNumberRegistryRecords, Logger processLog) throws ExecuteException {
-        return flushRecordStack(records, null, false, flushNumberRegistryRecords, processLog);
+    private void flushRecordStack(Context context, Logger processLog) throws ExecuteException {
+        flushRecordStack(context, false, processLog);
     }
 
     @SuppressWarnings ({"unchecked"})
-    private int flushRecordStack(List<RegistryRecord> records, Registry registry, boolean finalize,
-                                     Long flushNumberRegistryRecords, Logger processLog) throws ExecuteException {
-        if (records != null && (records.size() >= flushNumberRegistryRecords || finalize)) {
+    private void flushRecordStack(final Context context, boolean finalize, Logger processLog) throws ExecuteException {
+        if (context.getRecords() != null &&
+                (context.getRecords().size() >= context.getNumberFlushRegistryRecords() || finalize)) {
 
-            registryRecordService.saveBulk(records);
-            int flushedCount = records.size();
+            final List<RegistryRecord> records = context.getRecords();
 
-            records.clear();
-            return flushedCount;
+            context.getBatchProcessor().processJob(new AbstractJob<JobResult>() {
+                @Override
+                public JobResult execute() throws ExecuteException {
+                    registryRecordService.saveBulk(records);
+                    //TODO save intermediate state
+                    context.setRecordCounter(context.getRecordCounter() + records.size());
+                    return JobResult.SUCCESSFUL;
+                }
+            });
+
+            context.clearRecords();
         }
-        return -1;
     }
 
-    private void finalizeRegistry(Map<String, Object> parameters, List<RegistryRecord> records,
-                                  Long flushNumberRegistryRecords, Logger processLog) throws ExecuteException {
-        Registry registry = getRegistry(parameters, processLog);
-        if (registry == null) {
-            throw new ExecuteException("Registry not found");
-        }
+    private void finalizeRegistry(Context context, Logger processLog) throws ExecuteException {
 
-        flushRecordStack(parameters, records, registry, true, flushNumberRegistryRecords, processLog);
+        flushRecordStack(context, true, processLog);
+
+        context.getBatchProcessor().waitEndWorks();
 
         log.debug("Finalize registry");
 
-        Long recordCounter = (Long)parameters.get(ParseRegistryConstants.PARAM_NUMBER_PROCESSED_REGISTRY_RECORDS);
-
-        if (!registry.getRecordsNumber().equals(recordCounter)) {
+        if (context.getRegistry().getRecordsCount() != context.getRecordCounter()) {
             processLog.error("Registry records number error, expected: {}, found: {}",
-                    new Object[]{registry.getRecordsNumber(), recordCounter});
+                    new Object[]{context.getRegistry().getRecordsCount(), context.getRecordCounter()});
             throw new ExecuteException("Registry records number error, expected: " +
-                    registry.getRecordsNumber() + ", found: " + recordCounter);
+                    context.getRegistry().getRecordsCount() + ", found: " + context.getRecordCounter());
         }
 
         try {
-            registryWorkflowManager.setNextSuccessStatus(registry);
+            registryWorkflowManager.setNextSuccessStatus(context.getRegistry());
         } catch (TransitionNotAllowed transitionNotAllowed) {
             throw new ExecuteException("Does not finalize registry", transitionNotAllowed);
         }
@@ -206,7 +223,8 @@ public class ParseFPRegistry {
         Registry newRegistry = new Registry();
         try {
             registryWorkflowManager.setInitialStatus(newRegistry);
-            newRegistry.getFiles().put(registryFPFileTypeService.findByCode(RegistryFPFileType.MB_FORMAT), spFile);
+            // TODO attach file
+            //newRegistry.getFiles().put(registryFPFileTypeService.findByCode(RegistryFPFileType.MB_FORMAT), spFile);
             int n = 0;
             newRegistry.setRegistryNumber(Long.valueOf(messageFieldList.get(++n)));
             String value = messageFieldList.get(++n);
@@ -235,110 +253,101 @@ public class ParseFPRegistry {
                 newRegistry.setAmount(new BigDecimal(amountStr));
             }
             if (messageFieldList.size() > n) {
-                if (!parseContainers(newRegistry, messageFieldList.get(++n), processLog)) {
+                if (!parseContainers(newRegistry.getContainers(), messageFieldList.get(++n), processLog)) {
                     return null;
                 }
             }
 
             processLog.info("Creating new registry: {}", newRegistry);
 
-            newRegistry.setProperties(propertiesFactory.newRegistryProperties());
-            EircRegistryProperties props = (EircRegistryProperties) newRegistry.getProperties();
-            props.setRegistry(newRegistry);
-
-            Organization recipient = setRecipient(newRegistry, processLog);
+            Organization recipient = getRecipient(newRegistry, processLog);
             if (recipient == null) {
-                processLog.error("Failed processing registry header, recipient not found: #{}", newRegistry.getRecipientCode());
+                processLog.error("Failed processing registry header, recipient not found: #{}", newRegistry.getRecipientOrganizationId());
                 return null;
             }
-            Organization sender = setSender(newRegistry, processLog);
+            Organization sender = getSender(newRegistry, processLog);
             if (sender == null) {
-                processLog.error("Failed processing registry header, sender not found: #{}", newRegistry.getSenderCode());
+                processLog.error("Failed processing registry header, sender not found: #{}", newRegistry.getSenderOrganizationId());
                 return null;
             }
             processLog.info("Recipient: {}\n sender: {}", recipient, sender);
 
-            if (!validateProvider(newRegistry, processLog)) {
+            if (!validateServiceProvider(newRegistry, processLog)) {
                 return null;
             }
-            ServiceProvider provider = getProvider(newRegistry);
-            if (provider == null) {
-                processLog.error("Failed processing registry header, provider not found: #{}", newRegistry.getSenderCode());
-                return null;
-            }
-            props.setServiceProvider(provider);
 
             if (!validateRegistry(newRegistry, processLog)) {
                 return null;
             }
 
-            return registryService.create(newRegistry);
-        } catch (NumberFormatException e) {
-            processLog.error("Header parse error", e);
-        } catch (ParseException e) {
-            processLog.error("Header parse error", e);
-        } catch (TransitionNotAllowed e) {
-            processLog.error("Header parse error", e);
-        } catch (ExecuteException e) {
+            newRegistry.setLoadDate(DateUtil.getCurrentDate());
+
+            registryService.save(newRegistry);
+
+            return newRegistry;
+        } catch (NumberFormatException | ParseException | TransitionNotAllowed e) {
             processLog.error("Header parse error", e);
         }
         return null;
     }
 
-    private boolean validateProvider(Registry registry, Logger processLog) {
+    private boolean validateServiceProvider(Registry registry, Logger processLog) {
+        Organization provider = getProvider(registry);
+        /*
         if (registry.getType().isPayments()) {
-            Stub<Organization> recipient = new Stub<Organization>(registry.getRecipientCode());
+            Stub<Organization> recipient = new Stub<Organization>(registry.getRecipientOrganizationId());
             if (recipient.sameId(ApplicationConfig.getSelfOrganization())) {
                 processLog.error("Expected service provider recipient, but recieved eirc code");
                 return false;
             }
         }
+        */
+        if (!provider.isServiceProvider()) {
+            processLog.error("Organization found, but it is not service provider: {}", provider);
+            return false;
+        }
         return true;
     }
 
-    private ServiceProvider getProvider(Registry registry) {
+    private Organization getProvider(Registry registry) {
         // for payments registry assume recipient is a service provider
-        if (registry.getRegistryType().isPayments()) {
-            return providerService.getProvider(new Stub<Organization>(registry.getRecipientCode()));
-        }
-        return providerService.getProvider(new Stub<Organization>(registry.getSenderCode()));
+
+        Long providerId = registry.getType().isPayments()? registry.getRecipientOrganizationId() : registry.getSenderOrganizationId();
+
+        return organizationStrategy.findById(providerId, false);
     }
 
-    private Organization setSender(Registry registry, Logger processLog) {
+    private Organization getSender(Registry registry, Logger processLog) {
 
-        EircRegistryProperties props = (EircRegistryProperties) registry.getProperties();
-
-        processLog.debug("Fetching sender via code={}", registry.getSenderCode());
-        Organization sender = findOrgByRegistryCorrections(registry, registry.getSenderCode(), processLog);
+        processLog.debug("Fetching sender via code={}", registry.getSenderOrganizationId());
+        Organization sender = findOrgByRegistryCorrections(registry, registry.getSenderOrganizationId(), processLog);
         if (sender == null) {
-            sender = organizationService.readFull(props.getSenderStub());
+            sender = organizationStrategy.findById(registry.getSenderOrganizationId(), false);
         }
-        props.setSender(sender);
         return sender;
     }
 
-    private Organization setRecipient(Registry registry, Logger processLog) {
-        EircRegistryProperties props = (EircRegistryProperties) registry.getProperties();
+    private Organization getRecipient(Registry registry, Logger processLog) {
 
         Organization recipient;
-        if (registry.getRecipientCode() == 0) {
+        if (registry.getRecipientOrganizationId() == 0) {
             processLog.debug("Recipient is EIRC, code=0");
-            recipient = organizationService.readFull(ApplicationConfig.getSelfOrganizationStub());
+            configBean.getConfigs();
+            recipient = organizationStrategy.findById(configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true), false);
         } else {
-            processLog.debug("Fetching recipient via code={}", registry.getRecipientCode());
-            recipient = findOrgByRegistryCorrections(registry, registry.getRecipientCode(), processLog);
+            processLog.debug("Fetching recipient via code={}", registry.getRecipientOrganizationId());
+            recipient = findOrgByRegistryCorrections(registry, registry.getSenderOrganizationId(), processLog);
             if (recipient == null) {
-                recipient = organizationService.readFull(props.getRecipientStub());
+                recipient = organizationStrategy.findById(registry.getRecipientOrganizationId(), false);
             }
         }
-        props.setRecipient(recipient);
         return recipient;
     }
 
-    @Nullable
+    // TODO Find organization in corrections
     private Organization findOrgByRegistryCorrections(Registry registry, Long code, Logger processLog) {
-
-        for (RegistryContainer container : registry.getContainers()) {
+        /*
+        for (Container container : registry.getContainers()) {
             String data = container.getData();
             processLog.debug("Candidate: {}", data);
             if (data.startsWith("502"+ ParseRegistryConstants.CONTAINER_DATA_DELIMITER)) {
@@ -361,7 +370,7 @@ public class ParseFPRegistry {
                                 "but not found: " + data);
                     }
                     processLog.debug("Found organization by master correction: {}", datum.get(4));
-                    Organization org = organizationService.readFull(stub);
+                    Organization org = organizationStrategy.readFull(stub);
                     if (org == null) {
                         throw new IllegalStateException("Existing master correction for organization " +
                                 "references nowhere: " + data);
@@ -369,12 +378,12 @@ public class ParseFPRegistry {
                     return org;
                 }
             }
-        }
+        }*/
 
         return null;
     }
 
-    private boolean parseContainers(Registry registry, String containersData, Logger processLog) {
+    private boolean parseContainers(List<Container> distContainers, String containersData, Logger processLog) {
 
         List<String> containers = StringUtil.splitEscapable(
                 containersData, ParseRegistryConstants.CONTAINER_DELIMITER, ParseRegistryConstants.ESCAPE_SYMBOL);
@@ -382,18 +391,27 @@ public class ParseFPRegistry {
             if (StringUtils.isBlank(data)) {
                 continue;
             }
-            if (data.length() > org.flexpay.eirc.process.registry.ParseRegistryConstants.MAX_CONTAINER_SIZE) {
+            if (data.length() > ParseRegistryConstants.MAX_CONTAINER_SIZE) {
                 processLog.error("Too long container found: {}", data);
                 return false;
             }
-            registry.addContainer(new RegistryContainer(data));
+            List<String> containerData = StringUtil.splitEscapable(
+                    data, ParseRegistryConstants.CONTAINER_DATA_DELIMITER, ParseRegistryConstants.ESCAPE_SYMBOL);
+            if (data.length() < 1) {
+                processLog.error("Failed container format: {}", containerData);
+                return false;
+            }
+
+            ContainerType containerType = ContainerType.valueOf(Long.getLong(containerData.get(0), 0L));
+
+            distContainers.add(new Container(data, containerType));
         }
         return true;
     }
 
     private boolean validateRegistry(Registry registry, Logger processLog) {
-        List<Registry> persistents = registryService.getRegistries(FilterWrapper.of(registry));
-        if (persistents.size() > 0) {
+        int countRegistries = registryService.count(FilterWrapper.of(registry));
+        if (countRegistries > 0) {
             processLog.error("Registry was already uploaded");
             return false;
         }
@@ -407,17 +425,18 @@ public class ParseFPRegistry {
         }
 
         RegistryRecord record = new RegistryRecord();
+        record.setRegistryId(registry.getId());
         try {
             log.info("adding record: '{}'", StringUtils.join(messageFieldList, '-'));
             int n = 1;
             record.setServiceCode(messageFieldList.get(++n));
             record.setPersonalAccountExt(messageFieldList.get(++n));
 
-            Service service = consumerService.findService(serviceProviderStub, record.getServiceCode());
+            //TODO find by external id, if service code started by # (maybe using correction)
+            Service service = serviceBean.getService(Long.getLong(record.getServiceCode(), 0L));
             if (service == null) {
                 processLog.warn("Unknown service code: {}", record.getServiceCode());
             }
-            recordProps.setService(service);
 
             // setup consumer address
             String addressStr = messageFieldList.get(++n);
@@ -448,13 +467,12 @@ public class ParseFPRegistry {
             }
 
             // setup ParseRegistryConstants.date
-            DateFormat dateFormat = new SimpleDateFormat(org.flexpay.eirc.process.registry.ParseRegistryConstants.DATE_FORMAT);
-            record.setParseConstants.ate(dateFormat.parse(messageFieldList.get(++n)));
+            record.setOperationDate(ParseRegistryConstants.DATE_FORMAT.parse(messageFieldList.get(++n)));
 
-            // setup unique ParseRegistryConstants.number
-            String uniqueParseConstants.umberStr = messageFieldList.get(++n);
-            if (StringUtils.isNotEmpty(uniqueParseConstants.umberStr)) {
-                record.setUniqueParseConstants.umber(Long.valueOf(uniqueParseConstants.umberStr));
+            // setup unique operation number
+            String uniqueOperationNumberStr = messageFieldList.get(++n);
+            if (StringUtils.isNotEmpty(uniqueOperationNumberStr)) {
+                record.setUniqueOperationNumber(Long.valueOf(uniqueOperationNumberStr));
             }
 
             // setup amount
@@ -465,51 +483,21 @@ public class ParseFPRegistry {
 
             // setup containers
             String containersStr = messageFieldList.get(++n);
-            if (StringUtils.isNotEmpty(containersStr)) {
-                record.setContainers(parseContainers(record, containersStr));
+            if (StringUtils.isNotEmpty(containersStr) && !parseContainers(record.getContainers(), containersStr, log)) {
+                return null;
             }
 
             // setup record status
             recordWorkflowManager.setInitialStatus(record);
 
             return record;
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException | RegistryFormatException | TransitionNotAllowed e) {
             log.error("Record number parse error", e);
         } catch (ParseException e) {
             log.error("Record parse error", e);
-        } catch (RegistryFormatException e) {
-            log.error("Record number parse error", e);
-        } catch (TransitionNotAllowed transitionNotAllowed) {
-            log.error("Record number parse error", transitionNotAllowed);
-        } catch (ExecuteException e) {
-            log.error("Record number parse error", e);
         }
         processLog.error("Record number parse error");
         return null;
-    }
-
-    private List<RegistryRecordContainer> parseContainers(RegistryRecord record, String containersData)
-            throws RegistryFormatException {
-
-        List<String> containers = StringUtil.splitEscapable(
-                containersData, ParseRegistryConstants.CONTAINER_DELIMITER, ParseRegistryConstants.ESCAPE_SYMBOL);
-        List<RegistryRecordContainer> result = new ArrayList<RegistryRecordContainer>(containers.size());
-        int n = 0;
-        for (String data : containers) {
-            if (StringUtils.isBlank(data)) {
-                continue;
-            }
-            if (data.length() > org.flexpay.eirc.process.registry.ParseRegistryConstants.MAX_CONTAINER_SIZE) {
-                throw new RegistryFormatException("Too long container found: " + data);
-            }
-            RegistryRecordContainer container = new RegistryRecordContainer();
-            container.setOrder(n++);
-            container.setRecord(record);
-            container.setData(data);
-            result.add(container);
-        }
-
-        return result;
     }
 
     public void processFooter(List<String> messageFieldList, Logger processLog) throws ExecuteException {
@@ -518,5 +506,57 @@ public class ParseFPRegistry {
             throw new ExecuteException("Message footer error, invalid number of fields");
         }
     }
-    */
+
+    private class Context {
+        private Registry registry;
+
+        private List<RegistryRecord> records = Lists.newArrayList();
+
+        private volatile int recordCounter = 0;
+
+        private int numberFlushRegistryRecords;
+
+        private BatchProcessor<JobResult> batchProcessor;
+
+        private Context(int numberFlushRegistryRecords) {
+            this.numberFlushRegistryRecords = numberFlushRegistryRecords;
+            batchProcessor = new BatchProcessor<>(10, processor);
+        }
+
+        private Registry getRegistry() {
+            return registry;
+        }
+
+        private void setRegistry(Registry registry) {
+            this.registry = registry;
+        }
+
+        private List<RegistryRecord> getRecords() {
+            return records;
+        }
+
+        private int getRecordCounter() {
+            return recordCounter;
+        }
+
+        private void setRecordCounter(int recordCounter) {
+            this.recordCounter = recordCounter;
+        }
+
+        private int getNumberFlushRegistryRecords() {
+            return numberFlushRegistryRecords;
+        }
+
+        private BatchProcessor<JobResult> getBatchProcessor() {
+            return batchProcessor;
+        }
+
+        public void add(RegistryRecord registryRecord) {
+            records.add(registryRecord);
+        }
+
+        public void clearRecords() {
+            records = Lists.newArrayList();
+        }
+    }
 }

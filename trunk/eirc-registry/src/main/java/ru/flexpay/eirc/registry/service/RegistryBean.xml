@@ -163,11 +163,12 @@
             `load_date`,
             `sender_organization_id`,
             `recipient_organization_id`,
+            `import_error_type`,
             `amount`
         ) values (
             #{registryNumber},
-            #{type},
-            #{status},
+            #{type.id},
+            #{status.id},
             #{recordsCount},
             #{errorsCount},
             #{creationDate},
@@ -176,6 +177,7 @@
             #{loadDate},
             #{senderOrganizationId},
             #{recipientOrganizationId},
+            #{importErrorType.id},
             #{amount}
         )
     </insert>
@@ -186,7 +188,7 @@
     </insert>
 
     <update id="updateRegistry" parameterType="ru.flexpay.eirc.registry.entity.Registry">
-        update `registry` (`status`, `records_count`, `errors_count`) values (#{status}, #{recordsCount}, #{errorsCount})
+        update `registry` set `status`= #{status.id}, `records_count`=#{recordsCount}, `errors_count`=#{errorsCount} where `id`=#{id}
     </update>
 
 </mapper>

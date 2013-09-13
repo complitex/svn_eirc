@@ -23,6 +23,14 @@ public class Container extends DictionaryObject {
     private ContainerType type;
     private Long parentId;
 
+    public Container() {
+    }
+
+    public Container(String data, ContainerType type) {
+        this.data = data;
+        this.type = type;
+    }
+
     public String getData() {
         return data;
     }
