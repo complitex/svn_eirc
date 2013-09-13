@@ -39,4 +39,7 @@ public class ParseRegistryConstants {
     public static final int MAX_CONTAINER_SIZE = 2048;
 
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("ddMMyyyyHHmmss");
+    public static final int MESSAGE_TYPE_HEADER = 0xC;
+    public static final int MESSAGE_TYPE_RECORD = 0x3;
+    public static final int MESSAGE_TYPE_FOOTER = 0xB;
 }

@@ -1,6 +1,9 @@
 package ru.flexpay.eirc.registry.entity;
 
+import com.google.common.collect.ImmutableMap;
 import org.complitex.dictionary.mybatis.IFixedIdType;
+
+import java.util.Map;
 
 import static ru.flexpay.eirc.registry.entity.RegistryType.*;
 
@@ -8,6 +11,7 @@ import static ru.flexpay.eirc.registry.entity.RegistryType.*;
  * @author Pavel Sknar
  */
 public enum ContainerType implements IFixedIdType {
+    UNDEFINED(0L, null),
     OPEN_ACCOUNT(1L, INFO),
     CLOSE_ACCOUNT(2L, CLOSED_ACCOUNTS),
     SET_RESPONSIBLE_PERSON(3L, INFO),
@@ -43,6 +47,18 @@ public enum ContainerType implements IFixedIdType {
     SET_CALCULATION_HEATING_SQUARE(604L, INFO)
     ;
 
+    private static final Map<Long, ContainerType> CONTAINER_TYPE_MAP;
+
+    static {
+        ImmutableMap.Builder<Long, ContainerType> builder = ImmutableMap.builder();
+
+        for (ContainerType containerType : ContainerType.values()) {
+            builder.put(containerType.getId(), containerType);
+        }
+
+        CONTAINER_TYPE_MAP = builder.build();
+    }
+
     private Long id;
     private RegistryType registryType;
 
@@ -58,5 +74,10 @@ public enum ContainerType implements IFixedIdType {
 
     public RegistryType getRegistryType() {
         return registryType;
+    }
+
+    public static ContainerType valueOf(Long id) {
+        ContainerType containerType = CONTAINER_TYPE_MAP.get(id);
+        return containerType != null? containerType : UNDEFINED;
     }
 }

@@ -164,4 +164,8 @@ public class Registry extends DictionaryObject {
         files.put((RegistryFileType)registryFile.get("registryFileType"), (RegistryFile)registryFile.get("registryFile"));
 
     }
+
+    public void addContainer(Container container) {
+        containers.add(container);
+    }
 }
