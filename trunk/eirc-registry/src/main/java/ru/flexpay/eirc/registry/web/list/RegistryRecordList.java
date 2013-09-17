@@ -97,7 +97,7 @@ public class RegistryRecordList extends TemplatePage {
 
             @Override
             protected int getSize() {
-                FilterWrapper<RegistryRecord> filterWrapper = FilterWrapper.of(new RegistryRecord());
+                FilterWrapper<RegistryRecord> filterWrapper = FilterWrapper.of(filterModel.getObject());
                 return registryRecordBean.count(filterWrapper);
             }
         };
