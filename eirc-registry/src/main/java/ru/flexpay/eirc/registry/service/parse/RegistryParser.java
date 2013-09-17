@@ -2,6 +2,7 @@ package ru.flexpay.eirc.registry.service.parse;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
+import org.complitex.dictionary.entity.DictionaryConfig;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.executor.ExecuteException;
@@ -23,8 +24,7 @@ import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.List;
-
-import static ru.flexpay.eirc.registry.service.parse.FileReader.Message;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Pavel Sknar
@@ -56,40 +56,84 @@ public class RegistryParser implements Serializable {
     @EJB
     private JobProcessor processor;
 
-    public Registry parse(File file) throws ExecuteException {
-        int numberReadChars = configBean.getInteger(RegistryConfig.NUMBER_READ_CHARS, true);
-        int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
-        return parse(file, numberReadChars, numberFlushRegistryRecords);
+    @EJB
+    private ParserQueueProcessor parserQueueProcessor;
+
+    public void parse(final IMessenger imessenger, final FinishCallback finishUpload) throws ExecuteException {
+        imessenger.addMessageInfo("Starting upload registries");
+        finishUpload.init();
+
+        final String dir = configBean.getString(DictionaryConfig.IMPORT_FILE_STORAGE_DIR, true);
+
+        String[] fileNames = new File(dir).list();
+
+        if (fileNames == null || fileNames.length == 0) {
+            imessenger.addMessageInfo("Files did not find for import");
+            finishUpload.complete();
+            return;
+        }
+        final AtomicInteger recordCounter = new AtomicInteger(fileNames.length);
+
+        for (final String fileName : fileNames) {
+            parserQueueProcessor.execute(new AbstractJob<Void>() {
+                @Override
+                public Void execute() throws ExecuteException {
+
+                    try {
+                        FileInputStream is = new FileInputStream(new File(dir, fileName));
+                        Registry registry = parse(imessenger, is, fileName);
+
+                        if (registry != null) {
+                            imessenger.addMessageInfo("Created registry with id=" + registry.getId() + " by file name: " + fileName);
+                        } else {
+                            imessenger.addMessageError("Failed upload registry file by file name: " + fileName);
+                        }
+
+                        return null;
+                    } catch (Throwable th) {
+                        String message = "Failed upload registry file by file name: " + fileName;
+                        imessenger.addMessageError(message);
+                        throw new ExecuteException(th, message);
+                    } finally {
+                        if (recordCounter.decrementAndGet() == 0) {
+                            imessenger.addMessageInfo("Finished upload registries");
+                            finishUpload.complete();
+                        }
+                    }
+                }
+            });
+        }
     }
 
-    public Registry parse(File file, int numberReadChars, int numberFlushRegistryRecords) throws ExecuteException {
+    public Registry parse(IMessenger imessenger, InputStream is, String fileName) throws ExecuteException {
+        int numberReadChars = configBean.getInteger(RegistryConfig.NUMBER_READ_CHARS, true);
+        int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
+        return parse(imessenger, is, fileName, numberReadChars, numberFlushRegistryRecords);
+    }
+
+    public Registry parse(IMessenger imessenger, InputStream is, String fileName, int numberReadChars, int numberFlushRegistryRecords)
+            throws ExecuteException {
         log.debug("start action");
 
         Logger processLog = log;
 
-        Context context = new Context(numberFlushRegistryRecords);
+        Context context = new Context(imessenger, numberFlushRegistryRecords);
 
-        FileReader reader;
-        try {
-            reader = new FileReader(new FileInputStream(file));
-        } catch (FileNotFoundException e) {
-            throw new ExecuteException(e, "Can not open file {}", file.getName());
-        }
+        FileReader reader = new FileReader(is);
 
         try {
-            List<Message> listMessage = Lists.newArrayList();
+            List<FileReader.Message> listMessage = Lists.newArrayList();
             boolean nextIterate;
             Registry registry = null;
             do {
-                listMessage = getMessages(reader, listMessage, numberReadChars);
+                listMessage = reader.getMessages(listMessage, numberReadChars);
+                log.debug("read {} number records", listMessage.size());
 
-                int i = 0;
-                for (Message message : listMessage) {
+                for (FileReader.Message message : listMessage) {
                     if (message == null) {
                         finalizeRegistry(context, processLog);
                         return registry;
                     }
-                    i++;
                     String messageValue = message.getBody();
                     if (StringUtils.isEmpty(messageValue)) {
                         continue;
@@ -100,16 +144,16 @@ public class RegistryParser implements Serializable {
                     Integer messageType = message.getType();
 
                     if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_HEADER)) {
-                        registry = processHeader(file, messageFieldList, processLog);
+                        registry = processHeader(fileName, messageFieldList, processLog);
                         if (registry == null) {
                             return null;
                         }
+                        context.addMessageInfo("Creating registry " + registry.getId().toString() + " by file " + fileName);
+                        log.debug("Creating registry {}", registry.getId());
                         context.setRegistry(registry);
-                        log.debug("Create registry {}. Add it to process parameters", registry.getId());
                     } else if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_RECORD)) {
                         RegistryRecord record = processRecord(registry, messageFieldList, processLog);
                         if (record == null) {
-                            reader.setInputStream(null);
                             return null;
                         }
                         context.add(record);
@@ -122,7 +166,6 @@ public class RegistryParser implements Serializable {
                 listMessage.clear();
 
             } while(nextIterate);
-            log.error("Failed registry file");
         } catch(Exception e) {
             log.error("Processing error", e);
             processLog.error("Inner error");
@@ -136,31 +179,6 @@ public class RegistryParser implements Serializable {
         }
 
         return null;
-    }
-
-    @SuppressWarnings ({"unchecked"})
-    private List<Message> getMessages(FileReader reader, List<Message> listMessage, Integer minReadChars)
-            throws ExecuteException, RegistryFormatException {
-        if (listMessage == null) {
-            listMessage = Lists.newArrayList();
-        } else if (!listMessage.isEmpty()) {
-            return listMessage;
-        }
-
-        try {
-            Long startPoint = reader.getPosition();
-            Message message;
-
-            do {
-                message = reader.readMessage();
-                listMessage.add(message);
-            } while (message != null && (reader.getPosition() - startPoint) < minReadChars);
-            log.debug("read {} number record", listMessage.size());
-
-            return listMessage;
-        } catch (IOException e) {
-            throw new ExecuteException("Failed open stream", e);
-        }
     }
 
     private void flushRecordStack(Context context, Logger processLog) throws ExecuteException {
@@ -180,6 +198,7 @@ public class RegistryParser implements Serializable {
                     registryRecordService.saveBulk(records);
                     //TODO save intermediate state
                     context.setRecordCounter(context.getRecordCounter() + records.size());
+                    context.addMessageInfo("Upload " + context.getRecordCounter() + " by registry=" + context.getRegistry());
                     return JobResult.SUCCESSFUL;
                 }
             });
@@ -210,7 +229,7 @@ public class RegistryParser implements Serializable {
         }
     }
 
-    private Registry processHeader(File file, List<String> messageFieldList, Logger processLog) {
+    private Registry processHeader(String fileName, List<String> messageFieldList, Logger processLog) {
         if (messageFieldList.size() < 10) {
             processLog.error("Message header error, invalid number of fields: {}, expected at least 10", messageFieldList.size());
             return null;
@@ -518,8 +537,11 @@ public class RegistryParser implements Serializable {
 
         private BatchProcessor<JobResult> batchProcessor;
 
-        private Context(int numberFlushRegistryRecords) {
+        private IMessenger imessenger;
+
+        private Context(IMessenger imessenger, int numberFlushRegistryRecords) {
             this.numberFlushRegistryRecords = numberFlushRegistryRecords;
+            this.imessenger = imessenger;
             batchProcessor = new BatchProcessor<>(10, processor);
         }
 
@@ -557,6 +579,21 @@ public class RegistryParser implements Serializable {
 
         public void clearRecords() {
             records = Lists.newArrayList();
+        }
+
+        public void addMessageInfo(String message) {
+            message = addRegistryToMessage(message);
+            imessenger.addMessageInfo(message);
+
+        }
+
+        public void addMessageError(String message) {
+            message = addRegistryToMessage(message);
+            imessenger.addMessageError(message);
+        }
+
+        private String addRegistryToMessage(String message) {
+            return registry != null? message + " by registry=" + registry.getId().toString() : message;
         }
     }
 }

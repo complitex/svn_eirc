@@ -1,9 +1,13 @@
 package ru.flexpay.eirc.registry.service.parse;
 
+import com.google.common.collect.Lists;
+import org.complitex.dictionary.service.executor.ExecuteException;
+
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * @author Pavel Sknar
@@ -28,6 +32,30 @@ public class FileReader {
         this.is = bufferSize > 0? new BufferedInputStream(is, bufferSize) : new BufferedInputStream(is);
         this.charset = DEFAULT_CHARSET;
         this.position = 0;
+    }
+
+    @SuppressWarnings ({"unchecked"})
+    public List<Message> getMessages(List<Message> listMessage, Integer minReadChars)
+            throws ExecuteException, RegistryFormatException {
+        if (listMessage == null) {
+            listMessage = Lists.newArrayList();
+        } else if (!listMessage.isEmpty()) {
+            return listMessage;
+        }
+
+        try {
+            Long startPoint = getPosition();
+            FileReader.Message message;
+
+            do {
+                message = readMessage();
+                listMessage.add(message);
+            } while (message != null && (getPosition() - startPoint) < minReadChars);
+
+            return listMessage;
+        } catch (IOException e) {
+            throw new ExecuteException("Failed open stream", e);
+        }
     }
 
     public Message readMessage() throws IOException, RegistryFormatException {
