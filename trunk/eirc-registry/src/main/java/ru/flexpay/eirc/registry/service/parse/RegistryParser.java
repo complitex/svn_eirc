@@ -84,7 +84,7 @@ public class RegistryParser implements Serializable {
                         Registry registry = parse(imessenger, is, fileName);
 
                         if (registry != null) {
-                            imessenger.addMessageInfo("Created registry with id=" + registry.getId() + " by file name: " + fileName);
+                            imessenger.addMessageInfo("Created registry with registry number " + registry.getRegistryNumber() + " by file name: " + fileName);
                         } else {
                             imessenger.addMessageError("Failed upload registry file by file name: " + fileName);
                         }
@@ -148,9 +148,9 @@ public class RegistryParser implements Serializable {
                         if (registry == null) {
                             return null;
                         }
-                        context.addMessageInfo("Creating registry " + registry.getId().toString() + " by file " + fileName);
-                        log.debug("Creating registry {}", registry.getId());
                         context.setRegistry(registry);
+                        context.addMessageInfo("Creating registry by file " + fileName);
+                        log.debug("Creating registry {}", registry.getId());
                     } else if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_RECORD)) {
                         RegistryRecord record = processRecord(registry, messageFieldList, processLog);
                         if (record == null) {
@@ -198,7 +198,7 @@ public class RegistryParser implements Serializable {
                     registryRecordService.saveBulk(records);
                     //TODO save intermediate state
                     context.setRecordCounter(context.getRecordCounter() + records.size());
-                    context.addMessageInfo("Upload " + context.getRecordCounter() + " by registry=" + context.getRegistry());
+                    context.addMessageInfo("Upload number registries " + context.getRecordCounter());
                     return JobResult.SUCCESSFUL;
                 }
             });
@@ -305,7 +305,7 @@ public class RegistryParser implements Serializable {
 
             return newRegistry;
         } catch (NumberFormatException | ParseException | TransitionNotAllowed e) {
-            processLog.error("Header parse error", e);
+            processLog.error("Header parse error in file: {}", fileName, e);
         }
         return null;
     }
@@ -593,7 +593,7 @@ public class RegistryParser implements Serializable {
         }
 
         private String addRegistryToMessage(String message) {
-            return registry != null? message + " by registry=" + registry.getId().toString() : message;
+            return registry != null? message + " by registry number " + registry.getRegistryNumber().toString() : message;
         }
     }
 }

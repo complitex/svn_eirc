@@ -33,7 +33,8 @@ public class Organization extends DomainObject {
     public boolean isServiceProvider() {
         List<Attribute> types = getAttributes(IOrganizationStrategy.ORGANIZATION_TYPE);
         for (Attribute type : types) {
-            if (type.getValueId().equals(OrganizationType.SERVICE_PROVIDER.getId())) {
+            if (type.getValueId() != null &&
+                    type.getValueId().equals(OrganizationType.SERVICE_PROVIDER.getId())) {
                 return true;
             }
         }

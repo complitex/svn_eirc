@@ -1,17 +1,10 @@
 package ru.flexpay.eirc.registry.service.parse;
 
-import javax.ejb.Stateful;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionManagement;
-import javax.ejb.TransactionManagementType;
-
-import static javax.ejb.TransactionAttributeType.NOT_SUPPORTED;
+import javax.ejb.Stateless;
 
 /**
  * @author Pavel Sknar
  */
-@Stateful
-@TransactionManagement(TransactionManagementType.BEAN)
-@TransactionAttribute(value= NOT_SUPPORTED)
+@Stateless
 public class RegistryParserMessenger extends IMessenger {
 }
