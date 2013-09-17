@@ -33,12 +33,10 @@ public class RegistryRecordBean extends AbstractBean {
         for (RegistryRecord registryRecord : registryRecords) {
             saveRegistryRecord(sqlSession, registryRecord);
         }
-        sqlSession.flushStatements();
 
         for (RegistryRecord registryRecord : registryRecords) {
             saveRegistryRecordContainers(sqlSession, registryRecord);
         }
-        sqlSession.flushStatements();
     }
 
     @Transactional
