@@ -96,6 +96,8 @@ public class RegistryList extends TemplatePage {
     @EJB
     private RegistryParserFinishCallback finishCallback;
 
+    private AjaxSelfUpdatingTimerBehavior timerBehavior;
+
     public RegistryList() throws ExecutionException, InterruptedException {
         init();
     }
@@ -121,16 +123,10 @@ public class RegistryList extends TemplatePage {
         add(container);
 
 
-        messagesContainer.add(new AjaxSelfUpdatingTimerBehavior(Duration.seconds(5)) {
-            @Override
-            protected void onPostProcessTarget(AjaxRequestTarget target) {
-                showIMessages(target);
-
-                if (finishCallback.isCompleted()) {
-                    stop();
-                }
-            }
-        });
+        if (imessenger.countIMessages() > 0 || !finishCallback.isCompleted()) {
+            timerBehavior = new MessageBehavior(Duration.seconds(5));
+            messagesContainer.add(timerBehavior);
+        }
 
 
         //Form
@@ -362,6 +358,13 @@ public class RegistryList extends TemplatePage {
             @Override
             protected void onClick(final AjaxRequestTarget target) {
 
+                if (timerBehavior == null) {
+
+                    timerBehavior = new MessageBehavior(Duration.seconds(5));
+
+                    messagesContainer.add(timerBehavior);
+                }
+
                 try {
                     parser.parse(imessenger, finishCallback);
                 } catch (ExecuteException e) {
@@ -388,6 +391,23 @@ public class RegistryList extends TemplatePage {
                 }
             }
             target.add(messagesContainer);
+        }
+    }
+
+    private class MessageBehavior extends AjaxSelfUpdatingTimerBehavior {
+        private MessageBehavior(Duration updateInterval) {
+            super(updateInterval);
+        }
+
+        @Override
+        protected void onPostProcessTarget(AjaxRequestTarget target) {
+            showIMessages(target);
+
+            if (finishCallback.isCompleted() && imessenger.countIMessages() <= 0) {
+                stop();
+                messagesContainer.remove(timerBehavior);
+                timerBehavior = null;
+            }
         }
     }
 
