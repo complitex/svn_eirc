@@ -1,8 +1,12 @@
 package ru.flexpay.eirc.registry.service.parse;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
+import org.complitex.dictionary.service.SessionBean;
 
+import javax.ejb.EJB;
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Queue;
 
 /**
@@ -10,28 +14,41 @@ import java.util.Queue;
  */
 public class IMessenger {
 
-    private Queue<IMessage> imessages = Queues.newConcurrentLinkedQueue();
+    @EJB
+    private SessionBean sessionBean;
+
+    private Map<Long, Queue<IMessage>> imessages = Maps.newConcurrentMap();
 
     public void addMessageInfo(String message) {
-        imessages.add(new IMessage(IMessageType.INFO, message));
+        getIMessages().add(new IMessage(IMessageType.INFO, message));
 
     }
 
     public void addMessageError(String message) {
-        imessages.add(new IMessage(IMessageType.ERROR, message));
+        getIMessages().add(new IMessage(IMessageType.ERROR, message));
     }
 
 
     public Queue<IMessage> getIMessages() {
-        return imessages;
+        return getUserIMessages();
     }
 
     public int countIMessages() {
-        return imessages.size();
+        return getIMessages().size();
     }
 
     public IMessage getNextIMessage() {
-        return imessages.poll();
+        return getIMessages().poll();
+    }
+
+    private Queue<IMessage> getUserIMessages() {
+        Long userId = sessionBean.getCurrentUserId();
+        Queue<IMessage> userIMessages = imessages.get(userId);
+        if (userIMessages == null) {
+            userIMessages = Queues.newConcurrentLinkedQueue();
+            imessages.put(userId, userIMessages);
+        }
+        return userIMessages;
     }
 
     public class IMessage implements Serializable {

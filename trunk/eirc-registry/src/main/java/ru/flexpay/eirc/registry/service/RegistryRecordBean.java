@@ -27,16 +27,22 @@ public class RegistryRecordBean extends AbstractBean {
         return getSqlSessionManager().selectOne(NS + ".countRegistryRecords", filter);
     }
 
-    @Transactional
+    @Transactional(
+            executorType = ExecutorType.BATCH
+    )
     public void saveBulk(List<RegistryRecord> registryRecords) {
-        SqlSession sqlSession = getSqlSessionManager().openSession(ExecutorType.BATCH);
-        for (RegistryRecord registryRecord : registryRecords) {
-            saveRegistryRecord(sqlSession, registryRecord);
-        }
+        SqlSession session = sqlSession();
 
         for (RegistryRecord registryRecord : registryRecords) {
-            saveRegistryRecordContainers(sqlSession, registryRecord);
+            saveRegistryRecord(session, registryRecord);
         }
+
+        session.flushStatements();
+
+        for (RegistryRecord registryRecord : registryRecords) {
+            saveRegistryRecordContainers(session, registryRecord);
+        }
+
     }
 
     @Transactional

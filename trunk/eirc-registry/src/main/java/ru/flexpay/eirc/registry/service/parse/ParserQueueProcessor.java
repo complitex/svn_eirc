@@ -6,6 +6,8 @@ import ru.flexpay.eirc.registry.service.JobProcessor;
 import ru.flexpay.eirc.registry.service.QueueProcessor;
 
 import javax.annotation.PostConstruct;
+import javax.ejb.ConcurrencyManagement;
+import javax.ejb.ConcurrencyManagementType;
 import javax.ejb.EJB;
 import javax.ejb.Singleton;
 
@@ -13,6 +15,7 @@ import javax.ejb.Singleton;
  * @author Pavel Sknar
  */
 @Singleton
+@ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 public class ParserQueueProcessor extends QueueProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(ParserQueueProcessor.class);

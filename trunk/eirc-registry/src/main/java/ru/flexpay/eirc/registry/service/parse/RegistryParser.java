@@ -2,11 +2,14 @@ package ru.flexpay.eirc.registry.service.parse;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
+import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.complitex.dictionary.entity.DictionaryConfig;
 import org.complitex.dictionary.entity.FilterWrapper;
+import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.util.DateUtil;
+import org.complitex.dictionary.util.EjbBeanLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.organization.entity.Organization;
@@ -18,18 +21,19 @@ import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
 
 import javax.ejb.EJB;
-import javax.ejb.Stateless;
+import javax.ejb.Singleton;
 import java.io.*;
 import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Pavel Sknar
  */
-@Stateless
+@Singleton
 public class RegistryParser implements Serializable {
 
     private static final Logger log = LoggerFactory.getLogger(RegistryParser.class);
@@ -81,7 +85,7 @@ public class RegistryParser implements Serializable {
 
                     try {
                         FileInputStream is = new FileInputStream(new File(dir, fileName));
-                        Registry registry = parse(imessenger, is, fileName);
+                        Registry registry = EjbBeanLocator.getBean(RegistryParser.class).parse(imessenger, is, fileName);
 
                         if (registry != null) {
                             imessenger.addMessageInfo("Created registry with registry number " + registry.getRegistryNumber() + " by file name: " + fileName);
@@ -195,7 +199,8 @@ public class RegistryParser implements Serializable {
             context.getBatchProcessor().processJob(new AbstractJob<JobResult>() {
                 @Override
                 public JobResult execute() throws ExecuteException {
-                    registryRecordService.saveBulk(records);
+                    EjbBeanLocator.getBean(RegistryRecordBean.class).saveBulk(records);
+                    //registryRecordService.saveBulk(records);
                     //TODO save intermediate state
                     context.setRecordCounter(context.getRecordCounter() + records.size());
                     context.addMessageInfo("Upload number registries " + context.getRecordCounter());
@@ -208,6 +213,10 @@ public class RegistryParser implements Serializable {
     }
 
     private void finalizeRegistry(Context context, Logger processLog) throws ExecuteException {
+
+        if (context.getRegistry() == null) {
+            return;
+        }
 
         flushRecordStack(context, true, processLog);
 
@@ -239,7 +248,7 @@ public class RegistryParser implements Serializable {
 
         DateFormat dateFormat = ParseRegistryConstants.DATE_FORMAT;
 
-        Registry newRegistry = new Registry();
+        final Registry newRegistry = new Registry();
         try {
             registryWorkflowManager.setInitialStatus(newRegistry);
             // TODO attach file
@@ -301,7 +310,23 @@ public class RegistryParser implements Serializable {
 
             newRegistry.setLoadDate(DateUtil.getCurrentDate());
 
-            registryService.save(newRegistry);
+            final CountDownLatch latch = new CountDownLatch(1);
+            processor.processJob(new AbstractJob<Void>() {
+                @Override
+                public Void execute() throws ExecuteException {
+                    try {
+                        EjbBeanLocator.getBean(RegistryBean.class).save(newRegistry);
+                        return null;
+                    } finally {
+                        latch.countDown();
+                    }
+                }
+            });
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                //
+            }
 
             return newRegistry;
         } catch (NumberFormatException | ParseException | TransitionNotAllowed e) {
@@ -428,8 +453,11 @@ public class RegistryParser implements Serializable {
         return true;
     }
 
+    @Transactional(isolationLevel = TransactionIsolationLevel.READ_UNCOMMITTED)
     private boolean validateRegistry(Registry registry, Logger processLog) {
-        int countRegistries = registryService.count(FilterWrapper.of(registry));
+        Registry filterObject = new Registry();
+        filterObject.setRegistryNumber(registry.getRegistryNumber());
+        int countRegistries = registryService.count(FilterWrapper.of(filterObject));
         if (countRegistries > 0) {
             processLog.error("Registry was already uploaded");
             return false;
