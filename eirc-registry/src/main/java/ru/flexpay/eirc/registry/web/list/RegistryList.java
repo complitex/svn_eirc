@@ -383,10 +383,10 @@ public class RegistryList extends TemplatePage {
             while ((importMessage = imessenger.getNextIMessage()) != null) {
                 switch (importMessage.getType()) {
                     case ERROR:
-                        messagesContainer.error(importMessage.getData());
+                        messagesContainer.error(importMessage.getLocalizedString(getLocale()));
                         break;
                     case INFO:
-                        messagesContainer.info(importMessage.getData());
+                        messagesContainer.info(importMessage.getLocalizedString(getLocale()));
                         break;
                 }
             }

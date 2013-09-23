@@ -21,19 +21,21 @@ import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
 
 import javax.ejb.EJB;
-import javax.ejb.Singleton;
+import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import java.io.*;
 import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Pavel Sknar
  */
-@Singleton
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+@Stateless
 public class RegistryParser implements Serializable {
 
     private static final Logger log = LoggerFactory.getLogger(RegistryParser.class);
@@ -64,7 +66,7 @@ public class RegistryParser implements Serializable {
     private ParserQueueProcessor parserQueueProcessor;
 
     public void parse(final IMessenger imessenger, final FinishCallback finishUpload) throws ExecuteException {
-        imessenger.addMessageInfo("Starting upload registries");
+        imessenger.addMessageInfo("starting_upload_registries");
         finishUpload.init();
 
         final String dir = configBean.getString(DictionaryConfig.IMPORT_FILE_STORAGE_DIR, true);
@@ -72,7 +74,7 @@ public class RegistryParser implements Serializable {
         String[] fileNames = new File(dir).list();
 
         if (fileNames == null || fileNames.length == 0) {
-            imessenger.addMessageInfo("Files did not find for import");
+            imessenger.addMessageInfo("files_not_found");
             finishUpload.complete();
             return;
         }
@@ -88,19 +90,18 @@ public class RegistryParser implements Serializable {
                         Registry registry = EjbBeanLocator.getBean(RegistryParser.class).parse(imessenger, is, fileName);
 
                         if (registry != null) {
-                            imessenger.addMessageInfo("Created registry with registry number " + registry.getRegistryNumber() + " by file name: " + fileName);
+                            imessenger.addMessageInfo("registry_created", registry.getRegistryNumber(), fileName);
                         } else {
-                            imessenger.addMessageError("Failed upload registry file by file name: " + fileName);
+                            imessenger.addMessageError("registry_failed_upload", fileName);
                         }
 
                         return null;
                     } catch (Throwable th) {
-                        String message = "Failed upload registry file by file name: " + fileName;
-                        imessenger.addMessageError(message);
-                        throw new ExecuteException(th, message);
+                        imessenger.addMessageError("registry_failed_upload", fileName);
+                        throw new ExecuteException(th, "Failed upload registry file by file name: " + fileName);
                     } finally {
                         if (recordCounter.decrementAndGet() == 0) {
-                            imessenger.addMessageInfo("Finished upload registries");
+                            imessenger.addMessageInfo("registry_finish_upload");
                             finishUpload.complete();
                         }
                     }
@@ -152,8 +153,9 @@ public class RegistryParser implements Serializable {
                         if (registry == null) {
                             return null;
                         }
+                        saveRegistry(registry);
                         context.setRegistry(registry);
-                        context.addMessageInfo("Creating registry by file " + fileName);
+                        context.addMessageInfo("registry_creating", registry.getRegistryNumber(), fileName);
                         log.debug("Creating registry {}", registry.getId());
                     } else if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_RECORD)) {
                         RegistryRecord record = processRecord(registry, messageFieldList, processLog);
@@ -189,7 +191,6 @@ public class RegistryParser implements Serializable {
         flushRecordStack(context, false, processLog);
     }
 
-    @SuppressWarnings ({"unchecked"})
     private void flushRecordStack(final Context context, boolean finalize, Logger processLog) throws ExecuteException {
         if (context.getRecords() != null &&
                 (context.getRecords().size() >= context.getNumberFlushRegistryRecords() || finalize)) {
@@ -199,11 +200,11 @@ public class RegistryParser implements Serializable {
             context.getBatchProcessor().processJob(new AbstractJob<JobResult>() {
                 @Override
                 public JobResult execute() throws ExecuteException {
-                    EjbBeanLocator.getBean(RegistryRecordBean.class).saveBulk(records);
+                    registryRecordService.saveBulk(records);
                     //registryRecordService.saveBulk(records);
                     //TODO save intermediate state
                     context.setRecordCounter(context.getRecordCounter() + records.size());
-                    context.addMessageInfo("Upload number registries " + context.getRecordCounter());
+                    context.addMessageInfo("registry_record_upload", context.getRegistry().getRegistryNumber(), context.getRecordCounter());
                     return JobResult.SUCCESSFUL;
                 }
             });
@@ -231,6 +232,11 @@ public class RegistryParser implements Serializable {
                     context.getRegistry().getRecordsCount() + ", found: " + context.getRecordCounter());
         }
 
+        setNextSuccessStatus(context);
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    private void setNextSuccessStatus(Context context) throws ExecuteException {
         try {
             registryWorkflowManager.setNextSuccessStatus(context.getRegistry());
         } catch (TransitionNotAllowed transitionNotAllowed) {
@@ -310,6 +316,18 @@ public class RegistryParser implements Serializable {
 
             newRegistry.setLoadDate(DateUtil.getCurrentDate());
 
+            return newRegistry;
+        } catch (NumberFormatException | ParseException | TransitionNotAllowed e) {
+            processLog.error("Header parse error in file: {}", fileName, e);
+        }
+        return null;
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    private void saveRegistry(Registry registry) {
+        registryService.save(registry);
+
+            /*
             final CountDownLatch latch = new CountDownLatch(1);
             processor.processJob(new AbstractJob<Void>() {
                 @Override
@@ -327,12 +345,7 @@ public class RegistryParser implements Serializable {
             } catch (InterruptedException e) {
                 //
             }
-
-            return newRegistry;
-        } catch (NumberFormatException | ParseException | TransitionNotAllowed e) {
-            processLog.error("Header parse error in file: {}", fileName, e);
-        }
-        return null;
+            */
     }
 
     private boolean validateServiceProvider(Registry registry, Logger processLog) {
@@ -609,19 +622,13 @@ public class RegistryParser implements Serializable {
             records = Lists.newArrayList();
         }
 
-        public void addMessageInfo(String message) {
-            message = addRegistryToMessage(message);
-            imessenger.addMessageInfo(message);
+        public void addMessageInfo(String message, Object... parameters) {
+            imessenger.addMessageInfo(message, parameters);
 
         }
 
-        public void addMessageError(String message) {
-            message = addRegistryToMessage(message);
-            imessenger.addMessageError(message);
-        }
-
-        private String addRegistryToMessage(String message) {
-            return registry != null? message + " by registry number " + registry.getRegistryNumber().toString() : message;
+        public void addMessageError(String message, Object... parameters) {
+            imessenger.addMessageError(message, parameters);
         }
     }
 }

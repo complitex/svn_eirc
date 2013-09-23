@@ -7,4 +7,10 @@ import javax.ejb.Stateless;
  */
 @Stateless
 public class RegistryParserMessenger extends IMessenger {
+    private static final String RESOURCE_BUNDLE = RegistryParserMessenger.class.getName();
+
+    @Override
+    protected String getResourceBundle() {
+        return RESOURCE_BUNDLE;
+    }
 }
