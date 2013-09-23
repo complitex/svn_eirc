@@ -3,31 +3,33 @@ package ru.flexpay.eirc.registry.service.parse;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import org.complitex.dictionary.service.SessionBean;
+import org.complitex.dictionary.util.ResourceUtil;
 
 import javax.ejb.EJB;
 import java.io.Serializable;
+import java.text.MessageFormat;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 
 /**
  * @author Pavel Sknar
  */
-public class IMessenger {
+public abstract class IMessenger {
 
     @EJB
     private SessionBean sessionBean;
 
     private Map<Long, Queue<IMessage>> imessages = Maps.newConcurrentMap();
 
-    public void addMessageInfo(String message) {
-        getIMessages().add(new IMessage(IMessageType.INFO, message));
+    public void addMessageInfo(String message, Object... parameters) {
+        getIMessages().add(new IMessage(IMessageType.INFO, message, parameters));
 
     }
 
-    public void addMessageError(String message) {
-        getIMessages().add(new IMessage(IMessageType.ERROR, message));
+    public void addMessageError(String message, Object... parameters) {
+        getIMessages().add(new IMessage(IMessageType.ERROR, message, parameters));
     }
-
 
     public Queue<IMessage> getIMessages() {
         return getUserIMessages();
@@ -51,14 +53,19 @@ public class IMessenger {
         return userIMessages;
     }
 
+    protected abstract String getResourceBundle();
+
     public class IMessage implements Serializable {
         private IMessageType type;
 
         private String data;
 
-        private IMessage(IMessageType type, String data) {
+        private Object[] parameters;
+
+        private IMessage(IMessageType type, String data, Object... parameters) {
             this.type = type;
             this.data = data;
+            this.parameters = parameters;
         }
 
         public IMessageType getType() {
@@ -67,6 +74,15 @@ public class IMessenger {
 
         public String getData() {
             return data;
+        }
+
+        public Object[] getParameters() {
+            return parameters;
+        }
+
+        public String getLocalizedString(Locale locale) {
+            String message = ResourceUtil.getString(getResourceBundle(), String.valueOf(getData()), locale);
+            return parameters != null && parameters.length > 0? MessageFormat.format(message, parameters) : message;
         }
     }
 

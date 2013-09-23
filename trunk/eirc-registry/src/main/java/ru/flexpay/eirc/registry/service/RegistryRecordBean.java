@@ -10,6 +10,8 @@ import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecord;
 
 import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import java.util.List;
 
 /**
@@ -27,9 +29,8 @@ public class RegistryRecordBean extends AbstractBean {
         return getSqlSessionManager().selectOne(NS + ".countRegistryRecords", filter);
     }
 
-    @Transactional(
-            executorType = ExecutorType.BATCH
-    )
+    @Transactional(executorType = ExecutorType.BATCH)
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void saveBulk(List<RegistryRecord> registryRecords) {
         SqlSession session = sqlSession();
 

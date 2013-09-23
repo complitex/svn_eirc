@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 
 /**
  * @author Pavel Sknar
@@ -18,19 +19,16 @@ public class BatchProcessor<T> implements Serializable {
     private static final Logger log = LoggerFactory.getLogger(BatchProcessor.class);
 
     private JobProcessor processor;
-    private int batchSize;
-    private volatile int countWorker = 0;
+    private Semaphore semaphore;
 
     List<CountDownLatch> waitEndWorks = Lists.newArrayList();
 
     public BatchProcessor(int batchSize, JobProcessor processor) {
-        this.batchSize = batchSize;
         this.processor = processor;
+        semaphore = new Semaphore(batchSize);
     }
 
     public Future<T> processJob(final AbstractJob<T> job) {
-
-        final CountDownLatch latch = new CountDownLatch(1);
 
         AbstractJob<T> innerJob = new AbstractJob<T>() {
 
@@ -39,36 +37,28 @@ public class BatchProcessor<T> implements Serializable {
                 try {
                     return job.execute();
                 } finally {
-                    latch.countDown();
-                    synchronized (this) {
-                        countWorker--;
-                        jobFinalize();
-                    }
+                    semaphore.release();
+                    jobFinalize();
                 }
             }
         };
 
-        if (countWorker >= batchSize) {
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                //
-            }
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) {
+            //
         }
-        countWorker++;
 
         return processor.processJob(innerJob);
 
     }
 
     public void waitEndWorks() {
-        while (countWorker > 0) {
+        while (semaphore.getQueueLength() > 0) {
             CountDownLatch waitEndWork;
-            synchronized (this) {
-                waitEndWork  = new CountDownLatch(countWorker);
-                log.debug("create latch: {}", waitEndWork);
-                waitEndWorks.add(waitEndWork);
-            }
+            waitEndWork  = new CountDownLatch(semaphore.getQueueLength());
+            log.debug("create latch: {}", waitEndWork);
+            waitEndWorks.add(waitEndWork);
             try {
                 waitEndWork.await();
                 log.debug("finish latch: {}", waitEndWork);
