@@ -1,15 +1,14 @@
 package ru.flexpay.eirc.registry.service;
 
-import com.google.common.collect.Lists;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Pavel Sknar
@@ -21,10 +20,14 @@ public class BatchProcessor<T> implements Serializable {
     private JobProcessor processor;
     private Semaphore semaphore;
 
-    List<CountDownLatch> waitEndWorks = Lists.newArrayList();
+    private CountDownLatch latch;
+    private ReentrantLock lock = new ReentrantLock();
+
+    private int batchSize;
 
     public BatchProcessor(int batchSize, JobProcessor processor) {
         this.processor = processor;
+        this.batchSize = batchSize;
         semaphore = new Semaphore(batchSize);
     }
 
@@ -37,8 +40,10 @@ public class BatchProcessor<T> implements Serializable {
                 try {
                     return job.execute();
                 } finally {
+                    lock.lock();
                     semaphore.release();
                     jobFinalize();
+                    lock.unlock();
                 }
             }
         };
@@ -54,25 +59,27 @@ public class BatchProcessor<T> implements Serializable {
     }
 
     public void waitEndWorks() {
-        while (semaphore.getQueueLength() > 0) {
-            CountDownLatch waitEndWork;
-            waitEndWork  = new CountDownLatch(semaphore.getQueueLength());
-            log.debug("create latch: {}", waitEndWork);
-            waitEndWorks.add(waitEndWork);
-            try {
-                waitEndWork.await();
-                log.debug("finish latch: {}", waitEndWork);
-            } catch (InterruptedException e) {
-                //
-            }
+        lock.lock();
+        int countWork = batchSize - semaphore.availablePermits();
+        if (latch == null && countWork > 0) {
+            latch = new CountDownLatch(countWork);
         }
+        lock.unlock();
+        try {
+            if (latch != null) {
+                latch.await();
+            }
+        } catch (InterruptedException e) {
+            //
+        }
+        latch = null;
     }
 
     protected void jobFinalize() {
         log.debug("finalize job");
-        for (CountDownLatch waitEndWork : waitEndWorks) {
-            waitEndWork.countDown();
-            log.debug("finalize latch: {}", waitEndWork);
+        if (latch != null) {
+            latch.countDown();
+            log.debug("finalize latch: {}", latch);
         }
     }
 }
