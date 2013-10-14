@@ -19,10 +19,10 @@
                 <pathelement location="${jdbc}"/>
             </classpath>
 
-            <!--transaction src="../../complitex/complitex-db/complitex-insert.sql"/-->
+            <transaction src="../../complitex/complitex-db/complitex-insert.sql"/>
             <transaction src="../../complitex/complitex-db/complitex-sequence.sql"/>
 
-            <!--transaction src="eirc-insert.sql"/-->
+            <transaction src="eirc-insert.sql"/>
             <transaction src="eirc-sequence.sql"/>
         </sql>
     </target>

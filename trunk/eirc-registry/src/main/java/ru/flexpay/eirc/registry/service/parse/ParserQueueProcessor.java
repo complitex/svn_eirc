@@ -25,10 +25,14 @@ public class ParserQueueProcessor extends QueueProcessor {
 
     @PostConstruct
     @Override
-    public void run() throws InterruptedException {
+    public void run() {
         setProcessor(processor);
         log.info("run");
-        super.run();
+        try {
+            super.run();
+        } catch (InterruptedException e) {
+            //
+        }
         log.info("runned");
     }
 }
