@@ -79,7 +79,7 @@ public class ServiceProviderAccountBean extends AbstractBean {
         return sqlSession().selectOne(NS + ".selectServiceProviderAccountByPkId", pkId);
     }
 
-    private static void addFilterMappingObject(FilterWrapper<ServiceProviderAccount> filter) {
+    private void addFilterMappingObject(FilterWrapper<ServiceProviderAccount> filter) {
         if (filter != null) {
             if (filter.getObject() != null) {
                 ServiceBean.addFilterMappingObject(filter, filter.getObject().getService());
@@ -89,7 +89,7 @@ public class ServiceProviderAccountBean extends AbstractBean {
         }
     }
 
-    public static void addFilterMappingObject(FilterWrapper<?> filter,
+    public void addFilterMappingObject(FilterWrapper<?> filter,
                                               ServiceProviderAccount serviceProviderAccount) {
         if (filter != null) {
             filter.getMap().put(FILTER_MAPPING_ATTRIBUTE_NAME, serviceProviderAccount);
