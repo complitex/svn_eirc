@@ -72,6 +72,10 @@
     <sql id="registryCondition">
         <if test="object != null">
 
+            <if test="object.id != null">
+                and r.`id` = #{object.id}
+            </if>
+
             <if test="object.type != null">
                 and r.`type` = #{object.type.id}
             </if>
@@ -93,7 +97,7 @@
             </if>
 
             <if test="object.loadDate != null">
-                and #{object.loadDate} == r.`load_date`
+                and #{object.loadDate} = date(r.`load_date`)
             </if>
 
             <if test="object.senderOrganizationId != null">

@@ -29,6 +29,15 @@ public class RegistryRecordBean extends AbstractBean {
         return getSqlSessionManager().selectOne(NS + ".countRegistryRecords", filter);
     }
 
+    /**
+     * Get registry records to linking
+     * @param filter Filter must content registryId, count, first
+     * @return registry records
+     */
+    public List<RegistryRecord> getRecordsToLinking(FilterWrapper<RegistryRecord> filter) {
+        return getSqlSessionManager().selectList(NS + ".selectRecordsToLinking", filter);
+    }
+
     @Transactional(executorType = ExecutorType.BATCH)
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void saveBulk(List<RegistryRecord> registryRecords) {
@@ -54,7 +63,11 @@ public class RegistryRecordBean extends AbstractBean {
     }
 
     private void saveRegistryRecord(SqlSession session, RegistryRecord registryRecord) {
-        session.insert(NS + ".insertRegistryRecord", registryRecord);
+        if (registryRecord.getId() == null) {
+            session.insert(NS + ".insertRegistryRecord", registryRecord);
+        } else {
+            session.update(NS + ".updateRegistryRecord", registryRecord);
+        }
     }
 
     private void saveRegistryRecordContainers(SqlSession session, RegistryRecord registryRecord) {
@@ -63,6 +76,10 @@ public class RegistryRecordBean extends AbstractBean {
             container.setParentId(registryRecord.getId());
             session.insert(NS + ".insertRegistryRecordContainer", container);
         }
+    }
+
+    public boolean hasRecordsToLinking(Registry registry) {
+        return sqlSession().selectOne(NS + ".hasRecordsToLinking", registry.getId()) != null;
     }
 
     public boolean hasRecordsToProcessing(Registry registry) {

@@ -509,12 +509,12 @@ public class RegistryParser implements Serializable {
                             String.format("Address group '%s' has invalid number of fields %d",
                                     addressStr, addressFieldList.size()));
                 }
-                record.setTownName(addressFieldList.get(0));
+                record.setCity(addressFieldList.get(0));
                 record.setStreetType(addressFieldList.get(1));
-                record.setStreetName(addressFieldList.get(2));
-                record.setBuildingNum(addressFieldList.get(3));
-                record.setBuildingBulkNum(addressFieldList.get(4));
-                record.setApartmentNum(addressFieldList.get(5));
+                record.setStreet(addressFieldList.get(2));
+                record.setBuildingNumber(addressFieldList.get(3));
+                record.setBuildingCorp(addressFieldList.get(4));
+                record.setApartment(addressFieldList.get(5));
             }
 
             // setup person first, middle, last names

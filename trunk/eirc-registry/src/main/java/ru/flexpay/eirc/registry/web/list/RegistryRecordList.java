@@ -114,13 +114,13 @@ public class RegistryRecordList extends TemplatePage {
 
                 item.add(new Label("serviceCode"));
                 item.add(new Label("personalAccountExt"));
-                item.add(new Label("townType"));
-                item.add(new Label("townName"));
+                item.add(new Label("cityType"));
+                item.add(new Label("city"));
                 item.add(new Label("streetType"));
-                item.add(new Label("streetName"));
-                item.add(new Label("buildingNum"));
-                item.add(new Label("buildingBulkNum"));
-                item.add(new Label("apartmentNum"));
+                item.add(new Label("street"));
+                item.add(new Label("buildingNumber"));
+                item.add(new Label("buildingCorp"));
+                item.add(new Label("apartment"));
                 item.add(new Label("lastName"));
                 item.add(new Label("firstName"));
                 item.add(new Label("middleName"));
@@ -158,8 +158,8 @@ public class RegistryRecordList extends TemplatePage {
         //Sorting
         filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true,
                 "registryRecordServiceCode", "registryRecordPersonalAccountExt",
-                "registryRecordTownType",    "registryRecordTownName",
-                "registryRecordStreetType", "registryRecordStreetName",
+                "registryRecordCityType",    "registryRecordCity",
+                "registryRecordStreetType", "registryRecordStreet",
                 "registryRecordBuildingNumber", "registryRecordBulkNumber",
                 "registryRecordApartmentNumber", "registryRecordFio",
                 "registryRecordOperationDate", "registryRecordAmount",
@@ -168,13 +168,13 @@ public class RegistryRecordList extends TemplatePage {
         //Filters
         filterForm.add(new TextField<>("serviceCode"));
         filterForm.add(new TextField<>("personalAccountExt"));
-        filterForm.add(new TextField<>("townType"));
-        filterForm.add(new TextField<>("townName"));
+        filterForm.add(new TextField<>("cityType"));
+        filterForm.add(new TextField<>("city"));
         filterForm.add(new TextField<>("streetType"));
-        filterForm.add(new TextField<>("streetName"));
-        filterForm.add(new TextField<>("buildingNum"));
-        filterForm.add(new TextField<>("buildingBulkNum"));
-        filterForm.add(new TextField<>("apartmentNum"));
+        filterForm.add(new TextField<>("street"));
+        filterForm.add(new TextField<>("buildingNumber"));
+        filterForm.add(new TextField<>("buildingCorp"));
+        filterForm.add(new TextField<>("apartment"));
 
         filterForm.add(new TextField<>("FIO", new Model<String>() {
 

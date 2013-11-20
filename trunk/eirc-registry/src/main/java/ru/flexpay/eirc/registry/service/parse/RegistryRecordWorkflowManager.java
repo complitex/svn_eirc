@@ -29,11 +29,15 @@ public class RegistryRecordWorkflowManager {
     @EJB
     private RegistryWorkflowManager registryWorkflowManager;
 
-    protected Map<RegistryRecordStatus, List<RegistryRecordStatus>> transitions = 
-            ImmutableMap.of(LOADED,                 ImmutableList.of(PROCESSED, PROCESSED_WITH_ERROR),
-                            PROCESSED_WITH_ERROR,   ImmutableList.of(FIXED),
-                            FIXED,                  ImmutableList.of(PROCESSED, PROCESSED_WITH_ERROR),
-                            PROCESSED,              Collections.<RegistryRecordStatus>emptyList());
+    protected Map<RegistryRecordStatus, List<RegistryRecordStatus>> transitions =
+            ImmutableMap.<RegistryRecordStatus, List<RegistryRecordStatus>>builder().
+                    put(LOADED_WITH_ERROR,      ImmutableList.of(LOADED)).
+                    put(LOADED,                 ImmutableList.of(LINKED, LINKED_WITH_ERROR)).
+                    put(LINKED_WITH_ERROR,      ImmutableList.of(LINKED)).
+                    put(LINKED,                 ImmutableList.of(PROCESSED, PROCESSED_WITH_ERROR)).
+                    put(PROCESSED_WITH_ERROR,   ImmutableList.of(PROCESSED)).
+                    put(PROCESSED,              Collections.<RegistryRecordStatus>emptyList()).
+                build();
 
     /**
      * Check if registry record processing allowed

@@ -43,9 +43,13 @@ import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryStatus;
 import ru.flexpay.eirc.registry.entity.RegistryType;
-import ru.flexpay.eirc.registry.service.JobProcessor;
+import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryBean;
-import ru.flexpay.eirc.registry.service.parse.*;
+import ru.flexpay.eirc.registry.service.RegistryMessenger;
+import ru.flexpay.eirc.registry.service.link.RegistryLinker;
+import ru.flexpay.eirc.registry.service.parse.RegistryParser;
+import ru.flexpay.eirc.registry.service.parse.RegistryParserFinishCallback;
+import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 
 import javax.ejb.EJB;
 import java.text.SimpleDateFormat;
@@ -81,20 +85,20 @@ public class RegistryList extends TemplatePage {
     private RegistryParser parser;
 
     @EJB
-    private JobProcessor processor;
+    private RegistryLinker linker;
 
     private WebMarkupContainer messagesContainer;
 
     @EJB
-    private RegistryParserMessenger imessenger;
+    private RegistryMessenger imessenger;
 
     private IModel<Registry> filterModel = new CompoundPropertyModel<>(new Registry());
 
     @EJB
-    private ParserQueueProcessor parserQueueProcessor;
+    private RegistryParserFinishCallback finishCallback;
 
     @EJB
-    private RegistryParserFinishCallback finishCallback;
+    private RegistryWorkflowManager registryWorkflowManager;
 
     private AjaxSelfUpdatingTimerBehavior timerBehavior;
 
@@ -184,6 +188,48 @@ public class RegistryList extends TemplatePage {
                     }
                 }));
                 item.add(detailsLink);
+
+                AjaxLink actionLink = new AjaxLink("actionLink") {
+                    @Override
+                    public void onClick(AjaxRequestTarget target) {
+                        if (registryWorkflowManager.canLink(registry)) {
+
+                            if (timerBehavior == null) {
+
+                                timerBehavior = new MessageBehavior(Duration.seconds(5));
+
+                                messagesContainer.add(timerBehavior);
+                            }
+
+                            try {
+                                linker.link(registry.getId(), imessenger, finishCallback);
+                            } finally {
+                                showIMessages(target);
+                            }
+
+                        } else if (registryWorkflowManager.canProcess(registry)) {
+                            // TODO process registry
+                        }
+                    }
+
+                    @Override
+                    public boolean isVisible() {
+                        return registryWorkflowManager.canLink(registry) || registryWorkflowManager.canProcess(registry);
+                    }
+                };
+                actionLink.add(new Label("actionMessage", new AbstractReadOnlyModel<String>() {
+
+                    @Override
+                    public String getObject() {
+                        if (registryWorkflowManager.canLink(registry)) {
+                            return getString("link");
+                        } else if (registryWorkflowManager.canProcess(registry)) {
+                            return getString("process");
+                        }
+                        return "";
+                    }
+                }));
+                item.add(actionLink);
             }
         };
         filterForm.add(dataView);

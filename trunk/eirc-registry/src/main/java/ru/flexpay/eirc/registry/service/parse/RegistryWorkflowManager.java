@@ -1,8 +1,8 @@
 package ru.flexpay.eirc.registry.service.parse;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.registry.entity.Registry;
@@ -35,33 +35,35 @@ public class RegistryWorkflowManager {
 
     // allowed transitions from source status code to target codes
     // first status in lists is the successfull one, the second is transition with some processing error
-    private static final Map<RegistryStatus, List<RegistryStatus>> transitions = Maps.newHashMap();
+    private static final Map<RegistryStatus, List<RegistryStatus>> transitions =
+            ImmutableMap.<RegistryStatus, List<RegistryStatus>>builder().
+                put(LOADING, ImmutableList.of(LOADED, LOADED_WITH_ERROR)).
+                put(LOADED_WITH_ERROR, Collections.<RegistryStatus>emptyList()).
+                put(LOADED, ImmutableList.of(LINKING)).
+                put(LINKING, ImmutableList.of(LINKED, LINKING_WITH_ERROR, LINKING_CANCELED)).
+                put(LINKED, ImmutableList.of(PROCESSING)).
+                put(LINKING_WITH_ERROR, ImmutableList.of(LINKED_WITH_ERROR, LINKING_CANCELED)).
+                put(LINKED_WITH_ERROR, ImmutableList.of(LINKING)).
+                put(LINKING_CANCELED, ImmutableList.of(LINKING)).
+                put(PROCESSING, ImmutableList.of(PROCESSED, PROCESSING_WITH_ERROR, PROCESSING_CANCELED)).
+                // allow set processed with errors if there are any not processed records
+                put(PROCESSED, ImmutableList.of(ROLLBACKING, PROCESSED_WITH_ERROR)).
+                put(PROCESSING_WITH_ERROR, ImmutableList.of(PROCESSED_WITH_ERROR, PROCESSING_CANCELED)).
+                put(PROCESSED_WITH_ERROR, ImmutableList.of(PROCESSING, ROLLBACKING)).
+                put(PROCESSING_CANCELED, ImmutableList.of(PROCESSING, ROLLBACKING)).
+                put(ROLLBACKING, ImmutableList.of(ROLLBACKED)).
+                put(ROLLBACKED, ImmutableList.of(PROCESSING)).build();
 
     private static final Set<RegistryStatus> transitionsToProcessing =
-            Sets.newHashSet(LOADED, PROCESSED_WITH_ERROR, PROCESSING_CANCELED, ROLLBACKED);
+            ImmutableSet.of(LINKED, PROCESSED_WITH_ERROR, PROCESSING_CANCELED, ROLLBACKED);
 
-    static {
-        transitions.put(LOADING, ImmutableList.of(LOADED, LOADED_WITH_ERROR));
+    private static final Set<RegistryStatus> processingStates = ImmutableSet.of(PROCESSING, PROCESSING_WITH_ERROR);
 
-        transitions.put(LOADED_WITH_ERROR, Collections.<RegistryStatus>emptyList());
+    private static final Set<RegistryStatus> transitionsToLinking =
+            ImmutableSet.of(LOADED, LINKED_WITH_ERROR, LINKING_CANCELED);
 
-        transitions.put(LOADED, ImmutableList.of(PROCESSING));
+    private static final Set<RegistryStatus> linkingStates = ImmutableSet.of(LINKING, LINKING_WITH_ERROR);
 
-        transitions.put(PROCESSING, ImmutableList.of(PROCESSED, PROCESSING_WITH_ERROR, PROCESSING_CANCELED));
-
-        // allow set processed with errors if there are any not processed records
-        transitions.put(PROCESSED, ImmutableList.of(ROLLBACKING, PROCESSED_WITH_ERROR));
-
-        transitions.put(PROCESSING_WITH_ERROR, ImmutableList.of(PROCESSED_WITH_ERROR, PROCESSING_CANCELED));
-
-        transitions.put(PROCESSED_WITH_ERROR, ImmutableList.of(PROCESSING, ROLLBACKING));
-
-        transitions.put(PROCESSING_CANCELED, ImmutableList.of(PROCESSING, ROLLBACKING));
-
-        transitions.put(ROLLBACKING, ImmutableList.of(ROLLBACKED));
-
-        transitions.put(ROLLBACKED, ImmutableList.of(PROCESSING));
-    }
 
     /**
      * Check if registry status transition allowed
@@ -84,17 +86,30 @@ public class RegistryWorkflowManager {
     }
 
     /**
-     * Check if registry can be processed, i.e. has one of the following statuses: {@link
-     * ru.flexpay.eirc.registry.entity.RegistryStatus#LOADED}, {@link
-     * ru.flexpay.eirc.registry.entity.RegistryStatus#ROLLBACKED},
-     * {@link ru.flexpay.eirc.registry.entity.RegistryStatus#PROCESSING_CANCELED} or {@link
-     * ru.flexpay.eirc.registry.entity.RegistryStatus#PROCESSED_WITH_ERROR}
+     * Check if registry can be processed, i.e. has one of the following statuses:
+     * {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKED},
+     * {@link ru.flexpay.eirc.registry.entity.RegistryStatus#ROLLBACKED},
+     * {@link ru.flexpay.eirc.registry.entity.RegistryStatus#PROCESSING_CANCELED} or
+     * {@link ru.flexpay.eirc.registry.entity.RegistryStatus#PROCESSED_WITH_ERROR}
      *
      * @param registry Registry to check
      * @return <code>true</code> if registry is allowed to be processed
      */
     public boolean canProcess(Registry registry) {
         return transitionsToProcessing.contains(registry.getStatus());
+    }
+
+    /**
+     * Check if registry can be linked, i.e. has one of the following statuses:
+     * {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LOADED},
+     * {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKING_CANCELED} or
+     * {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKED_WITH_ERROR}
+     *
+     * @param registry Registry to check
+     * @return <code>true</code> if registry is allowed to be linked
+     */
+    public boolean canLink(Registry registry) {
+        return transitionsToLinking.contains(registry.getStatus());
     }
 
     public void startProcessing(Registry registry) throws TransitionNotAllowed {
@@ -191,6 +206,28 @@ public class RegistryWorkflowManager {
     }
 
     /**
+     * Set registry linking status to {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKING_WITH_ERROR}
+     *
+     * @param registry Registry to update
+     * @throws TransitionNotAllowed if registry status is not {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKING}
+     *                              or {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKING_WITH_ERROR}
+     */
+    public void markLinkingHasError(Registry registry) throws TransitionNotAllowed {
+        if (!linkingStates.contains(registry.getStatus())) {
+            throw new TransitionNotAllowed("Cannot mark not linking registry as having errors. Current registry code", registry.getStatus());
+        }
+
+        log.debug("Setting registry errors: {}", registry);
+
+        if (registry.getStatus() == LINKING) {
+            log.debug("Updating registry status");
+            setNextErrorStatus(registry);
+        } else {
+            log.debug("Not updating registry status, current is {}", registry.getStatus());
+        }
+    }
+
+    /**
      * Set registry processing status to {@link ru.flexpay.eirc.registry.entity.RegistryStatus#PROCESSING_WITH_ERROR}
      *
      * @param registry Registry to update
@@ -198,7 +235,7 @@ public class RegistryWorkflowManager {
      *                              or {@link ru.flexpay.eirc.registry.entity.RegistryStatus#PROCESSING_WITH_ERROR}
      */
     public void markProcessingHasError(Registry registry) throws TransitionNotAllowed {
-        if (!transitions.get(PROCESSING).contains(registry.getStatus())) {
+        if (!processingStates.contains(registry.getStatus())) {
             throw new TransitionNotAllowed("Cannot mark not processing registry as having errors. Current registry code", registry.getStatus());
         }
 
