@@ -1,7 +1,8 @@
-package ru.flexpay.eirc.registry.service.parse;
+package ru.flexpay.eirc.registry.service;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
+import org.apache.commons.lang.builder.ToStringBuilder;
 import org.complitex.dictionary.service.SessionBean;
 import org.complitex.dictionary.util.ResourceUtil;
 
@@ -83,6 +84,15 @@ public abstract class IMessenger {
         public String getLocalizedString(Locale locale) {
             String message = ResourceUtil.getString(getResourceBundle(), String.valueOf(getData()), locale);
             return parameters != null && parameters.length > 0? MessageFormat.format(message, parameters) : message;
+        }
+
+        @Override
+        public String toString() {
+            ToStringBuilder builder = new ToStringBuilder(this);
+            builder.append(type).
+                    append(data).
+                    append(parameters);
+            return builder.toString();
         }
     }
 

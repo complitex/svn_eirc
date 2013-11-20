@@ -7,13 +7,13 @@
         <result column="registry_record_id"                         property="id"/>
         <result column="registry_record_service_code"               property="serviceCode"/>
         <result column="registry_record_personal_account_ext"       property="personalAccountExt"/>
-        <result column="registry_record_town_type"                  property="townType"/>
-        <result column="registry_record_town_name"                  property="townName"/>
+        <result column="registry_record_city_type"                  property="cityType"/>
+        <result column="registry_record_city"                       property="city"/>
         <result column="registry_record_street_type"                property="streetType"/>
-        <result column="registry_record_street_name"                property="streetName"/>
-        <result column="registry_record_building_number"            property="buildingNum"/>
-        <result column="registry_record_bulk_number"                property="buildingBulkNum"/>
-        <result column="registry_record_apartment_number"           property="apartmentNum"/>
+        <result column="registry_record_street"                     property="street"/>
+        <result column="registry_record_building_number"            property="buildingNumber"/>
+        <result column="registry_record_bulk_number"                property="buildingCorp"/>
+        <result column="registry_record_apartment_number"           property="apartment"/>
         <result column="registry_record_first_name"                 property="firstName"/>
         <result column="registry_record_middle_name"                property="middleName"/>
         <result column="registry_record_last_name"                  property="lastName"/>
@@ -21,6 +21,12 @@
         <result column="registry_record_unique_operation_number"    property="uniqueOperationNumber"/>
         <result column="registry_record_amount"                     property="amount"/>
         <result column="registry_record_registry_id"                property="registryId"/>
+        <result column="registry_record_city_type_id"               property="cityTypeId"/>
+        <result column="registry_record_city_id"                    property="cityId"/>
+        <result column="registry_record_street_type_id"             property="streetTypeId"/>
+        <result column="registry_record_street_id"                  property="streetId"/>
+        <result column="registry_record_building_id"                property="buildingId"/>
+        <result column="registry_record_apartment_id"               property="apartmentId"/>
         <result column="registry_record_status"                     property="status" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
         <result column="registry_record_import_error_type"          property="importErrorType" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
 
@@ -34,10 +40,10 @@
         rr.`id`                       as `registry_record_id`,
         rr.`service_code`             as `registry_record_service_code`,
         rr.`personal_account_ext`     as `registry_record_personal_account_ext`,
-        rr.`town_type`                as `registry_record_town_type`,
-        rr.`town_name`                as `registry_record_town_name`,
+        rr.`city_type`                as `registry_record_city_type`,
+        rr.`city`                     as `registry_record_city`,
         rr.`street_type`              as `registry_record_street_type`,
-        rr.`street_name`              as `registry_record_street_name`,
+        rr.`street`                   as `registry_record_street`,
         rr.`building_number`          as `registry_record_building_number`,
         rr.`bulk_number`              as `registry_record_bulk_number`,
         rr.`apartment_number`         as `registry_record_apartment_number`,
@@ -49,7 +55,13 @@
         rr.`amount`                   as `registry_record_amount`,
         rr.`status`                   as `registry_record_status`,
         rr.`import_error_type`        as `registry_record_import_error_type`,
-        rr.`registry_id`              as `registry_record_registry_id`
+        rr.`registry_id`              as `registry_record_registry_id`,
+        rr.`city_type_id`             as `registry_record_city_type_id`,
+        rr.`city_id`                  as `registry_record_city_id`,
+        rr.`street_type_id`           as `registry_record_street_type_id`,
+        rr.`street_id`                as `registry_record_street_id`,
+        rr.`building_id`              as `registry_record_building_id`,
+        rr.`apartment_id`             as `registry_record_apartment_id`
     </sql>
 
     <sql id="registryRecordContainerColumns">
@@ -64,26 +76,26 @@
 
     <sql id="registryRecordCondition">
         <if test="object != null">
-            <if test="object.townType != null">
-                and rr.`town_type` <choose><when test="like">like concat('%', #{object.townType}, '%') </when><otherwise>= #{object.townType}</otherwise></choose>
+            <if test="object.cityType != null">
+                and rr.`city_type` <choose><when test="like">like concat('%', #{object.cityType}, '%') </when><otherwise>= #{object.cityType}</otherwise></choose>
             </if>
-            <if test="object.townName != null">
-                and rr.`town_name` <choose><when test="like">like concat('%', #{object.townName}, '%') </when><otherwise>= #{object.townName}</otherwise></choose>
+            <if test="object.city != null">
+                and rr.`city` <choose><when test="like">like concat('%', #{object.city}, '%') </when><otherwise>= #{object.city}</otherwise></choose>
             </if>
             <if test="object.streetType != null">
                 and rr.`street_type` <choose><when test="like">like concat('%', #{object.streetType}, '%') </when><otherwise>= #{object.streetType}</otherwise></choose>
             </if>
-            <if test="object.streetName != null">
-                and rr.`street_name` <choose><when test="like">like concat('%', #{object.streetName}, '%') </when><otherwise>= #{object.streetName}</otherwise></choose>
+            <if test="object.street != null">
+                and rr.`street` <choose><when test="like">like concat('%', #{object.street}, '%') </when><otherwise>= #{object.street}</otherwise></choose>
             </if>
-            <if test="object.buildingNum != null">
-                and rr.`building_number` <choose><when test="like">like concat('%', #{object.buildingNum}, '%') </when><otherwise>= #{object.buildingNum}</otherwise></choose>
+            <if test="object.buildingNumber != null">
+                and rr.`building_number` <choose><when test="like">like concat('%', #{object.buildingNumber}, '%') </when><otherwise>= #{object.buildingNumber}</otherwise></choose>
             </if>
-            <if test="object.buildingBulkNum != null">
-                and rr.`bulk_number` <choose><when test="like">like concat('%', #{object.buildingBulkNum}, '%') </when><otherwise>= #{object.buildingBulkNum}</otherwise></choose>
+            <if test="object.buildingCorp != null">
+                and rr.`bulk_number` <choose><when test="like">like concat('%', #{object.buildingCorp}, '%') </when><otherwise>= #{object.buildingCorp}</otherwise></choose>
             </if>
-            <if test="object.apartmentNum != null">
-                and rr.`apartment_number` <choose><when test="like">like concat('%', #{object.apartmentNum}, '%') </when><otherwise>= #{object.apartmentNum}</otherwise></choose>
+            <if test="object.apartment != null">
+                and rr.`apartment_number` <choose><when test="like">like concat('%', #{object.apartment}, '%') </when><otherwise>= #{object.apartment}</otherwise></choose>
             </if>
 
             <if test="object.firstName != null">
@@ -166,9 +178,25 @@
 
     </select>
 
+    <select id="selectRecordsToLinking" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="RegistryRecord">
+
+        select
+        <include refid="registryRecordColumns"/>,
+        <include refid="registryRecordContainerColumns"/>
+        from `registry_record` rr
+        left join `registry_record_container` rrc on rrc.`record_id` = rr.`id`
+        where 9 >= rr.`status` and rr.`status` > 1 and rr.`registry_id` = #{object.registryId} and rr.`id` >= ${first}
+        order by rr.`id`
+        limit 0, ${count}
+
+    </select>
 
     <select id="hasRecordsToProcessing" parameterType="Long" resultType="Integer">
-        select 1 from `registry_record` where 4 > `status` and `registry_id` = #{registryId} limit 0, 1
+        select 1 from `registry_record` where 12 > `status` and `status` > 9 and `registry_id` = #{registryId} limit 0, 1
+    </select>
+
+    <select id="hasRecordsToLinking" parameterType="Long" resultType="Integer">
+        select 1 from `registry_record` where 9 >= `status` and `status` > 1 and `registry_id` = #{registryId} limit 0, 1
     </select>
 
     <insert id="insertRegistryRecord" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecord" keyProperty="id" useGeneratedKeys="true">
@@ -176,10 +204,10 @@
         (
             service_code,
             personal_account_ext,
-            town_type,
-            town_name,
+            city_type,
+            city,
             street_type,
-            street_name,
+            street,
             building_number,
             bulk_number,
             apartment_number,
@@ -193,8 +221,8 @@
             import_error_type,
             registry_id
         ) values (
-            #{serviceCode}, #{personalAccountExt}, #{townType}, #{townName}, #{streetType}, #{streetName}, #{buildingNum},
-            #{buildingBulkNum}, #{apartmentNum}, #{firstName}, #{middleName}, #{lastName}, #{operationDate}, #{uniqueOperationNumber},
+            #{serviceCode}, #{personalAccountExt}, #{cityType}, #{city}, #{streetType}, #{street}, #{buildingNumber},
+            #{buildingCorp}, #{apartment}, #{firstName}, #{middleName}, #{lastName}, #{operationDate}, #{uniqueOperationNumber},
             #{amount}, #{status.id},
             <choose>
                 <when test="importErrorType != null">#{importErrorType.id}</when>
@@ -208,5 +236,13 @@
             keyProperty="container.id" useGeneratedKeys="true">
         insert into `registry_record_container` (`data`, `record_id`, `type`) value (#{data}, #{parentId}, #{type.id})
     </insert>
+
+    <update id="updateRegistryRecord" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecord">
+        update `registry_record`
+        set `status` = #{status.id}, `city_type_id` = #{cityTypeId}, `city_id` = #{cityId},
+            `street_type_id` = #{streetTypeId}, `street_id` = #{streetId},
+            `building_id` = #{buildingId}, `apartment_id` = #{apartmentId}
+        <if test="importErrorType != null">, `import_error_type` = #{importErrorType.id}</if>
+    </update>
 
 </mapper>

@@ -35,6 +35,13 @@ public class Registry extends DictionaryObject {
 
     private Map<RegistryFileType, RegistryFile> files = Maps.newHashMap();
 
+    public Registry() {
+    }
+
+    public Registry(Long id) {
+        this.setId(id);
+    }
+
     public Long getRegistryNumber() {
         return registryNumber;
     }

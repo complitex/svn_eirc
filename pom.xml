@@ -41,6 +41,7 @@
         <module>../complitex/complitex-template</module>
         <module>../complitex/complitex-admin</module>
         <module>../complitex/complitex-address</module>
+        <module>../complitex/complitex-correction</module>
         <module>../complitex/complitex-logging</module>
         <module>../complitex/complitex-resources</module>
         <module>../complitex/complitex-images</module>

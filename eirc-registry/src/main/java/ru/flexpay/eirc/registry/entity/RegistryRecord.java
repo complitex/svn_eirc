@@ -1,6 +1,8 @@
 package ru.flexpay.eirc.registry.entity;
 
 import com.google.common.collect.Lists;
+import org.complitex.correction.entity.AddressLinkData;
+import org.complitex.correction.entity.LinkStatus;
 import ru.flexpay.eirc.dictionary.entity.DictionaryObject;
 
 import java.math.BigDecimal;
@@ -10,24 +12,31 @@ import java.util.List;
 /**
  * @author Pavel Sknar
  */
-public class RegistryRecord extends DictionaryObject {
+public class RegistryRecord extends DictionaryObject implements AddressLinkData {
 
     private String serviceCode;
     // лиц. счёт поставщика услуг
     private String personalAccountExt;
-    private String townType;
-    private String townName;
+    private String cityType;
+    private String city;
     private String streetType;
-    private String streetName;
-    private String buildingNum;
-    private String buildingBulkNum;
-    private String apartmentNum;
+    private String street;
+    private String buildingNumber;
+    private String buildingCorp;
+    private String apartment;
     private String firstName;
     private String middleName;
     private String lastName;
     private Date operationDate;
     private Long uniqueOperationNumber;
     private BigDecimal amount;
+
+    private Long cityTypeId;
+    private Long cityId;
+    private Long streetTypeId;
+    private Long streetId;
+    private Long buildingId;
+    private Long apartmentId;
 
     private RegistryRecordStatus status;
 
@@ -36,6 +45,16 @@ public class RegistryRecord extends DictionaryObject {
     private ImportErrorType importErrorType;
 
     private Long registryId;
+
+    private Long recipientOrganizationId;
+    private Long senderOrganizationId;
+
+    public RegistryRecord() {
+    }
+
+    public RegistryRecord(Long registryId) {
+        this.registryId = registryId;
+    }
 
     public String getServiceCode() {
         return serviceCode;
@@ -53,20 +72,20 @@ public class RegistryRecord extends DictionaryObject {
         this.personalAccountExt = personalAccountExt;
     }
 
-    public String getTownType() {
-        return townType;
+    public String getCityType() {
+        return cityType;
     }
 
-    public void setTownType(String townType) {
-        this.townType = townType;
+    public void setCityType(String cityType) {
+        this.cityType = cityType;
     }
 
-    public String getTownName() {
-        return townName;
+    public String getCity() {
+        return city;
     }
 
-    public void setTownName(String townName) {
-        this.townName = townName;
+    public void setCity(String city) {
+        this.city = city;
     }
 
     public String getStreetType() {
@@ -77,36 +96,36 @@ public class RegistryRecord extends DictionaryObject {
         this.streetType = streetType;
     }
 
-    public String getStreetName() {
-        return streetName;
+    public String getStreet() {
+        return street;
     }
 
-    public void setStreetName(String streetName) {
-        this.streetName = streetName;
+    public void setStreet(String street) {
+        this.street = street;
     }
 
-    public String getBuildingNum() {
-        return buildingNum;
+    public String getBuildingNumber() {
+        return buildingNumber;
     }
 
-    public void setBuildingNum(String buildingNum) {
-        this.buildingNum = buildingNum;
+    public void setBuildingNumber(String buildingNumber) {
+        this.buildingNumber = buildingNumber;
     }
 
-    public String getBuildingBulkNum() {
-        return buildingBulkNum;
+    public String getBuildingCorp() {
+        return buildingCorp;
     }
 
-    public void setBuildingBulkNum(String buildingBulkNum) {
-        this.buildingBulkNum = buildingBulkNum;
+    public void setBuildingCorp(String buildingCorp) {
+        this.buildingCorp = buildingCorp;
     }
 
-    public String getApartmentNum() {
-        return apartmentNum;
+    public String getApartment() {
+        return apartment;
     }
 
-    public void setApartmentNum(String apartmentNum) {
-        this.apartmentNum = apartmentNum;
+    public void setApartment(String apartment) {
+        this.apartment = apartment;
     }
 
     public String getFirstName() {
@@ -187,5 +206,83 @@ public class RegistryRecord extends DictionaryObject {
 
     public void setRegistryId(Long registryId) {
         this.registryId = registryId;
+    }
+
+    public Long getCityTypeId() {
+        return cityTypeId;
+    }
+
+    public void setCityTypeId(Long cityTypeId) {
+        this.cityTypeId = cityTypeId;
+    }
+
+    public Long getCityId() {
+        return cityId;
+    }
+
+    public void setCityId(Long cityId) {
+        this.cityId = cityId;
+    }
+
+    public Long getStreetTypeId() {
+        return streetTypeId;
+    }
+
+    public void setStreetTypeId(Long streetTypeId) {
+        this.streetTypeId = streetTypeId;
+    }
+
+    public Long getStreetId() {
+        return streetId;
+    }
+
+    public void setStreetId(Long streetId) {
+        this.streetId = streetId;
+    }
+
+    public Long getBuildingId() {
+        return buildingId;
+    }
+
+    public void setBuildingId(Long buildingId) {
+        this.buildingId = buildingId;
+    }
+
+    public Long getApartmentId() {
+        return apartmentId;
+    }
+
+    public void setApartmentId(Long apartmentId) {
+        this.apartmentId = apartmentId;
+    }
+
+    public void setSenderOrganizationId(Long senderOrganizationId) {
+        this.senderOrganizationId = senderOrganizationId;
+    }
+
+    @Override
+    public Long getOrganizationId() {
+        return senderOrganizationId;
+    }
+
+    public void setRecipientOrganizationId(Long recipientOrganizationId) {
+        this.recipientOrganizationId = recipientOrganizationId;
+    }
+
+    @Override
+    public Long getUserOrganizationId() {
+        return recipientOrganizationId;
+    }
+
+    @Override
+    public <T extends LinkStatus> void setStatus(T status) {
+
+        importErrorType = ImportErrorType.getImportErrorType(status);
+        this.status = RegistryRecordStatus.getRegistryRecordStatus(status);
+    }
+
+    @Override
+    public String getStreetCode() {
+        return null;
     }
 }
