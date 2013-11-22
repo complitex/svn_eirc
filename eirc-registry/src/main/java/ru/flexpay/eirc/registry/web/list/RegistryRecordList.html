@@ -199,9 +199,14 @@
                         <span wicket:id="status"></span>
                     </td>
                     <td>
+                        <a class="data-row-link" wicket:id="addressCorrectionLink">
+                            <wicket:message key="correctAddress"/>
+                        </a>
+                        <!--
                         <a wicket:id="detailsLink">
                             <span wicket:id="editMessage"></span>
                         </a>
+                        -->
                     </td>
                 </tr>
                 </tbody>
@@ -209,6 +214,8 @@
         </form>
         <div wicket:id="navigator"></div>
     </div>
+
+    <span wicket:id="addressCorrectionPanel"></span>
 
 </wicket:extend>
 </body>
