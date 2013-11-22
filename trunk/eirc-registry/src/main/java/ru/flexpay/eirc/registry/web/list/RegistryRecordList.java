@@ -5,9 +5,9 @@ import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
+import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxLink;
 import org.apache.wicket.extensions.markup.html.repeater.data.sort.SortOrder;
 import org.apache.wicket.markup.html.WebMarkupContainer;
-import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
@@ -16,26 +16,33 @@ import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
-import org.apache.wicket.model.*;
+import org.apache.wicket.model.CompoundPropertyModel;
+import org.apache.wicket.model.IModel;
+import org.apache.wicket.model.Model;
+import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.string.StringValue;
+import org.complitex.address.entity.AddressEntity;
+import org.complitex.correction.service.AddressService;
+import org.complitex.correction.service.exception.DuplicateCorrectionException;
+import org.complitex.correction.service.exception.MoreOneCorrectionException;
+import org.complitex.correction.service.exception.NotFoundCorrectionException;
+import org.complitex.correction.web.component.AddressCorrectionPanel;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.web.component.DatePicker;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
-import org.complitex.dictionary.web.component.scroll.ScrollBookmarkablePageLink;
 import org.complitex.template.web.template.FormTemplatePage;
 import org.complitex.template.web.template.TemplatePage;
-import ru.flexpay.eirc.registry.entity.Container;
-import ru.flexpay.eirc.registry.entity.ImportErrorType;
-import ru.flexpay.eirc.registry.entity.RegistryRecord;
-import ru.flexpay.eirc.registry.entity.RegistryRecordStatus;
+import ru.flexpay.eirc.registry.entity.*;
+import ru.flexpay.eirc.registry.service.RegistryBean;
 import ru.flexpay.eirc.registry.service.RegistryRecordBean;
 
 import javax.ejb.EJB;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static org.complitex.dictionary.util.PageUtil.newSorting;
@@ -50,7 +57,15 @@ public class RegistryRecordList extends TemplatePage {
     @EJB
     private RegistryRecordBean registryRecordBean;
 
+    @EJB
+    private RegistryBean registryBean;
+
+    @EJB
+    private AddressService addressService;
+
     private IModel<RegistryRecord> filterModel = new CompoundPropertyModel<>(new RegistryRecord());
+
+    private Registry registry;
 
     public RegistryRecordList(PageParameters params) throws ExecutionException, InterruptedException {
         StringValue registryIdParam = params.get("registryId");
@@ -59,7 +74,14 @@ public class RegistryRecordList extends TemplatePage {
             setResponsePage(RegistryList.class);
             return;
         }
-        filterModel.getObject().setRegistryId(registryIdParam.toLong());
+        List<Registry> registries = registryBean.getRegistries(FilterWrapper.of(new Registry(registryIdParam.toLong())));
+        if (registries.size() == 0) {
+            getSession().error(getString("error_registry_not_found"));
+            setResponsePage(RegistryList.class);
+            return;
+        }
+        registry = registries.get(0);
+        filterModel.getObject().setRegistryId(registry.getId());
         init();
     }
 
@@ -81,6 +103,27 @@ public class RegistryRecordList extends TemplatePage {
         //Form
         final Form<RegistryRecord> filterForm = new Form<>("filterForm", filterModel);
         container.add(filterForm);
+
+        //Панель коррекции адреса
+        final AddressCorrectionPanel<RegistryRecord> addressCorrectionPanel = new AddressCorrectionPanel<RegistryRecord>("addressCorrectionPanel",
+                registry.getRecipientOrganizationId(), container) {
+
+            @Override
+            protected void correctAddress(RegistryRecord registryRecord, AddressEntity entity, Long cityId, Long streetTypeId, Long streetId,
+                                          Long buildingId, Long userOrganizationId)
+                    throws DuplicateCorrectionException, MoreOneCorrectionException, NotFoundCorrectionException {
+                addressService.correctAddress(registryRecord, entity, cityId, streetTypeId, streetId, buildingId,
+                        registry.getRecipientOrganizationId(), registry.getSenderOrganizationId());
+                registryRecord.setStatus(RegistryRecordStatus.LINKED);
+                registryRecordBean.save(registryRecord);
+            }
+
+            @Override
+            protected void closeDialog(AjaxRequestTarget target) {
+                super.closeDialog(target);
+            }
+        };
+        add(addressCorrectionPanel);
 
         //Data Provider
         final DataProvider<RegistryRecord> dataProvider = new DataProvider<RegistryRecord>() {
@@ -139,6 +182,7 @@ public class RegistryRecordList extends TemplatePage {
                         registryRecord.getImportErrorType().getLabel(getLocale()) : ""));
                 item.add(new Label("status", registryRecord.getStatus().getLabel(getLocale())));
 
+                /*
                 ScrollBookmarkablePageLink<WebPage> detailsLink = new ScrollBookmarkablePageLink<>("detailsLink",
                         getEditPage(), getEditPageParams(registryRecord.getId()),
                         String.valueOf(registryRecord.getId()));
@@ -151,6 +195,23 @@ public class RegistryRecordList extends TemplatePage {
                 }));
                 detailsLink.setEnabled(false);
                 item.add(detailsLink);
+                */
+
+                AjaxLink addressCorrectionLink = new IndicatingAjaxLink("addressCorrectionLink") {
+
+                    @Override
+                    public void onClick(AjaxRequestTarget target) {
+                        addressCorrectionPanel.open(target, registryRecord, registryRecord.getFirstName(),
+                                registryRecord.getMiddleName(), registryRecord.getLastName(),
+                                registryRecord.getCity(), registryRecord.getStreet(),
+                                registryRecord.getBuildingNumber(), registryRecord.getBuildingCorp(),
+                                registryRecord.getApartment(), registryRecord.getCityId(),
+                                registryRecord.getStreetId(), registryRecord.getBuildingId());
+                    }
+                };
+                addressCorrectionLink.setVisible(registryRecord.getStatus() == RegistryRecordStatus.LINKED_WITH_ERROR &&
+                registryRecord.getImportErrorType() != null && registryRecord.getImportErrorType().getId() < 17);
+                item.add(addressCorrectionLink);
             }
         };
         filterForm.add(dataView);

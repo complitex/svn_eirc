@@ -170,7 +170,7 @@ public class RegistryLinker {
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     private void linkRegistryRecords(Registry registry, List<RegistryRecord> registryRecords) throws TransitionNotAllowed {
         for (RegistryRecord registryRecord : registryRecords) {
-            addressService.resolveAddress(registryRecord);
+            addressService.resolveAddress(registry.getRecipientOrganizationId(), registry.getSenderOrganizationId(), registryRecord);
             if (registryRecord.getStatus() != RegistryRecordStatus.LINKED) {
                 registryWorkflowManager.markLinkingHasError(registry);
             }

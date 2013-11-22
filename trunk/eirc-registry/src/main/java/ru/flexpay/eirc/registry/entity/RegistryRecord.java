@@ -285,4 +285,9 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
     public String getStreetCode() {
         return null;
     }
+
+    @Override
+    public String getStreetTypeCode() {
+        return null;
+    }
 }
