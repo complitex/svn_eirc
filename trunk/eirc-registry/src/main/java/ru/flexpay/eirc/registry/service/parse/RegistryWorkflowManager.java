@@ -85,6 +85,10 @@ public class RegistryWorkflowManager {
         return transitions.get(registry.getStatus()).contains(nextStatus);
     }
 
+    public boolean isProcessing(Registry registry) {
+        return processingStates.contains(registry.getStatus());
+    }
+
     /**
      * Check if registry can be processed, i.e. has one of the following statuses:
      * {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKED},
@@ -97,6 +101,10 @@ public class RegistryWorkflowManager {
      */
     public boolean canProcess(Registry registry) {
         return transitionsToProcessing.contains(registry.getStatus());
+    }
+
+    public boolean isLinking(Registry registry) {
+        return linkingStates.contains(registry.getStatus());
     }
 
     /**

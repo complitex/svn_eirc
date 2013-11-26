@@ -46,9 +46,6 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
 
     private Long registryId;
 
-    private Long recipientOrganizationId;
-    private Long senderOrganizationId;
-
     public RegistryRecord() {
     }
 
@@ -256,29 +253,14 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.apartmentId = apartmentId;
     }
 
-    public void setSenderOrganizationId(Long senderOrganizationId) {
-        this.senderOrganizationId = senderOrganizationId;
-    }
-
-    @Override
-    public Long getOrganizationId() {
-        return senderOrganizationId;
-    }
-
-    public void setRecipientOrganizationId(Long recipientOrganizationId) {
-        this.recipientOrganizationId = recipientOrganizationId;
-    }
-
-    @Override
-    public Long getUserOrganizationId() {
-        return recipientOrganizationId;
-    }
-
     @Override
     public <T extends LinkStatus> void setStatus(T status) {
 
         importErrorType = ImportErrorType.getImportErrorType(status);
-        this.status = RegistryRecordStatus.getRegistryRecordStatus(status);
+        RegistryRecordStatus newStatus = RegistryRecordStatus.getRegistryRecordStatus(status);
+        if (newStatus != null) {
+            this.status = newStatus;
+        }
     }
 
     @Override

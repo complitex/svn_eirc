@@ -35,9 +35,8 @@ public enum ImportErrorType implements IFixedIdType {
     MORE_ONE_BUILDING_CORRECTION(15L),
     MORE_ONE_APARTMENT_CORRECTION(16L),
 
-    ADDRESS_LINKED(17L),
-
-    FIXED(18L);
+    ACCOUNT_UNRESOLVED(17L),
+    MORE_ONE_ACCOUNT(18L);
 
     private static final String RESOURCE_BUNDLE = ImportErrorType.class.getName();
 
@@ -59,7 +58,6 @@ public enum ImportErrorType implements IFixedIdType {
             put(AddressLinkStatus.MORE_ONE_STREET_CORRECTION, MORE_ONE_STREET_CORRECTION).
             put(AddressLinkStatus.MORE_ONE_BUILDING_CORRECTION, MORE_ONE_BUILDING_CORRECTION).
             put(AddressLinkStatus.MORE_ONE_APARTMENT_CORRECTION, MORE_ONE_APARTMENT_CORRECTION).
-            put(AddressLinkStatus.ADDRESS_LINKED, ADDRESS_LINKED).
             build();
 
     private ImportErrorType(Long id) {

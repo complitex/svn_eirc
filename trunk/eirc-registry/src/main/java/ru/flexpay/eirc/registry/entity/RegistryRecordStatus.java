@@ -40,12 +40,6 @@ public enum RegistryRecordStatus implements IFixedIdType {
     }
 
     public static RegistryRecordStatus getRegistryRecordStatus(LinkStatus linkStatus) {
-        if (linkStatus instanceof AddressLinkStatus) {
-            if (linkStatus == AddressLinkStatus.ADDRESS_LINKED) {
-                return LINKED;
-            }
-            return LINKED_WITH_ERROR;
-        }
-        return null;
+        return linkStatus instanceof AddressLinkStatus && linkStatus != AddressLinkStatus.ADDRESS_LINKED ? LINKED_WITH_ERROR : null;
     }
 }

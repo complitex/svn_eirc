@@ -38,6 +38,15 @@ public class RegistryRecordBean extends AbstractBean {
         return getSqlSessionManager().selectList(NS + ".selectRecordsToLinking", filter);
     }
 
+    /**
+     * Get registry records to processing
+     * @param filter Filter must content registryId, count, first
+     * @return registry records
+     */
+    public List<RegistryRecord> getRecordsToProcessing(FilterWrapper<RegistryRecord> filter) {
+        return getSqlSessionManager().selectList(NS + ".selectRecordsToProcessing", filter);
+    }
+
     @Transactional(executorType = ExecutorType.BATCH)
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void saveBulk(List<RegistryRecord> registryRecords) {
