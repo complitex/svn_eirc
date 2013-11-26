@@ -178,6 +178,19 @@
 
     </select>
 
+    <select id="selectRecordsToProcessing" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="RegistryRecord">
+
+        select
+        <include refid="registryRecordColumns"/>,
+        <include refid="registryRecordContainerColumns"/>
+        from `registry_record` rr
+        left join `registry_record_container` rrc on rrc.`record_id` = rr.`id`
+        where 5 >= rr.`status` and rr.`status` >= 4 and rr.`registry_id` = #{object.registryId} and rr.`id` >= ${first}
+        order by rr.`id`
+        limit 0, ${count}
+
+    </select>
+
     <select id="selectRecordsToLinking" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="RegistryRecord">
 
         select
@@ -185,18 +198,18 @@
         <include refid="registryRecordContainerColumns"/>
         from `registry_record` rr
         left join `registry_record_container` rrc on rrc.`record_id` = rr.`id`
-        where 9 >= rr.`status` and rr.`status` > 1 and rr.`registry_id` = #{object.registryId} and rr.`id` >= ${first}
+        where 3 >= rr.`status` and rr.`status` >= 2 and rr.`registry_id` = #{object.registryId} and rr.`id` >= ${first}
         order by rr.`id`
         limit 0, ${count}
 
     </select>
 
     <select id="hasRecordsToProcessing" parameterType="Long" resultType="Integer">
-        select 1 from `registry_record` where 12 > `status` and `status` > 9 and `registry_id` = #{registryId} limit 0, 1
+        select 1 from `registry_record` where 5 >= `status` and `status` >= 4 and `registry_id` = #{registryId} limit 0, 1
     </select>
 
     <select id="hasRecordsToLinking" parameterType="Long" resultType="Integer">
-        select 1 from `registry_record` where 9 >= `status` and `status` > 1 and `registry_id` = #{registryId} limit 0, 1
+        select 1 from `registry_record` where 3 >= `status` and `status` >= 2 and `registry_id` = #{registryId} limit 0, 1
     </select>
 
     <insert id="insertRegistryRecord" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecord" keyProperty="id" useGeneratedKeys="true">
@@ -242,7 +255,11 @@
         set `status` = #{status.id}, `city_type_id` = #{cityTypeId}, `city_id` = #{cityId},
             `street_type_id` = #{streetTypeId}, `street_id` = #{streetId},
             `building_id` = #{buildingId}, `apartment_id` = #{apartmentId}
-        <if test="importErrorType != null">, `import_error_type` = #{importErrorType.id}</if>
+        <choose>
+            <when test="importErrorType != null">, `import_error_type` = #{importErrorType.id}</when>
+            <otherwise>, `import_error_type` = null</otherwise>
+        </choose>
+        where `id`=#{id}
     </update>
 
 </mapper>

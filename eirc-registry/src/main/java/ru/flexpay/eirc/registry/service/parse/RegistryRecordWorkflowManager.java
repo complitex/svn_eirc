@@ -78,7 +78,7 @@ public class RegistryRecordWorkflowManager {
      */
     public void setNextErrorStatus(RegistryRecord record, Registry registry) throws TransitionNotAllowed {
 
-        if (record.getStatus() == PROCESSED_WITH_ERROR) {
+        if (record.getStatus() == PROCESSED_WITH_ERROR || record.getStatus() == LINKED_WITH_ERROR) {
             return;
         }
 
@@ -101,7 +101,7 @@ public class RegistryRecordWorkflowManager {
     public void setNextErrorStatus(RegistryRecord record, Registry registry, ImportErrorType importErrorType) throws TransitionNotAllowed {
         List<RegistryRecordStatus> allowedCodes = transitions.get(record.getStatus());
         if (allowedCodes.size() < 2) {
-            throw new TransitionNotAllowed("No error transition, current is: '", record.getStatus());
+            throw new TransitionNotAllowed("No error transition, current is: ", record.getStatus());
         }
 
         markRegistryAsHavingError(record, registry);
@@ -112,8 +112,13 @@ public class RegistryRecordWorkflowManager {
     private void markRegistryAsHavingError(RegistryRecord record, Registry registry) throws TransitionNotAllowed {
 
         log.debug("Setting record errors: {}", record);
-
-        registryWorkflowManager.markProcessingHasError(registry);
+        if (registryWorkflowManager.isProcessing(registry)) {
+            registryWorkflowManager.markProcessingHasError(registry);
+        } else if (registryWorkflowManager.isLinking(registry)) {
+            registryWorkflowManager.markLinkingHasError(registry);
+        } else {
+            throw new TransitionNotAllowed("Failed mark registry as having error", registry.getStatus());
+        }
     }
 
     /**
@@ -128,7 +133,7 @@ public class RegistryRecordWorkflowManager {
             throw new TransitionNotAllowed("No success transition");
         }
 
-        if (record.getStatus() == PROCESSED_WITH_ERROR) {
+        if (record.getStatus() == PROCESSED_WITH_ERROR || record.getStatus() == LINKED_WITH_ERROR) {
             record = removeError(record);
         }
 
@@ -164,7 +169,7 @@ public class RegistryRecordWorkflowManager {
             return record;
         }
 
-        record.setImportErrorType(ImportErrorType.FIXED);
+        record.setImportErrorType(null);
 
         return record;
     }

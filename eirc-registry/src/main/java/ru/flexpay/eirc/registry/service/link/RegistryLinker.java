@@ -1,19 +1,23 @@
 package ru.flexpay.eirc.registry.service.link;
 
+import org.apache.commons.lang.StringUtils;
+import org.complitex.address.entity.AddressEntity;
 import org.complitex.correction.service.AddressService;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.flexpay.eirc.registry.entity.Registry;
-import ru.flexpay.eirc.registry.entity.RegistryConfig;
-import ru.flexpay.eirc.registry.entity.RegistryRecord;
-import ru.flexpay.eirc.registry.entity.RegistryRecordStatus;
+import ru.flexpay.eirc.dictionary.entity.Address;
+import ru.flexpay.eirc.eirc_account.entity.EircAccount;
+import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.parse.RegistryRecordWorkflowManager;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 import ru.flexpay.eirc.registry.service.parse.TransitionNotAllowed;
+import ru.flexpay.eirc.service.entity.Service;
+import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
+import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 
 import javax.ejb.EJB;
 import javax.ejb.Singleton;
@@ -55,6 +59,9 @@ public class RegistryLinker {
 
     @EJB
     private AddressService addressService;
+
+    @EJB
+    private ServiceProviderAccountBean serviceProviderAccountBean;
 
     public void link(final Long registryId, final IMessenger imessenger, final FinishCallback finishLink) {
         final AtomicBoolean finishReadRecords = new AtomicBoolean(false);
@@ -170,10 +177,52 @@ public class RegistryLinker {
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     private void linkRegistryRecords(Registry registry, List<RegistryRecord> registryRecords) throws TransitionNotAllowed {
         for (RegistryRecord registryRecord : registryRecords) {
-            addressService.resolveAddress(registry.getRecipientOrganizationId(), registry.getSenderOrganizationId(), registryRecord);
-            if (registryRecord.getStatus() != RegistryRecordStatus.LINKED) {
-                registryWorkflowManager.markLinkingHasError(registry);
+
+            // Search address
+            if (registryRecord.getStatus() == RegistryRecordStatus.LOADED ||
+                    registryRecord.getImportErrorType() != null && registryRecord.getImportErrorType().getId() < 17) {
+                addressService.resolveAddress(registry.getRecipientOrganizationId(), registry.getSenderOrganizationId(), registryRecord);
+                if (registryRecord.getImportErrorType() != null) {
+                    registryWorkflowManager.markLinkingHasError(registry);
+                    continue;
+                }
             }
+
+            // Search service provider account
+            Address address = null;
+            if (registryRecord.getApartmentId() != null) {
+                address = new Address(registryRecord.getApartmentId(), AddressEntity.APARTMENT);
+            } else if (registryRecord.getBuildingId() != null) {
+                address = new Address(registryRecord.getBuildingId(), AddressEntity.BUILDING);
+            }
+
+            EircAccount eircAccount = new EircAccount();
+            eircAccount.setAddress(address);
+
+            ServiceProviderAccount account = new ServiceProviderAccount(eircAccount);
+            account.setOrganizationId(registry.getRecipientOrganizationId());
+
+            Service service = new Service();
+            service.setCode(registryRecord.getServiceCode());
+
+            account.setService(service);
+
+            FilterWrapper<ServiceProviderAccount> filter = FilterWrapper.of(account);
+            filter.setSortProperty(null);
+
+            List<ServiceProviderAccount> accounts =
+                    serviceProviderAccountBean.getServiceProviderAccounts(filter);
+
+            if (accounts.size() > 1) {
+                registryRecordWorkflowManager.setNextErrorStatus(registryRecord, registry, ImportErrorType.MORE_ONE_ACCOUNT);
+            } else if (accounts.size() == 1 &&
+                    !StringUtils.equals(accounts.get(0).getAccountNumber(), registryRecord.getPersonalAccountExt())) {
+                registryRecordWorkflowManager.setNextErrorStatus(registryRecord, registry, ImportErrorType.ACCOUNT_UNRESOLVED);
+            } else {
+                // success linked
+                registryRecordWorkflowManager.setNextSuccessStatus(registryRecord);
+            }
+
         }
 
         registryRecordBean.saveBulk(registryRecords);

@@ -173,7 +173,7 @@ public class RegistryRecordList extends TemplatePage {
                 StringBuilder unitContainers = new StringBuilder();
                 for (Container registryContainer : registryRecord.getContainers()) {
                     if (unitContainers.length() > 0) {
-                        unitContainers.append(";");
+                        unitContainers.append("\n");
                     }
                     unitContainers.append(registryContainer.getData());
                 }
