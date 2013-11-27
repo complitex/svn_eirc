@@ -39,6 +39,15 @@ public class RegistryRecordBean extends AbstractBean {
     }
 
     /**
+     * Get registry records to linking
+     * @param filter Filter must content registryId, count, first
+     * @return registry records
+     */
+    public List<RegistryRecord> getCorrectionRecordsToLinking(FilterWrapper<RegistryRecord> filter) {
+        return getSqlSessionManager().selectList(NS + ".selectCorrectionRecordsToLinking", filter);
+    }
+
+    /**
      * Get registry records to processing
      * @param filter Filter must content registryId, count, first
      * @return registry records

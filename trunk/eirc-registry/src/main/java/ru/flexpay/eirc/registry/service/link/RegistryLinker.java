@@ -64,8 +64,19 @@ public class RegistryLinker {
     private ServiceProviderAccountBean serviceProviderAccountBean;
 
     public void link(final Long registryId, final IMessenger imessenger, final FinishCallback finishLink) {
+        link(FilterWrapper.of(new RegistryRecord(registryId)), imessenger, finishLink, false);
+    }
+
+    public void linkAfterCorrection(RegistryRecord record, final IMessenger imessenger, final FinishCallback finishLink) {
+        link(FilterWrapper.of(record), imessenger, finishLink, true);
+    }
+
+    private void link(final FilterWrapper<RegistryRecord> filter, final IMessenger imessenger,
+                      final FinishCallback finishLink, final boolean afterCorrection) {
         final AtomicBoolean finishReadRecords = new AtomicBoolean(false);
         final AtomicInteger recordLinkingCounter = new AtomicInteger(0);
+
+        final Long registryId = filter.getObject().getRegistryId();
 
         linkQueueProcessor.execute(new AbstractJob<Void>() {
             @Override
@@ -112,9 +123,11 @@ public class RegistryLinker {
 
                         int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
                         List<RegistryRecord> registryRecords;
-                        FilterWrapper<RegistryRecord> filter = FilterWrapper.of(new RegistryRecord(registryId), 0, numberFlushRegistryRecords);
+                        FilterWrapper<RegistryRecord> innerFilter = FilterWrapper.of(filter.getObject(), 0, numberFlushRegistryRecords);
                         do {
-                            final List<RegistryRecord> recordsToLinking = registryRecordBean.getRecordsToLinking(filter);
+                            final List<RegistryRecord> recordsToLinking = afterCorrection?
+                                    registryRecordBean.getCorrectionRecordsToLinking(innerFilter) :
+                                    registryRecordBean.getRecordsToLinking(innerFilter);
 
                             if (recordsToLinking.size() < numberFlushRegistryRecords) {
                                 finishReadRecords.set(true);
@@ -147,7 +160,7 @@ public class RegistryLinker {
                                 });
 
                                 // next registry record`s id is last in this partition
-                                filter.setFirst(recordsToLinking.get(recordsToLinking.size() - 1).getId().intValue() + 1);
+                                innerFilter.setFirst(recordsToLinking.get(recordsToLinking.size() - 1).getId().intValue() + 1);
                             } else if (recordLinkingCounter.get() == 0) {
                                 imessenger.addMessageInfo("registry_finish_link", registryId);
                                 finishLink.complete();
