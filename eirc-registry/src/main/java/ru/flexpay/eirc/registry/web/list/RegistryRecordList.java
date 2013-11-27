@@ -3,6 +3,7 @@ package ru.flexpay.eirc.registry.web.list;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
+import org.apache.wicket.ajax.AjaxSelfUpdatingTimerBehavior;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxLink;
@@ -13,7 +14,6 @@ import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.form.TextField;
-import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.model.CompoundPropertyModel;
@@ -22,6 +22,7 @@ import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.string.StringValue;
+import org.apache.wicket.util.time.Duration;
 import org.complitex.address.entity.AddressEntity;
 import org.complitex.correction.service.AddressService;
 import org.complitex.correction.service.exception.DuplicateCorrectionException;
@@ -29,14 +30,20 @@ import org.complitex.correction.service.exception.MoreOneCorrectionException;
 import org.complitex.correction.service.exception.NotFoundCorrectionException;
 import org.complitex.correction.web.component.AddressCorrectionPanel;
 import org.complitex.dictionary.entity.FilterWrapper;
+import org.complitex.dictionary.web.component.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.DatePicker;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
 import org.complitex.template.web.template.FormTemplatePage;
 import org.complitex.template.web.template.TemplatePage;
 import ru.flexpay.eirc.registry.entity.*;
+import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryBean;
+import ru.flexpay.eirc.registry.service.RegistryMessenger;
 import ru.flexpay.eirc.registry.service.RegistryRecordBean;
+import ru.flexpay.eirc.registry.service.link.RegistryLinker;
+import ru.flexpay.eirc.registry.service.parse.RegistryParserFinishCallback;
+import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 
 import javax.ejb.EJB;
 import java.text.SimpleDateFormat;
@@ -61,11 +68,27 @@ public class RegistryRecordList extends TemplatePage {
     private RegistryBean registryBean;
 
     @EJB
+    private RegistryWorkflowManager registryWorkflowManager;
+
+    @EJB
     private AddressService addressService;
+
+    @EJB
+    private RegistryLinker registryLinker;
+
+    @EJB
+    private RegistryMessenger imessenger;
+
+    @EJB
+    private RegistryParserFinishCallback finishCallback;
 
     private IModel<RegistryRecord> filterModel = new CompoundPropertyModel<>(new RegistryRecord());
 
     private Registry registry;
+
+    private WebMarkupContainer container;
+
+    private AjaxSelfUpdatingTimerBehavior timerBehavior;
 
     public RegistryRecordList(PageParameters params) throws ExecutionException, InterruptedException {
         StringValue registryIdParam = params.get("registryId");
@@ -91,14 +114,19 @@ public class RegistryRecordList extends TemplatePage {
         add(new Label("title", labelModel));
         add(new Label("label", labelModel));
 
-        final FeedbackPanel messages = new FeedbackPanel("messages");
-        messages.setOutputMarkupId(true);
-        add(messages);
-
-        final WebMarkupContainer container = new WebMarkupContainer("container");
+        container = new WebMarkupContainer("container");
         container.setOutputMarkupPlaceholderTag(true);
         container.setVisible(true);
         add(container);
+
+        final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
+        messages.setOutputMarkupId(true);
+        container.add(messages);
+
+        if (imessenger.countIMessages() > 0 || !finishCallback.isCompleted()) {
+            timerBehavior = new MessageBehavior(Duration.seconds(5));
+            container.add(timerBehavior);
+        }
 
         //Form
         final Form<RegistryRecord> filterForm = new Form<>("filterForm", filterModel);
@@ -110,16 +138,29 @@ public class RegistryRecordList extends TemplatePage {
 
             @Override
             protected void correctAddress(RegistryRecord registryRecord, AddressEntity entity, Long cityId, Long streetTypeId, Long streetId,
-                                          Long buildingId, Long userOrganizationId)
+                                          Long buildingId, Long apartmentId, Long userOrganizationId)
                     throws DuplicateCorrectionException, MoreOneCorrectionException, NotFoundCorrectionException {
-                addressService.correctAddress(registryRecord, entity, cityId, streetTypeId, streetId, buildingId,
-                        registry.getRecipientOrganizationId(), registry.getSenderOrganizationId());
-                registryRecord.setStatus(RegistryRecordStatus.LINKED);
-                registryRecordBean.save(registryRecord);
+
+                if (registryWorkflowManager.canLink(registry)) {
+
+                    if (timerBehavior == null) {
+                        timerBehavior = new MessageBehavior(Duration.seconds(5));
+                        container.add(timerBehavior);
+                    }
+
+                    addressService.correctAddress(registryRecord, entity, cityId, streetTypeId, streetId, buildingId, apartmentId,
+                            registry.getRecipientOrganizationId(), registry.getSenderOrganizationId());
+
+                    registryLinker.linkAfterCorrection(registryRecord, imessenger, finishCallback);
+
+                } else {
+                    RegistryRecordList.this.container.error("failed_correction_registry_linking");
+                }
             }
 
             @Override
             protected void closeDialog(AjaxRequestTarget target) {
+                showIMessages(target);
                 super.closeDialog(target);
             }
         };
@@ -206,7 +247,7 @@ public class RegistryRecordList extends TemplatePage {
                                 registryRecord.getCity(), registryRecord.getStreet(),
                                 registryRecord.getBuildingNumber(), registryRecord.getBuildingCorp(),
                                 registryRecord.getApartment(), registryRecord.getCityId(),
-                                registryRecord.getStreetId(), registryRecord.getBuildingId());
+                                registryRecord.getStreetId(), registryRecord.getBuildingId(), registryRecord.getApartmentId());
                     }
                 };
                 addressCorrectionLink.setVisible(registryRecord.getStatus() == RegistryRecordStatus.LINKED_WITH_ERROR &&
@@ -356,5 +397,40 @@ public class RegistryRecordList extends TemplatePage {
             parameters.add("registryRecordId", id);
         }
         return parameters;
+    }
+
+    private void showIMessages(AjaxRequestTarget target) {
+        if (imessenger.countIMessages() > 0) {
+            IMessenger.IMessage importMessage;
+
+            while ((importMessage = imessenger.getNextIMessage()) != null) {
+                switch (importMessage.getType()) {
+                    case ERROR:
+                        container.error(importMessage.getLocalizedString(getLocale()));
+                        break;
+                    case INFO:
+                        container.info(importMessage.getLocalizedString(getLocale()));
+                        break;
+                }
+            }
+            target.add(container);
+        }
+    }
+
+    private class MessageBehavior extends AjaxSelfUpdatingTimerBehavior {
+        private MessageBehavior(Duration updateInterval) {
+            super(updateInterval);
+        }
+
+        @Override
+        protected void onPostProcessTarget(AjaxRequestTarget target) {
+            showIMessages(target);
+
+            if (finishCallback.isCompleted() && imessenger.countIMessages() <= 0) {
+                stop();
+                container.remove(timerBehavior);
+                timerBehavior = null;
+            }
+        }
     }
 }
