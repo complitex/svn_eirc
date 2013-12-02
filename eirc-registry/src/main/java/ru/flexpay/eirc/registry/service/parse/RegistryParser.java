@@ -1,6 +1,7 @@
 package ru.flexpay.eirc.registry.service.parse;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.complitex.dictionary.entity.DictionaryConfig;
@@ -25,6 +26,9 @@ import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import java.io.*;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -86,7 +90,7 @@ public class RegistryParser implements Serializable {
                 public Void execute() throws ExecuteException {
 
                     try {
-                        FileInputStream is = new FileInputStream(new File(dir, fileName));
+                        InputStream is = new FileInputStream(new File(dir, fileName));
                         Registry registry = EjbBeanLocator.getBean(RegistryParser.class).parse(imessenger, is, fileName);
 
                         if (registry != null) {
@@ -120,7 +124,7 @@ public class RegistryParser implements Serializable {
             throws ExecuteException {
         log.debug("start action");
 
-        Logger processLog = log;
+        Logger processLog = getProcessLogger();
 
         Context context = new Context(imessenger, numberFlushRegistryRecords);
 
@@ -154,6 +158,9 @@ public class RegistryParser implements Serializable {
                             return null;
                         }
                         saveRegistry(registry);
+
+                        processLog = getProcessLogger(registry.getRegistryNumber());
+
                         context.setRegistry(registry);
                         context.addMessageInfo("registry_creating", registry.getRegistryNumber(), fileName);
                         log.debug("Creating registry {}", registry.getId());
@@ -187,6 +194,16 @@ public class RegistryParser implements Serializable {
         return null;
     }
 
+    private Logger getProcessLogger() {
+        return getProcessLogger(-1L);
+    }
+
+    private Logger getProcessLogger(Long registryId) {
+        InvocationHandler handler = new RegistryLogger(log, registryId);
+        ClassLoader cl = Logger.class.getClassLoader();
+        return (Logger) Proxy.newProxyInstance(cl, new Class[]{Logger.class}, handler);
+    }
+
     private void flushRecordStack(Context context, Logger processLog) throws ExecuteException {
         flushRecordStack(context, false, processLog);
     }
@@ -200,11 +217,10 @@ public class RegistryParser implements Serializable {
             context.getBatchProcessor().processJob(new AbstractJob<JobResult>() {
                 @Override
                 public JobResult execute() throws ExecuteException {
-                    registryRecordService.saveBulk(records);
-                    //registryRecordService.saveBulk(records);
+                    registryRecordService.createBulk(records);
                     //TODO save intermediate state
-                    context.setRecordCounter(context.getRecordCounter() + records.size());
-                    context.addMessageInfo("registry_record_upload", context.getRegistry().getRegistryNumber(), context.getRecordCounter());
+                    int currentCounter = context.addRecordCounter(records.size());
+                    context.addMessageInfo("registry_record_upload", context.getRegistry().getRegistryNumber(), currentCounter);
                     return JobResult.SUCCESSFUL;
                 }
             });
@@ -225,20 +241,40 @@ public class RegistryParser implements Serializable {
 
         log.debug("Finalize registry");
 
+        boolean failed = false;
+
         if (context.getRegistry().getRecordsCount() != context.getRecordCounter()) {
             processLog.error("Registry records number error, expected: {}, found: {}",
                     new Object[]{context.getRegistry().getRecordsCount(), context.getRecordCounter()});
-            throw new ExecuteException("Registry records number error, expected: " +
-                    context.getRegistry().getRecordsCount() + ", found: " + context.getRecordCounter());
+            failed = true;
         }
 
-        setNextSuccessStatus(context);
+        if (!context.getRegistry().getAmount().equals(context.getTotalAmount())) {
+            processLog.error("Total amount error, expected: {}, found: {}",
+                    new Object[]{context.getRegistry().getAmount(), context.getTotalAmount()});
+            failed = true;
+        }
+
+        if (failed) {
+            setNextErrorStatus(context);
+        } else {
+            setNextSuccessStatus(context);
+        }
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     private void setNextSuccessStatus(Context context) throws ExecuteException {
         try {
             registryWorkflowManager.setNextSuccessStatus(context.getRegistry());
+        } catch (TransitionNotAllowed transitionNotAllowed) {
+            throw new ExecuteException("Does not finalize registry", transitionNotAllowed);
+        }
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    private void setNextErrorStatus(Context context) throws ExecuteException {
+        try {
+            registryWorkflowManager.setNextErrorStatus(context.getRegistry());
         } catch (TransitionNotAllowed transitionNotAllowed) {
             throw new ExecuteException("Does not finalize registry", transitionNotAllowed);
         }
@@ -386,17 +422,23 @@ public class RegistryParser implements Serializable {
 
     private Organization getRecipient(Registry registry, Logger processLog) {
 
-        Organization recipient;
-        if (registry.getRecipientOrganizationId() == 0) {
+        Integer eircOrganizationId = configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true);
+
+        if (registry.getRecipientOrganizationId() == null || registry.getRecipientOrganizationId() == 0) {
             processLog.debug("Recipient is EIRC, code=0");
             configBean.getConfigs();
-            recipient = organizationStrategy.findById(configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true), false);
-        } else {
-            processLog.debug("Fetching recipient via code={}", registry.getRecipientOrganizationId());
-            recipient = findOrgByRegistryCorrections(registry, registry.getSenderOrganizationId(), processLog);
-            if (recipient == null) {
-                recipient = organizationStrategy.findById(registry.getRecipientOrganizationId(), false);
-            }
+            return organizationStrategy.findById(eircOrganizationId, false);
+        }
+
+        if (!registry.getRecipientOrganizationId().equals(eircOrganizationId.longValue())) {
+            processLog.error("Recipient is not EIRC organization");
+            return null;
+        }
+
+        processLog.debug("Fetching recipient via code={}", registry.getRecipientOrganizationId());
+        Organization recipient = findOrgByRegistryCorrections(registry, registry.getRecipientOrganizationId(), processLog);
+        if (recipient == null) {
+            recipient = organizationStrategy.findById(registry.getRecipientOrganizationId(), false);
         }
         return recipient;
     }
@@ -484,6 +526,7 @@ public class RegistryParser implements Serializable {
             return null;
         }
 
+        boolean failed = false;
         RegistryRecord record = new RegistryRecord();
         record.setRegistryId(registry.getId());
         try {
@@ -547,8 +590,15 @@ public class RegistryParser implements Serializable {
                 return null;
             }
 
+            // validate operation date
+            if (registry.getFromDate().after(record.getOperationDate()) ||
+                    registry.getTillDate().before(record.getOperationDate())) {
+                processLog.error("Failed operation date {} in operation number {}", record.getOperationDate(), record.getUniqueOperationNumber());
+                failed = true;
+            }
+
             // setup record status
-            recordWorkflowManager.setInitialStatus(record);
+            recordWorkflowManager.setInitialStatus(record, failed);
 
             return record;
         } catch (NumberFormatException | RegistryFormatException | TransitionNotAllowed e) {
@@ -572,7 +622,7 @@ public class RegistryParser implements Serializable {
 
         private List<RegistryRecord> records = Lists.newArrayList();
 
-        private volatile int recordCounter = 0;
+        private AtomicInteger recordCounter = new AtomicInteger(0);
 
         private int numberFlushRegistryRecords;
 
@@ -580,41 +630,50 @@ public class RegistryParser implements Serializable {
 
         private IMessenger imessenger;
 
+        private AtomicDouble totalAmount = new AtomicDouble(0);
+
         private Context(IMessenger imessenger, int numberFlushRegistryRecords) {
             this.numberFlushRegistryRecords = numberFlushRegistryRecords;
             this.imessenger = imessenger;
             batchProcessor = new BatchProcessor<>(10, processor);
         }
 
-        private Registry getRegistry() {
+        public Registry getRegistry() {
             return registry;
         }
 
-        private void setRegistry(Registry registry) {
+        public void setRegistry(Registry registry) {
             this.registry = registry;
         }
 
-        private List<RegistryRecord> getRecords() {
+        public List<RegistryRecord> getRecords() {
             return records;
         }
 
-        private int getRecordCounter() {
-            return recordCounter;
+        public int getRecordCounter() {
+            return recordCounter.get();
         }
 
-        private void setRecordCounter(int recordCounter) {
-            this.recordCounter = recordCounter;
+        private int addRecordCounter(int recordCounter) {
+            return this.recordCounter.addAndGet(recordCounter);
         }
 
-        private int getNumberFlushRegistryRecords() {
+        public BigDecimal getTotalAmount() {
+            return BigDecimal.valueOf(totalAmount.get());
+        }
+
+        public int getNumberFlushRegistryRecords() {
             return numberFlushRegistryRecords;
         }
 
-        private BatchProcessor<JobResult> getBatchProcessor() {
+        public BatchProcessor<JobResult> getBatchProcessor() {
             return batchProcessor;
         }
 
         public void add(RegistryRecord registryRecord) {
+            if (registryRecord.getAmount() != null) {
+                totalAmount.addAndGet(registryRecord.getAmount().doubleValue());
+            }
             records.add(registryRecord);
         }
 
@@ -629,6 +688,42 @@ public class RegistryParser implements Serializable {
 
         public void addMessageError(String message, Object... parameters) {
             imessenger.addMessageError(message, parameters);
+        }
+    }
+
+    private class RegistryLogger implements InvocationHandler {
+
+        private Logger logger;
+        private String incMessage;
+
+        private RegistryLogger(Logger logger, Long registryId) {
+            this.logger = logger;
+            this.incMessage = registryId > 0? "(Registry : " + registryId + ")" : "";
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] params) throws Throwable {
+            if (
+                    StringUtils.equals(method.getName(), "trace") ||
+                    StringUtils.equals(method.getName(), "debug") ||
+                    StringUtils.equals(method.getName(), "warn") ||
+                    StringUtils.equals(method.getName(), "info") ||
+                    StringUtils.equals(method.getName(), "error")
+                    ) {
+
+                if (StringUtils.isNotEmpty(incMessage)) {
+                    int i = 0;
+                    while (i < params.length && !(params[i] instanceof String)) {
+                        i++;
+                    }
+                    if (i < params.length) {
+                        String message = ((String)params[i]).concat(incMessage);
+                        params[i] = message;
+                    }
+                }
+
+            }
+            return method.invoke(logger, params);
         }
     }
 }

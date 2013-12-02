@@ -215,41 +215,41 @@
         where rr.`status` = 3 and
         <choose>
             <when test="object.apartmentId != null">
-                rr.`building_id` = #{object.buildingId} and rr.`apartment` = #{object.apartment}
+                rr.`building_id` = #{object.buildingId} and rr.`apartment` = #{object.apartment} and
             </when>
             <when test="object.buildingId != null">
                 rr.`street_id` = #{object.streetId} and rr.`building_number` = #{object.buildingNumber} and
                 <choose>
                     <when test="object.buildingCorp != null">
-                        rr.`bulk_number` = #{object.buildingCorp}
+                        rr.`bulk_number` = #{object.buildingCorp} and
                     </when>
                     <otherwise>
-                        rr.`bulk_number` is null
+                        rr.`bulk_number` is null and
                     </otherwise>
                 </choose>
             </when>
             <when test="object.streetId != null">
-                rr.`city_id` = #{object.cityId} and rr.`street_type_id` = #{object.streetTypeId} and rr.`street` = #{object.street}
+                rr.`city_id` = #{object.cityId} and rr.`street_type_id` = #{object.streetTypeId} and rr.`street` = #{object.street} and
             </when>
             <when test="object.streetTypeId != null">
-                rr.`street_type` = #{object.streetType}
+                rr.`street_type` = #{object.streetType} and
             </when>
             <when test="object.cityId != null">
                 rr.`city` = #{object.city} and
                 <choose>
                     <when test="object.cityTypeId != null">
-                        rr.`city_type_id` = #{object.cityTypeId}
+                        rr.`city_type_id` = #{object.cityTypeId} and
                     </when>
                     <otherwise>
-                        rr.`city_type_id` is null
+                        rr.`city_type_id` is null and
                     </otherwise>
                 </choose>
             </when>
             <when test="object.cityTypeId != null">
-                rr.`city_type` = #{object.cityType}
+                rr.`city_type` = #{object.cityType} and
             </when>
         </choose>
-        and rr.`registry_id` = #{object.registryId} and rr.`id` >= ${first}
+        rr.`registry_id` = #{object.registryId} and rr.`id` >= ${first}
         order by rr.`id`
         limit 0, ${count}
 

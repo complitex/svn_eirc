@@ -238,7 +238,7 @@ public class RegistryLinker {
 
         }
 
-        registryRecordBean.saveBulk(registryRecords);
+        registryRecordBean.updateBulk(registryRecords);
 
     }
 
