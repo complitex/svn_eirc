@@ -14,6 +14,7 @@ import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.form.TextField;
+import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.model.CompoundPropertyModel;
@@ -385,6 +386,13 @@ public class RegistryRecordList extends TemplatePage {
 
         //Navigator
         container.add(new PagingNavigator("navigator", dataView, getPreferencesPage(), container));
+
+        add(new Link("back") {
+            @Override
+            public void onClick() {
+                setResponsePage(RegistryList.class);
+            }
+        });
     }
 
     private Class<? extends Page> getEditPage() {
