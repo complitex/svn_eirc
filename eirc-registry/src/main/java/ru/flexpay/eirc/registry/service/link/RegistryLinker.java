@@ -78,12 +78,13 @@ public class RegistryLinker {
 
         final Long registryId = filter.getObject().getRegistryId();
 
+        imessenger.addMessageInfo("starting_link_registries", registryId);
+        finishLink.init();
+
         linkQueueProcessor.execute(new AbstractJob<Void>() {
             @Override
             public Void execute() throws ExecuteException {
                 try {
-                    imessenger.addMessageInfo("starting_link_registries", registryId);
-                    finishLink.init();
 
                     List<Registry> registries = registryBean.getRegistries(FilterWrapper.of(new Registry(registryId)));
 
