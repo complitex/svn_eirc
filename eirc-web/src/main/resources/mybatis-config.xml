@@ -36,6 +36,7 @@
         <mapper resource="org/complitex/dictionary/service/ConfigBean.xml"/>
 
         <mapper resource="org/complitex/address/strategy/building/Building.xml"/>
+        <mapper resource="org/complitex/address/strategy/building/BuildingImportBean.xml"/>
         <mapper resource="org/complitex/address/strategy/building_address/BuildingAddress.xml"/>
         <mapper resource="org/complitex/address/strategy/street/Street.xml"/>
         <mapper resource="org/complitex/address/strategy/city/City.xml"/>

@@ -2,6 +2,7 @@ package ru.flexpay.eirc.web.admin;
 
 import org.apache.wicket.Page;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
+import org.complitex.address.web.ImportPage;
 import org.complitex.admin.web.AdminTemplateMenu;
 import org.complitex.template.web.template.ITemplateLink;
 
@@ -21,12 +22,12 @@ public class AdminMenu extends AdminTemplateMenu {
 
             @Override
             public String getLabel(Locale locale) {
-                return ""; //return getString(ReferenceDataImportPage.class, locale, "title");
+                return getString(ImportPage.class, locale, "title");
             }
 
             @Override
             public Class<? extends Page> getPage() {
-                return null;//ReferenceDataImportPage.class;
+                return ImportPage.class;
             }
 
             @Override
@@ -36,9 +37,10 @@ public class AdminMenu extends AdminTemplateMenu {
 
             @Override
             public String getTagId() {
-                return "reference_data_import";
+                return "ImportPage";
             }
         });
+
 
         return links;
     }
