@@ -181,16 +181,20 @@ public class RegistryRecordWorkflowManager {
      * @return SpRegistryRecord back
      * @throws TransitionNotAllowed if registry already has a status
      */
-    public RegistryRecord setInitialStatus(RegistryRecord record) throws TransitionNotAllowed {
+    public RegistryRecord setInitialStatus(RegistryRecord record, boolean failed) throws TransitionNotAllowed {
         if (record.getStatus() != null) {
-            if (record.getStatus() != LOADED) {
+            if (record.getStatus() != LOADED && !failed) {
                 throw new TransitionNotAllowed("Registry was already processed, cannot set initial status");
             }
 
             return record;
         }
 
-        record.setStatus(LOADED);
+        if (failed) {
+            record.setStatus(LOADED_WITH_ERROR);
+        } else {
+            record.setStatus(LOADED);
+        }
         return record;
     }
 

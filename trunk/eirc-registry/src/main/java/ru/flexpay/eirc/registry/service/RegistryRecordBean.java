@@ -58,7 +58,7 @@ public class RegistryRecordBean extends AbstractBean {
 
     @Transactional(executorType = ExecutorType.BATCH)
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public void saveBulk(List<RegistryRecord> registryRecords) {
+    public void createBulk(List<RegistryRecord> registryRecords) {
         SqlSession session = sqlSession();
 
         for (RegistryRecord registryRecord : registryRecords) {
@@ -73,19 +73,39 @@ public class RegistryRecordBean extends AbstractBean {
 
     }
 
+    @Transactional(executorType = ExecutorType.BATCH)
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public void updateBulk(List<RegistryRecord> registryRecords) {
+        SqlSession session = sqlSession();
+
+        for (RegistryRecord registryRecord : registryRecords) {
+            saveRegistryRecord(session, registryRecord);
+        }
+
+    }
+
     @Transactional
     public void save(RegistryRecord registryRecord) {
         SqlSession session = sqlSession();
-        saveRegistryRecord(session, registryRecord);
-        saveRegistryRecordContainers(session, registryRecord);
+        if (saveRegistryRecord(session, registryRecord)) {
+            saveRegistryRecordContainers(session, registryRecord);
+        }
     }
 
-    private void saveRegistryRecord(SqlSession session, RegistryRecord registryRecord) {
+    /**
+     * Save registry record
+     *
+     * @param session Sql session
+     * @param registryRecord Registry record
+     * @return <code>true</code> if registry record was created otherwise <code>false</code>
+     */
+    private boolean saveRegistryRecord(SqlSession session, RegistryRecord registryRecord) {
         if (registryRecord.getId() == null) {
             session.insert(NS + ".insertRegistryRecord", registryRecord);
-        } else {
-            session.update(NS + ".updateRegistryRecord", registryRecord);
+            return true;
         }
+        session.update(NS + ".updateRegistryRecord", registryRecord);
+        return false;
     }
 
     private void saveRegistryRecordContainers(SqlSession session, RegistryRecord registryRecord) {
