@@ -22,6 +22,7 @@ import org.apache.wicket.model.CompoundPropertyModel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
+import org.apache.wicket.request.resource.SharedResourceReference;
 import org.apache.wicket.util.time.Duration;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
@@ -31,6 +32,7 @@ import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.DatePicker;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
+import org.complitex.dictionary.web.component.image.StaticImage;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
 import org.complitex.dictionary.web.component.scroll.ScrollBookmarkablePageLink;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
@@ -47,8 +49,8 @@ import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryBean;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
+import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryParser;
-import ru.flexpay.eirc.registry.service.parse.RegistryParserFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 
 import javax.ejb.EJB;
@@ -71,6 +73,7 @@ public class RegistryList extends TemplatePage {
 
     private static final SimpleDateFormat CREATE_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd");
     private static final SimpleDateFormat LOAD_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+    private static final String IMAGE_AJAX_LOADER = "images/ajax-loader2.gif";
 
     @EJB
     private RegistryBean registryBean;
@@ -87,7 +90,7 @@ public class RegistryList extends TemplatePage {
     @EJB
     private RegistryLinker linker;
 
-    private WebMarkupContainer messagesContainer;
+    private WebMarkupContainer container;
 
     @EJB
     private RegistryMessenger imessenger;
@@ -95,7 +98,7 @@ public class RegistryList extends TemplatePage {
     private IModel<Registry> filterModel = new CompoundPropertyModel<>(new Registry());
 
     @EJB
-    private RegistryParserFinishCallback finishCallback;
+    private RegistryFinishCallback finishCallback;
 
     @EJB
     private RegistryWorkflowManager registryWorkflowManager;
@@ -112,24 +115,19 @@ public class RegistryList extends TemplatePage {
         add(new Label("title", labelModel));
         add(new Label("label", labelModel));
 
-        messagesContainer = new WebMarkupContainer("messagesContainer");
-        messagesContainer.setOutputMarkupPlaceholderTag(true);
-        messagesContainer.setVisible(true);
-        add(messagesContainer);
-
         final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
         messages.setOutputMarkupId(true);
-        messagesContainer.add(messages);
 
-        final WebMarkupContainer container = new WebMarkupContainer("container");
+        container = new WebMarkupContainer("container");
         container.setOutputMarkupPlaceholderTag(true);
         container.setVisible(true);
         add(container);
+        container.add(messages);
 
 
         if (imessenger.countIMessages() > 0 || !finishCallback.isCompleted()) {
             timerBehavior = new MessageBehavior(Duration.seconds(5));
-            messagesContainer.add(timerBehavior);
+            this.container.add(timerBehavior);
         }
 
 
@@ -169,7 +167,6 @@ public class RegistryList extends TemplatePage {
                 Organization recipientOrganization = organizationStrategy.findById(registry.getRecipientOrganizationId(), false);
 
                 item.add(new Label("creationDate", registry.getCreationDate() != null ? CREATE_DATE_FORMAT.format(registry.getCreationDate()) : ""));
-                item.add(new Label("registryNumber", String.valueOf(registry.getRegistryNumber())));
                 item.add(new Label("sender", organizationStrategy.displayDomainObject(senderOrganization, getLocale())));
                 item.add(new Label("recipient", organizationStrategy.displayDomainObject(recipientOrganization, getLocale())));
                 item.add(new Label("type", registry.getType().getLabel(getLocale())));
@@ -180,14 +177,25 @@ public class RegistryList extends TemplatePage {
                 ScrollBookmarkablePageLink<WebPage> detailsLink = new ScrollBookmarkablePageLink<>("detailsLink",
                         getViewPage(), getViewPageParams(registry.getId()),
                         String.valueOf(registry.getId()));
-                detailsLink.add(new Label("viewMessage", new AbstractReadOnlyModel<String>() {
+                detailsLink.add(new Label("registryNumber", new AbstractReadOnlyModel<String>() {
 
                     @Override
                     public String getObject() {
-                        return getString("view");
+                        return String.valueOf(registry.getRegistryNumber());
                     }
                 }));
                 item.add(detailsLink);
+
+                //Анимация в обработке
+                item.add(new StaticImage("processing", new SharedResourceReference(IMAGE_AJAX_LOADER)) {
+
+                    @Override
+                    public boolean isVisible() {
+                        return !finishCallback.isCompleted() &&
+                                registryWorkflowManager.isLinking(registry) ||
+                                registryWorkflowManager.isProcessing(registry);
+                    }
+                });
 
                 AjaxLink actionLink = new AjaxLink("actionLink") {
                     @Override
@@ -198,7 +206,7 @@ public class RegistryList extends TemplatePage {
 
                                 timerBehavior = new MessageBehavior(Duration.seconds(5));
 
-                                messagesContainer.add(timerBehavior);
+                                RegistryList.this.container.add(timerBehavior);
                             }
 
                             try {
@@ -408,7 +416,7 @@ public class RegistryList extends TemplatePage {
 
                     timerBehavior = new MessageBehavior(Duration.seconds(5));
 
-                    messagesContainer.add(timerBehavior);
+                    container.add(timerBehavior);
                 }
 
                 try {
@@ -429,14 +437,14 @@ public class RegistryList extends TemplatePage {
             while ((importMessage = imessenger.getNextIMessage()) != null) {
                 switch (importMessage.getType()) {
                     case ERROR:
-                        messagesContainer.error(importMessage.getLocalizedString(getLocale()));
+                        container.error(importMessage.getLocalizedString(getLocale()));
                         break;
                     case INFO:
-                        messagesContainer.info(importMessage.getLocalizedString(getLocale()));
+                        container.info(importMessage.getLocalizedString(getLocale()));
                         break;
                 }
             }
-            target.add(messagesContainer);
+            target.add(container);
         }
     }
 
@@ -451,7 +459,7 @@ public class RegistryList extends TemplatePage {
 
             if (finishCallback.isCompleted() && imessenger.countIMessages() <= 0) {
                 stop();
-                messagesContainer.remove(timerBehavior);
+                container.remove(timerBehavior);
                 timerBehavior = null;
             }
         }

@@ -2,11 +2,11 @@ package ru.flexpay.eirc.registry.service.parse;
 
 import ru.flexpay.eirc.registry.service.FinishCallback;
 
-import javax.ejb.Stateful;
+import javax.ejb.Singleton;
 
 /**
  * @author Pavel Sknar
  */
-@Stateful
-public class RegistryParserFinishCallback extends FinishCallback {
+@Singleton
+public class RegistryFinishCallback extends FinishCallback {
 }

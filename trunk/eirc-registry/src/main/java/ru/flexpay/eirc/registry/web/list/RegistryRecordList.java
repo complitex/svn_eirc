@@ -43,7 +43,7 @@ import ru.flexpay.eirc.registry.service.RegistryBean;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
 import ru.flexpay.eirc.registry.service.RegistryRecordBean;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
-import ru.flexpay.eirc.registry.service.parse.RegistryParserFinishCallback;
+import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 
 import javax.ejb.EJB;
@@ -81,7 +81,7 @@ public class RegistryRecordList extends TemplatePage {
     private RegistryMessenger imessenger;
 
     @EJB
-    private RegistryParserFinishCallback finishCallback;
+    private RegistryFinishCallback finishCallback;
 
     private IModel<RegistryRecord> filterModel = new CompoundPropertyModel<>(new RegistryRecord());
 
