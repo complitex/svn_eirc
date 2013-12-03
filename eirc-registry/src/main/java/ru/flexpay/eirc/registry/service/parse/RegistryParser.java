@@ -590,10 +590,22 @@ public class RegistryParser implements Serializable {
                 return null;
             }
 
+            // validate containers
+            for (Container container : record.getContainers()) {
+                RegistryType containerRegistryType = container.getType().getRegistryType();
+                if (containerRegistryType == null || !containerRegistryType.equals(registry.getType())) {
+                    processLog.error("Failed container {} for account {}", container, record.getPersonalAccountExt());
+                    failed = true;
+                }
+            }
+
             // validate operation date
             if (registry.getFromDate().after(record.getOperationDate()) ||
                     registry.getTillDate().before(record.getOperationDate())) {
-                processLog.error("Failed operation date {} in operation number {}", record.getOperationDate(), record.getUniqueOperationNumber());
+
+                processLog.error("Failed operation date {} in operation number {} for account {}",
+                        new Object[]{record.getOperationDate(), record.getUniqueOperationNumber(),
+                                record.getPersonalAccountExt()});
                 failed = true;
             }
 
