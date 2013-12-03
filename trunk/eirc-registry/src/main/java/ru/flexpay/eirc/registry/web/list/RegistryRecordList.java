@@ -37,6 +37,9 @@ import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
 import org.complitex.template.web.template.FormTemplatePage;
 import org.complitex.template.web.template.TemplatePage;
+import org.odlabs.wiquery.ui.accordion.Accordion;
+import org.odlabs.wiquery.ui.accordion.AccordionActive;
+import org.odlabs.wiquery.ui.accordion.AccordionAnimated;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryBean;
@@ -212,14 +215,39 @@ public class RegistryRecordList extends TemplatePage {
                 item.add(new Label("operationDate", registryRecord.getOperationDate() != null ?
                         OPERATION_DATE_FORMAT.format(registryRecord.getOperationDate()) : ""));
                 item.add(new Label("amount"));
-                StringBuilder unitContainers = new StringBuilder();
-                for (Container registryContainer : registryRecord.getContainers()) {
-                    if (unitContainers.length() > 0) {
-                        unitContainers.append("\n");
+
+                Accordion accordion = new Accordion("accordionContainers");
+                accordion.setCollapsible(true);
+                accordion.setClearStyle(true);
+                accordion.setNavigation(true);
+                accordion.setActive(new AccordionActive(false));
+                accordion.setAnimated(new AccordionAnimated(false));
+                accordion.setOutputMarkupPlaceholderTag(true);
+                accordion.setAutoHeight(false);
+                item.add(accordion);
+
+                final DataProvider<Container> dataProvider = new DataProvider<Container>() {
+                    @Override
+                    protected Iterable<? extends Container> getData(int first, int count) {
+                        return registryRecord.getContainers();
                     }
-                    unitContainers.append(registryContainer.getData());
-                }
-                item.add(new Label("containers", unitContainers.toString()));
+
+                    @Override
+                    protected int getSize() {
+                        return registryRecord.getContainers().size();
+                    }
+                };
+
+                DataView<Container> dataView = new DataView<Container>("containersData", dataProvider,
+                        registryRecord.getContainers().size()) {
+                    @Override
+                    protected void populateItem(Item<Container> item) {
+                        item.add(new Label("container", item.getModelObject().getData()));
+                    }
+                };
+
+                accordion.add(dataView);
+
                 item.add(new Label("importErrorType", registryRecord.getImportErrorType() != null?
                         registryRecord.getImportErrorType().getLabel(getLocale()) : ""));
                 item.add(new Label("status", registryRecord.getStatus().getLabel(getLocale())));
