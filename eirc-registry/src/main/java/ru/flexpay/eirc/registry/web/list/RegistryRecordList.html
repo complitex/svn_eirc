@@ -191,7 +191,20 @@
                         <span wicket:id="amount"></span>
                     </td>
                     <td>
-                        <span wicket:id="containers"></span>
+                        <div wicket:id="accordionContainers">
+                            <h3>
+                                <a name="containers">
+                                    <wicket:message key="registry_record_containers"/>
+                                </a>
+                            </h3>
+                            <table>
+                                <tr wicket:id="containersData">
+                                    <td>
+                                        <span wicket:id="container"></span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
                     </td>
                     <td>
                         <span wicket:id="importErrorType"></span>
