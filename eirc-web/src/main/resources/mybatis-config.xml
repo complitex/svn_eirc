@@ -48,9 +48,11 @@
         <mapper resource="org/complitex/logging/service/LogListBean.xml"/>
 
         <mapper resource="org/complitex/organization/strategy/Organization.xml"/>
+        <mapper resource="org/complitex/organization/service/OrganizationImportBean.xml"/>
 
         <mapper resource="org/complitex/dictionary/entity/Correction.xml"/>
         <mapper resource="org/complitex/correction/service/AddressCorrectionBean.xml"/>
+        <mapper resource="org/complitex/correction/service/OrganizationCorrectionBean.xml"/>
 
         <mapper resource="ru/flexpay/eirc/dictionary/service/PersonBean.xml"/>
         <mapper resource="ru/flexpay/eirc/eirc_account/service/EircAccountBean.xml"/>
