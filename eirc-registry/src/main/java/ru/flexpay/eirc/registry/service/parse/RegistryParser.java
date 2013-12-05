@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Stateless
 public class RegistryParser implements Serializable {
 
-    private static final Logger log = LoggerFactory.getLogger(RegistryParser.class);
+    private final Logger log = LoggerFactory.getLogger(RegistryParser.class);
 
     @EJB
     private RegistryRecordBean registryRecordService;

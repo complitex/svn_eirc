@@ -14,7 +14,7 @@ import java.util.concurrent.Future;
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 public class JobProcessor {
 
-    private static final Logger log = LoggerFactory.getLogger(JobProcessor.class);
+    private final Logger log = LoggerFactory.getLogger(JobProcessor.class);
 
     @Asynchronous
     public <T> Future<T> processJob(AbstractJob<T> job) {

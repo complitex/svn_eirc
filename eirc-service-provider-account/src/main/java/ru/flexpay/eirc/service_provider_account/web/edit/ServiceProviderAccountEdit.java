@@ -65,7 +65,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
     private ServiceProviderAccount serviceProviderAccount;
 
 
-    private static final Logger log = LoggerFactory.getLogger(ServiceProviderAccountEdit.class);
+    private final Logger log = LoggerFactory.getLogger(ServiceProviderAccountEdit.class);
 
     public ServiceProviderAccountEdit() {
         init();

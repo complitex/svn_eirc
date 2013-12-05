@@ -13,7 +13,7 @@ import java.util.concurrent.Semaphore;
  */
 public abstract class QueueProcessor {
 
-    private static final Logger log = LoggerFactory.getLogger(QueueProcessor.class);
+    private final Logger log = LoggerFactory.getLogger(QueueProcessor.class);
 
     private Queue<AbstractJob<Void>> jobs = Queues.newConcurrentLinkedQueue();
 

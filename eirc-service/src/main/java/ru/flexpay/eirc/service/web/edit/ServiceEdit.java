@@ -39,7 +39,7 @@ public class ServiceEdit extends FormTemplatePage {
     private Service service;
     private Service parentService;
 
-    private static final Logger log = LoggerFactory.getLogger(ServiceEdit.class);
+    private final Logger log = LoggerFactory.getLogger(ServiceEdit.class);
 
     public ServiceEdit() {
         init();

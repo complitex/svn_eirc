@@ -18,7 +18,7 @@ import javax.ejb.Singleton;
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 public class LinkQueueProcessor extends QueueProcessor {
 
-    private static final Logger log = LoggerFactory.getLogger(LinkQueueProcessor.class);
+    private final Logger log = LoggerFactory.getLogger(LinkQueueProcessor.class);
 
     @EJB
     private JobProcessor processor;

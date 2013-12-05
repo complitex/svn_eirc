@@ -74,7 +74,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
      */
 
 
-    private static final Logger log = LoggerFactory.getLogger(EircOrganizationStrategy.class);
+    private final Logger log = LoggerFactory.getLogger(EircOrganizationStrategy.class);
     public static final String EIRC_ORGANIZATION_STRATEGY_NAME = IOrganizationStrategy.BEAN_NAME;
     private static final String RESOURCE_BUNDLE = EircOrganizationStrategy.class.getName();
 
