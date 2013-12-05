@@ -3,6 +3,9 @@ package ru.flexpay.eirc.eirc_account.service;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.validator.routines.checkdigit.CheckDigit;
+import org.apache.commons.validator.routines.checkdigit.CheckDigitException;
+import org.apache.commons.validator.routines.checkdigit.EAN13CheckDigit;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
@@ -29,8 +32,18 @@ public class EircAccountBean extends AbstractBean {
 
     private static final List<String> searchFilters = ImmutableList.of("city", "street", "building", "apartment", "room");
 
+    private static final CheckDigit CHECK_DIGIT = EAN13CheckDigit.EAN13_CHECK_DIGIT;
     @EJB
     private SequenceBean sequenceBean;
+
+    @Transactional
+    public String generateEircAccountNumber(String prefix) throws NumberFormatException, CheckDigitException {
+        long lPrefix = Long.parseLong(prefix);
+        long id = sequenceBean.nextIdOrInit(prefix);
+        String accountNumber = String.valueOf(lPrefix*100000000 + id);
+
+        return accountNumber + CHECK_DIGIT.calculate(accountNumber);
+    }
 
     @Transactional
     public void archive(EircAccount object) {

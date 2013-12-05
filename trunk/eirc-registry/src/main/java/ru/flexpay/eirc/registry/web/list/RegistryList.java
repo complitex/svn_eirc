@@ -48,6 +48,7 @@ import ru.flexpay.eirc.registry.entity.RegistryType;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryBean;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
+import ru.flexpay.eirc.registry.service.handle.RegistryHandler;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryParser;
@@ -89,6 +90,9 @@ public class RegistryList extends TemplatePage {
 
     @EJB
     private RegistryLinker linker;
+
+    @EJB
+    private RegistryHandler handler;
 
     private WebMarkupContainer container;
 
@@ -216,7 +220,11 @@ public class RegistryList extends TemplatePage {
                             }
 
                         } else if (registryWorkflowManager.canProcess(registry)) {
-                            // TODO process registry
+                            try {
+                                handler.handle(registry.getId(), imessenger, finishCallback);
+                            } finally {
+                                showIMessages(target);
+                            }
                         }
                     }
 

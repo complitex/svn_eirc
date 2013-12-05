@@ -10,6 +10,13 @@ public class Service extends DictionaryNamedObject {
     private String code;
     private Long parentId;
 
+    public Service() {
+    }
+
+    public Service(String code) {
+        this.code = code;
+    }
+
     public String getCode() {
         return code;
     }

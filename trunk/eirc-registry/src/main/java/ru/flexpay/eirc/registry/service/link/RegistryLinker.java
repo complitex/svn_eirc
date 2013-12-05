@@ -189,7 +189,7 @@ public class RegistryLinker {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    private void linkRegistryRecords(Registry registry, List<RegistryRecord> registryRecords) throws TransitionNotAllowed {
+    public void linkRegistryRecords(Registry registry, List<RegistryRecord> registryRecords) throws TransitionNotAllowed {
         for (RegistryRecord registryRecord : registryRecords) {
 
             // Search address
@@ -244,7 +244,7 @@ public class RegistryLinker {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    private boolean setLinkingStatus(Registry registry) {
+    public boolean setLinkingStatus(Registry registry) {
         try {
             registryWorkflowManager.setNextSuccessStatus(registry);
             return true;
@@ -255,7 +255,7 @@ public class RegistryLinker {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    private boolean setLinkedStatus(Registry registry) {
+    public boolean setLinkedStatus(Registry registry) {
         try {
             registryWorkflowManager.setNextSuccessStatus(registry);
             return true;
@@ -266,7 +266,7 @@ public class RegistryLinker {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    private boolean setErrorStatus(Registry registry) {
+    public boolean setErrorStatus(Registry registry) {
         try {
             registryWorkflowManager.markLinkingHasError(registry);
             return true;

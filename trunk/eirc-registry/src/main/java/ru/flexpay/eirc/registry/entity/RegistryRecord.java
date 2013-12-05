@@ -1,9 +1,13 @@
 package ru.flexpay.eirc.registry.entity;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
+import org.complitex.address.entity.AddressEntity;
 import org.complitex.correction.entity.AddressLinkData;
 import org.complitex.correction.entity.LinkStatus;
+import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.DictionaryObject;
+import ru.flexpay.eirc.dictionary.entity.Person;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -251,6 +255,24 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
 
     public void setApartmentId(Long apartmentId) {
         this.apartmentId = apartmentId;
+    }
+
+    public Address getAddress() {
+        if (apartmentId != null) {
+            return new Address(apartmentId, AddressEntity.APARTMENT);
+        } else if (buildingId != null && StringUtils.isEmpty(apartment)) {
+            return new Address(buildingId, AddressEntity.BUILDING);
+        }
+        return null;
+    }
+
+    public Person getPerson() {
+        Person person = new Person();
+        person.setLastName(lastName);
+        person.setFirstName(firstName);
+        person.setMiddleName(middleName);
+
+        return person;
     }
 
     @Override

@@ -263,7 +263,7 @@ public class RegistryParser implements Serializable {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    private void setNextSuccessStatus(Context context) throws ExecuteException {
+    public void setNextSuccessStatus(Context context) throws ExecuteException {
         try {
             registryWorkflowManager.setNextSuccessStatus(context.getRegistry());
         } catch (TransitionNotAllowed transitionNotAllowed) {
@@ -272,7 +272,7 @@ public class RegistryParser implements Serializable {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    private void setNextErrorStatus(Context context) throws ExecuteException {
+    public void setNextErrorStatus(Context context) throws ExecuteException {
         try {
             registryWorkflowManager.setNextErrorStatus(context.getRegistry());
         } catch (TransitionNotAllowed transitionNotAllowed) {
@@ -360,7 +360,7 @@ public class RegistryParser implements Serializable {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    private void saveRegistry(Registry registry) {
+    public void saveRegistry(Registry registry) {
         registryService.save(registry);
 
             /*
@@ -501,7 +501,7 @@ public class RegistryParser implements Serializable {
                 return false;
             }
 
-            ContainerType containerType = ContainerType.valueOf(Long.getLong(containerData.get(0), 0L));
+            ContainerType containerType = ContainerType.valueOf(Long.parseLong(containerData.get(0)));
 
             distContainers.add(new Container(data, containerType));
         }
@@ -509,7 +509,7 @@ public class RegistryParser implements Serializable {
     }
 
     @Transactional(isolationLevel = TransactionIsolationLevel.READ_UNCOMMITTED)
-    private boolean validateRegistry(Registry registry, Logger processLog) {
+    public boolean validateRegistry(Registry registry, Logger processLog) {
         Registry filterObject = new Registry();
         filterObject.setRegistryNumber(registry.getRegistryNumber());
         int countRegistries = registryService.count(FilterWrapper.of(filterObject));
@@ -536,9 +536,11 @@ public class RegistryParser implements Serializable {
             record.setPersonalAccountExt(messageFieldList.get(++n));
 
             //TODO find by external id, if service code started by # (maybe using correction)
-            Service service = serviceBean.getService(Long.getLong(record.getServiceCode(), 0L));
-            if (service == null) {
-                processLog.warn("Unknown service code: {}", record.getServiceCode());
+            FilterWrapper<Service> filter = FilterWrapper.of(new Service(record.getServiceCode()));
+            filter.setSortProperty(null);
+            List<Service> services = serviceBean.getServices(filter);
+            if (services.size() == 0) {
+                processLog.warn("Not found service by code {}", record.getServiceCode());
             }
 
             // setup consumer address
