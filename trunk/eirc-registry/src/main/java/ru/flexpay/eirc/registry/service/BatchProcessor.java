@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class BatchProcessor<T> implements Serializable {
 
-    private static final Logger log = LoggerFactory.getLogger(BatchProcessor.class);
+    private final Logger log = LoggerFactory.getLogger(BatchProcessor.class);
 
     private JobProcessor processor;
     private Semaphore semaphore;

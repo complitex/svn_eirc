@@ -18,7 +18,7 @@ import javax.ejb.Singleton;
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 public class ParserQueueProcessor extends QueueProcessor {
 
-    private static final Logger log = LoggerFactory.getLogger(ParserQueueProcessor.class);
+    private final Logger log = LoggerFactory.getLogger(ParserQueueProcessor.class);
 
     @EJB
     private JobProcessor processor;

@@ -54,7 +54,7 @@ public class EircAccountEdit extends TemplatePage {
     private static final List<String> addressDescription = ImmutableList.of("street", "city", "region", "country");
 
 
-    private static final Logger log = LoggerFactory.getLogger(EircAccountEdit.class);
+    private final Logger log = LoggerFactory.getLogger(EircAccountEdit.class);
 
     public EircAccountEdit() {
         init();

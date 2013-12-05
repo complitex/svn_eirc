@@ -69,7 +69,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
 public class RegistryList extends TemplatePage {
 
-    private static final Logger log = getLogger(RegistryList.class);
+    private final Logger log = getLogger(RegistryList.class);
 
     private static final SimpleDateFormat CREATE_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd");
     private static final SimpleDateFormat LOAD_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");

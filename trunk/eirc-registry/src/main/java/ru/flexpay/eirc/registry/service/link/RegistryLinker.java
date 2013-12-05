@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Singleton
 public class RegistryLinker {
 
-    private static final Logger log = LoggerFactory.getLogger(RegistryLinker.class);
+    private final Logger log = LoggerFactory.getLogger(RegistryLinker.class);
 
     @EJB
     private ConfigBean configBean;
