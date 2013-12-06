@@ -201,6 +201,7 @@ public class RegistryHandler {
                     operation.process();
                 }
             } catch (AbstractException ex) {
+                log.error("Can not handeRegistryRecords", ex);
                 registryRecordWorkflowManager.setNextErrorStatus(registryRecord, registry);
             }
         }
