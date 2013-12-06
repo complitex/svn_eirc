@@ -1,5 +1,5 @@
 INSERT INTO `sequence` (`sequence_name`, `sequence_value`) VALUES
-('eirc_account',1), ('service_provider_account', 1);
+('eirc_account',1), ('service_provider_account', 1), ('service_provider_account_string_culture', 1);
 
 -- --------------------------------
 -- Organization type
@@ -40,6 +40,25 @@ INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_
 INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (403, 1, UPPER('Префикс л/с ЕИРЦ')), (403, 2, UPPER('Префікс л/р ЄIРЦ'));
 INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (402, 400, 0, 403, 1);
 INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (402, 402, UPPER('string'));
+
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (6000, 1, 'Л/c ПУ'), (6000, 2, 'Л/п ПП');
+INSERT INTO `entity`(`id`, `entity_table`, `entity_name_id`, `strategy_factory`) VALUES (6000, 'service_provider_account', 6000, '');
+
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (6002, 1, UPPER('Кол-во проживающих')), (6002, 2, UPPER('Кількість проживаючих'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (6001, 6000, 0, 6002, 1);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (6001, 6001, UPPER('string'));
+
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (6003, 1, UPPER('Площадь общая')), (6003, 2, UPPER('Площа загальна'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (6002, 6000, 0, 6003, 1);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (6002, 6002, UPPER('string'));
+
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (6004, 1, UPPER('Площадь жилая')), (6004, 2, UPPER('Площа житлова'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (6003, 6000, 0, 6004, 1);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (6003, 6003, UPPER('string'));
+
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (6005, 1, UPPER('Площадь отапливаемая')), (6005, 2, UPPER('Площа опалювальна'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (6004, 6000, 0, 6005, 1);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (6004, 6004, UPPER('string'));
 
 INSERT INTO `registry_status` (`code`, `name`) values
     (0, 'Загружается'),
