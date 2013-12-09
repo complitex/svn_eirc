@@ -1,19 +1,13 @@
 package ru.flexpay.eirc.registry.service.handle.exchange;
 
-import org.complitex.address.strategy.city.CityStrategy;
-import org.complitex.dictionary.entity.Locale;
-import org.complitex.dictionary.service.LocaleBean;
+import com.google.common.collect.ImmutableMap;
 import org.complitex.dictionary.service.exception.AbstractException;
-import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
 import ru.flexpay.eirc.registry.entity.Container;
-import ru.flexpay.eirc.registry.entity.Registry;
-import ru.flexpay.eirc.registry.entity.RegistryRecord;
-import ru.flexpay.eirc.service.service.ServiceBean;
-import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
-import ru.flexpay.eirc.service_provider_account.strategy.ServiceProviderAccountStrategy;
+import ru.flexpay.eirc.registry.entity.ContainerType;
 
 import javax.ejb.EJB;
 import javax.ejb.Singleton;
+import java.util.Map;
 
 /**
  * @author Pavel Sknar
@@ -22,65 +16,43 @@ import javax.ejb.Singleton;
 public class OperationFactory {
 
     @EJB
-    private EircAccountBean eircAccountBean;
+    private OpenAccountOperation openAccountOperation;
 
     @EJB
-    private ServiceProviderAccountBean serviceProviderAccountBean;
+    private SetHeatedSquareOperation setHeatedSquareOperation;
 
     @EJB
-    private ServiceProviderAccountStrategy serviceProviderAccountStrategy;
+    private SetNumberOfHabitantsOperation setNumberOfHabitantsOperation;
 
     @EJB
-    private CityStrategy cityStrategy;
+    private SetLiveSquareOperation setLiveSquareOperation;
 
     @EJB
-    private ServiceBean serviceBean;
+    private SetTotalSquareOperation setTotalSquareOperation;
 
-    @EJB
-    private LocaleBean localeBean;
+    private Map<ContainerType, Operation> operations = null;
 
-    private Locale systemLocale;
+    public Operation getOperation(Container container) throws AbstractException {
+        init();
 
-    public Operation getOperation(Registry registry, RegistryRecord registryRecord, Container container) throws AbstractException {
-        switch (container.getType()) {
-            case OPEN_ACCOUNT:
-                OpenAccountOperation operation = new OpenAccountOperation(registry, registryRecord, container);
-                operation.setCityStrategy(cityStrategy);
-                operation.setEircAccountBean(eircAccountBean);
-                operation.setServiceBean(serviceBean);
-                operation.setServiceProviderAccountBean(serviceProviderAccountBean);
-                return operation;
-            case SET_NUMBER_ON_HABITANTS:
-                SetNumberOfHabitantsOperation setNumberOfHabitantsOperation =
-                        new SetNumberOfHabitantsOperation(registry, registryRecord, container);
-                setNumberOfHabitantsOperation.setServiceProviderAccountBean(serviceProviderAccountBean);
-                setNumberOfHabitantsOperation.setLocaleBean(localeBean);
-                setNumberOfHabitantsOperation.setServiceProviderAccountStrategy(serviceProviderAccountStrategy);
-                return setNumberOfHabitantsOperation;
-            case SET_TOTAL_SQUARE:
-                SetTotalSquareOperation setTotalSquareOperation =
-                        new SetTotalSquareOperation(registry, registryRecord, container);
-                setTotalSquareOperation.setServiceProviderAccountBean(serviceProviderAccountBean);
-                setTotalSquareOperation.setLocaleBean(localeBean);
-                setTotalSquareOperation.setServiceProviderAccountStrategy(serviceProviderAccountStrategy);
-                return setTotalSquareOperation;
-            case SET_LIVE_SQUARE:
-                SetLiveSquareOperation setLiveSquareOperation =
-                        new SetLiveSquareOperation(registry, registryRecord, container);
-                setLiveSquareOperation.setServiceProviderAccountBean(serviceProviderAccountBean);
-                setLiveSquareOperation.setLocaleBean(localeBean);
-                setLiveSquareOperation.setServiceProviderAccountStrategy(serviceProviderAccountStrategy);
-                return setLiveSquareOperation;
-            case SET_WARM_SQUARE:
-                SetHeatedSquareOperation setHeatedSquareOperation =
-                        new SetHeatedSquareOperation(registry, registryRecord, container);
-                setHeatedSquareOperation.setServiceProviderAccountBean(serviceProviderAccountBean);
-                setHeatedSquareOperation.setLocaleBean(localeBean);
-                setHeatedSquareOperation.setServiceProviderAccountStrategy(serviceProviderAccountStrategy);
-                return setHeatedSquareOperation;
-
+        Operation operation = operations.get(container.getType());
+        if (operation == null) {
+            throw new ContainerDataException("Unknown container type: {0}", container);
         }
-
-        throw new ContainerDataException("Unknown container type: {0}", container);
+        return operation;
     }
+
+    private void init() {
+        if (operations == null) {
+            operations = ImmutableMap.<ContainerType, Operation>builder().
+                    put(ContainerType.OPEN_ACCOUNT, openAccountOperation).
+                    put(ContainerType.SET_WARM_SQUARE, setHeatedSquareOperation).
+                    put(ContainerType.SET_NUMBER_ON_HABITANTS, setNumberOfHabitantsOperation).
+                    put(ContainerType.SET_LIVE_SQUARE, setLiveSquareOperation).
+                    put(ContainerType.SET_TOTAL_SQUARE, setTotalSquareOperation).
+                    build();
+        }
+    }
+
+
 }

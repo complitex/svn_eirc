@@ -11,6 +11,7 @@ import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
 import ru.flexpay.eirc.registry.entity.Container;
+import ru.flexpay.eirc.registry.entity.ContainerType;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecord;
 import ru.flexpay.eirc.service.entity.Service;
@@ -18,55 +19,46 @@ import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
 import java.util.List;
 
 /**
  * @author Pavel Sknar
  */
-public class OpenAccountOperation extends Operation<ServiceProviderAccount> {
+@Stateless
+public class OpenAccountOperation extends BaseAccountOperation {
 
+    @EJB
     private EircAccountBean eircAccountBean;
 
+    @EJB
     private ServiceProviderAccountBean serviceProviderAccountBean;
 
+    @EJB
     private CityStrategy cityStrategy;
 
+    @EJB
     private ServiceBean serviceBean;
 
-    private Address address;
-    private Person person;
+    @Override
+    public Long getCode() {
+        return ContainerType.OPEN_ACCOUNT.getId();
+    }
 
-    private Long cityId;
-
-    private String serviceProviderAccountNumber;
-    private Long organizationId;
-    private String serviceCode;
-
-    private ServiceProviderAccount serviceProviderAccount;
-
-    /**
-     * Parse data and set operation id. Executing {@link ru.flexpay.eirc.registry.service.handle.exchange.Operation#prepareData}
-     *
-     * @param container Container
-     * @throws org.complitex.dictionary.service.exception.AbstractException
-     *
-     */
-    public OpenAccountOperation(Registry registry, RegistryRecord registryRecord, Container container) throws AbstractException {
-        super(container);
-        address = registryRecord.getAddress();
-        person = registryRecord.getPerson();
-        cityId = registryRecord.getCityId();
-        serviceProviderAccountNumber = registryRecord.getPersonalAccountExt();
-        organizationId = registry.getSenderOrganizationId();
-        serviceCode = registryRecord.getServiceCode();
+    @Override
+    public void process(Registry registry, RegistryRecord registryRecord, Container container,
+                        List<OperationResult> results) throws AbstractException {
+        Address address = registryRecord.getAddress();
+        Person person = registryRecord.getPerson();
+        Long cityId = registryRecord.getCityId();
+        String serviceProviderAccountNumber = registryRecord.getPersonalAccountExt();
+        Long organizationId = registry.getSenderOrganizationId();
+        String serviceCode = registryRecord.getServiceCode();
 
         if (address == null) {
             throw new DataNotFoundException("Address empty in registry record: {0}", registryRecord);
         }
-    }
-
-    @Override
-    public void process() throws AbstractException {
         EircAccount eircAccount = eircAccountBean.getEircAccount(address);
         if (eircAccount == null) {
             DomainObject city = cityStrategy.findById(cityId, true);
@@ -88,6 +80,8 @@ public class OpenAccountOperation extends Operation<ServiceProviderAccount> {
             eircAccount.setAccountNumber(eircAccountNumber);
             eircAccount.setPerson(person);
             eircAccountBean.save(eircAccount);
+
+            results.add(new OperationResult<>(null, eircAccount, getCode()));
         }
 
         //TODO find by external id, if service code started by # (maybe using correction)
@@ -98,45 +92,16 @@ public class OpenAccountOperation extends Operation<ServiceProviderAccount> {
             throw new DataNotFoundException("Not found service by code {0}", serviceCode);
         }
 
-        serviceProviderAccount = new ServiceProviderAccount();
+        ServiceProviderAccount serviceProviderAccount = new ServiceProviderAccount();
         serviceProviderAccount.setAccountNumber(serviceProviderAccountNumber);
         serviceProviderAccount.setEircAccount(eircAccount);
         serviceProviderAccount.setOrganizationId(organizationId);
         serviceProviderAccount.setService(services.get(0));
         serviceProviderAccount.setPerson(person);
-        serviceProviderAccount.setBeginDate(getChangeApplyingDate());
+        serviceProviderAccount.setBeginDate(getContainerData(container).getChangeApplyingDate());
 
         serviceProviderAccountBean.save(serviceProviderAccount);
-    }
 
-    public void setEircAccountBean(EircAccountBean eircAccountBean) {
-        this.eircAccountBean = eircAccountBean;
-    }
-
-    public void setServiceProviderAccountBean(ServiceProviderAccountBean serviceProviderAccountBean) {
-        this.serviceProviderAccountBean = serviceProviderAccountBean;
-    }
-
-    public void setCityStrategy(CityStrategy cityStrategy) {
-        this.cityStrategy = cityStrategy;
-    }
-
-    public void setServiceBean(ServiceBean serviceBean) {
-        this.serviceBean = serviceBean;
-    }
-
-    @Override
-    protected void prepareData(List<String> containerData) throws AbstractException {
-
-    }
-
-    @Override
-    public ServiceProviderAccount getOldObject() {
-        return null;
-    }
-
-    @Override
-    public ServiceProviderAccount getNewObject() {
-        return serviceProviderAccount;
+        results.add(new OperationResult<>(null, serviceProviderAccount, getCode()));
     }
 }

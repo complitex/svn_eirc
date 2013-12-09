@@ -15,6 +15,7 @@ import ru.flexpay.eirc.registry.entity.RegistryRecord;
 import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.handle.exchange.Operation;
 import ru.flexpay.eirc.registry.service.handle.exchange.OperationFactory;
+import ru.flexpay.eirc.registry.service.handle.exchange.OperationResult;
 import ru.flexpay.eirc.registry.service.parse.RegistryRecordWorkflowManager;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 import ru.flexpay.eirc.registry.service.parse.TransitionNotAllowed;
@@ -141,7 +142,7 @@ public class RegistryHandler {
                                     public JobResult execute() throws ExecuteException {
 
                                         try {
-                                            handleRegistryRecords(registry, recordsToProcessing);
+                                            List<OperationResult> results = handleRegistryRecords(registry, recordsToProcessing);
 
                                             return JobResult.SUCCESSFUL;
                                         } catch (Throwable th) {
@@ -188,23 +189,23 @@ public class RegistryHandler {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public void handleRegistryRecords(Registry registry, List<RegistryRecord> registryRecords) throws TransitionNotAllowed {
-        List<Operation> operations = Lists.newArrayList();
+    public List<OperationResult> handleRegistryRecords(Registry registry, List<RegistryRecord> registryRecords) throws TransitionNotAllowed {
+        List<OperationResult> results = Lists.newArrayListWithCapacity(registryRecords.size());
+        List<OperationResult> recordResults = Lists.newArrayList();
         for (RegistryRecord registryRecord : registryRecords) {
-            operations.clear();
             try {
                 for (Container container : registryRecord.getContainers()) {
-                    Operation operation = operationFactory.getOperation(registry, registryRecord, container);
-                    operations.add(operation);
+                    Operation operation = operationFactory.getOperation(container);
+                    operation.process(registry, registryRecord, container, recordResults);
                 }
-                for (Operation operation : operations) {
-                    operation.process();
-                }
+                results.addAll(recordResults);
             } catch (AbstractException ex) {
                 log.error("Can not handeRegistryRecords", ex);
                 registryRecordWorkflowManager.setNextErrorStatus(registryRecord, registry);
             }
+            recordResults.clear();
         }
+        return results;
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
