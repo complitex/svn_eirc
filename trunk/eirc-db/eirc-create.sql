@@ -77,34 +77,6 @@ CREATE TABLE `service_provider_account` (
   CONSTRAINT `fk_service_provider_account__service` FOREIGN KEY (`service_id`) REFERENCES `service` (`id`)
 ) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
--- Service provider account`s attributes --
-/*
-DROP TABLE IF EXISTS `service_provider_account`;
-
-CREATE TABLE `service_provider_account` (
-  `pk_id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT 'Суррогатный ключ',
-  `object_id` BIGINT(20) NOT NULL COMMENT 'Идентификатор объекта',
-  `parent_id` BIGINT(20) COMMENT 'Идентификатор родительского объекта',
-  `parent_entity_id` BIGINT(20) COMMENT 'Идентификатор сущности родительского объекта: 6000 - Service provider account',
-  `start_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Дата начала периода действия объекта',
-  `end_date` TIMESTAMP NULL DEFAULT NULL COMMENT 'Дата окончания периода действия объекта',
-  `status` VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' COMMENT 'Статус объекта. См. класс StatusType',
-  `permission_id` BIGINT(20) NOT NULL DEFAULT 0 COMMENT 'Ключ прав доступа к объекту',
-  `external_id` VARCHAR(20) COMMENT 'Внешний идентификатор импорта записи',
-  PRIMARY KEY (`pk_id`),
-  UNIQUE KEY `unique_object_id__start_date` (`object_id`,`start_date`),
-  UNIQUE KEY `unique_external_id` (`external_id`),
-  KEY `key_object_id` (object_id),
-  KEY `key_parent_id` (`parent_id`),
-  KEY `key_parent_entity_id` (`parent_entity_id`),
-  KEY `key_start_date` (`start_date`),
-  KEY `key_end_date` (`end_date`),
-  KEY `key_status` (`status`),
-  KEY `key_permission_id` (`permission_id`),
-  CONSTRAINT `fk_service_provider_account__entity` FOREIGN KEY (`parent_entity_id`) REFERENCES `entity` (`id`),
-  CONSTRAINT `fk_service_provider_account__permission` FOREIGN KEY (`permission_id`) REFERENCES `permission` (`permission_id`)
-) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Дополнительные атрибуты л/с ПУ (кол-во проживающих и т.п.)';
-*/
 DROP TABLE IF EXISTS `service_provider_account_attribute`;
 
 CREATE TABLE `service_provider_account_attribute` (
