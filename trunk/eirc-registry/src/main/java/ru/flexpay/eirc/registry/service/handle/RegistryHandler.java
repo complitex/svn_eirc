@@ -193,20 +193,29 @@ public class RegistryHandler {
         List<OperationResult> results = Lists.newArrayListWithCapacity(registryRecords.size());
         List<OperationResult> recordResults = Lists.newArrayList();
         for (RegistryRecord registryRecord : registryRecords) {
-            try {
-                for (Container container : registryRecord.getContainers()) {
-                    Operation operation = operationFactory.getOperation(container);
-                    operation.process(registry, registryRecord, container, recordResults);
-                }
-                results.addAll(recordResults);
-            } catch (AbstractException ex) {
-                log.error("Can not handeRegistryRecords", ex);
-                registryRecordWorkflowManager.setNextErrorStatus(registryRecord, registry);
-            }
+            handelRegistryRecord(registry, results, recordResults, registryRecord);
             recordResults.clear();
         }
         return results;
     }
+
+    @TransactionAttribute(TransactionAttributeType.MANDATORY)
+    public void handelRegistryRecord(Registry registry,
+                                     List<OperationResult> results,
+                                     List<OperationResult> recordResults,
+                                     RegistryRecord registryRecord) throws TransitionNotAllowed {
+        try {
+            for (Container container : registryRecord.getContainers()) {
+                Operation operation = operationFactory.getOperation(container);
+                operation.process(registry, registryRecord, container, recordResults);
+            }
+            results.addAll(recordResults);
+        } catch (AbstractException ex) {
+            log.error("Can not handleRegistryRecords", ex);
+            registryRecordWorkflowManager.setNextErrorStatus(registryRecord, registry);
+        }
+    }
+
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public boolean setHandlingStatus(Registry registry) {
