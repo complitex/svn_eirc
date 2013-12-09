@@ -17,59 +17,36 @@ import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 import ru.flexpay.eirc.service_provider_account.strategy.ServiceProviderAccountStrategy;
 
+import javax.ejb.EJB;
 import java.util.List;
 
 /**
  * @author Pavel Sknar
  */
-public abstract class ServiceProviderAccountAttrOperation extends Operation<DomainObject> {
+public abstract class ServiceProviderAccountAttrOperation extends BaseAccountOperation {
 
+    @EJB
     private ServiceProviderAccountBean serviceProviderAccountBean;
 
+    @EJB
     private ServiceProviderAccountStrategy serviceProviderAccountStrategy;
 
+    @EJB
     private LocaleBean localeBean;
 
-    private Address address;
+    @Override
+    public void process(Registry registry, RegistryRecord registryRecord, Container container,
+                        List<OperationResult> results) throws AbstractException {
 
-    private String serviceProviderAccountNumber;
-    private Long organizationId;
-    private String serviceCode;
-
-    private DomainObject newObject;
-    private DomainObject oldObject;
-
-    /**
-     * Parse data and set operation id. Executing {@link ru.flexpay.eirc.registry.service.handle.exchange.Operation#prepareData}
-     *
-     * @param container Container
-     * @throws org.complitex.dictionary.service.exception.AbstractException
-     *
-     */
-    public ServiceProviderAccountAttrOperation(Registry registry, RegistryRecord registryRecord, Container container) throws AbstractException {
-        super(container);
-        address = registryRecord.getAddress();
-        serviceProviderAccountNumber = registryRecord.getPersonalAccountExt();
-        organizationId = registry.getSenderOrganizationId();
-        serviceCode = registryRecord.getServiceCode();
+        Address address = registryRecord.getAddress();
+        String serviceProviderAccountNumber = registryRecord.getPersonalAccountExt();
+        Long organizationId = registry.getSenderOrganizationId();
+        String serviceCode = registryRecord.getServiceCode();
 
         if (address == null) {
             throw new DataNotFoundException("Address empty in registry record: {0}", registryRecord);
         }
-    }
 
-    @Override
-    public DomainObject getOldObject() {
-        return oldObject;
-    }
-
-    @Override
-    public DomainObject getNewObject() {
-        return newObject;
-    }
-
-    @Override
-    public void process() throws AbstractException {
         EircAccount eircAccount = new EircAccount();
         eircAccount.setAddress(address);
         ServiceProviderAccount serviceProviderAccount = new ServiceProviderAccount(eircAccount);
@@ -86,31 +63,18 @@ public abstract class ServiceProviderAccountAttrOperation extends Operation<Doma
             throw new DataNotFoundException("Not found service provider account by filter: {0}", filter);
         }
 
-        newObject = serviceProviderAccountStrategy.findById(serviceProviderAccounts.get(0).getId(), true);
-        oldObject = CloneUtil.cloneObject(newObject);
+        DomainObject newObject = serviceProviderAccountStrategy.findById(serviceProviderAccounts.get(0).getId(), true);
+        DomainObject oldObject = CloneUtil.cloneObject(newObject);
 
         Attribute numberOfHabitants = newObject.getAttribute(getAttributeId());
 
-        AttributeUtil.setStringValue(numberOfHabitants, getNewValue(), localeBean.getSystemLocaleObject().getId());
+        BaseAccountOperationData data = getContainerData(container);
 
-        serviceProviderAccountStrategy.update(oldObject, newObject, getChangeApplyingDate());
-    }
+        AttributeUtil.setStringValue(numberOfHabitants, data.getNewValue(), localeBean.getSystemLocaleObject().getId());
 
-    @Override
-    protected void prepareData(List<String> containerData) throws AbstractException {
+        serviceProviderAccountStrategy.update(oldObject, newObject, data.getChangeApplyingDate());
 
-    }
-
-    public void setServiceProviderAccountBean(ServiceProviderAccountBean serviceProviderAccountBean) {
-        this.serviceProviderAccountBean = serviceProviderAccountBean;
-    }
-
-    public void setServiceProviderAccountStrategy(ServiceProviderAccountStrategy serviceProviderAccountStrategy) {
-        this.serviceProviderAccountStrategy = serviceProviderAccountStrategy;
-    }
-
-    public void setLocaleBean(LocaleBean localeBean) {
-        this.localeBean = localeBean;
+        results.add(new OperationResult<>(oldObject, newObject, getCode()));
     }
 
     protected abstract Long getAttributeId();
