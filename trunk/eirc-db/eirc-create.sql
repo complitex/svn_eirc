@@ -7,7 +7,7 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- Service provider account --
+-- EIRC account --
 DROP TABLE IF EXISTS `eirc_account`;
 CREATE TABLE `eirc_account` (
   `pk_id` BIGINT(20) NOT NULL AUTO_INCREMENT,
@@ -118,6 +118,42 @@ CREATE TABLE `service_provider_account_string_culture` (
   KEY `key_value` (`value`(128)),
   CONSTRAINT `fk_sp_account_string_culture__locales` FOREIGN KEY (`locale_id`) REFERENCES `locales` (`id`)
 ) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Локализация атрибутов л/с ПУ';
+
+DROP TABLE IF EXISTS `owner_exemption`;
+CREATE TABLE `owner_exemption` (
+  `pk_id` BIGINT(20) NOT NULL AUTO_INCREMENT,
+  `object_id` BIGINT(20) NOT NULL,
+  `service_provider_account_id` BIGINT(20) NOT NULL,
+  `first_name` VARCHAR(255),
+  `last_name` VARCHAR(255),
+  `middle_name` VARCHAR(255),
+  `inn` VARCHAR(255),
+  `begin_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `end_date` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY  (`pk_id`),
+  UNIQUE KEY `unique_object_id__start_date` (`object_id`,`begin_date`),
+  KEY `key_object_id` (object_id),
+  KEY `key_begin_date` (`begin_date`),
+  KEY `key_end_date` (`end_date`),
+  CONSTRAINT `fk_owner_exemption__sp_account` FOREIGN KEY (`service_provider_account_id`) REFERENCES `service_provider_account` (`object_id`)
+) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Носители льготы';
+
+DROP TABLE IF EXISTS `exemption`;
+CREATE TABLE `exemption` (
+  `pk_id` BIGINT(20) NOT NULL AUTO_INCREMENT,
+  `object_id` BIGINT(20) NOT NULL,
+  `owner_exemption_id` BIGINT(20) NOT NULL,
+  `category` VARCHAR(255),
+  `number_using` INTEGER,
+  `begin_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `end_date` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY  (`pk_id`),
+  UNIQUE KEY `unique_object_id__start_date` (`object_id`,`begin_date`),
+  KEY `key_object_id` (object_id),
+  KEY `key_begin_date` (`begin_date`),
+  KEY `key_end_date` (`end_date`),
+  CONSTRAINT `fk_exemption__owner_exemption` FOREIGN KEY (`owner_exemption_id`) REFERENCES `owner_exemption` (`object_id`)
+) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Льготы';
 
 -- Registry status --
 DROP TABLE IF EXISTS `registry_status`;
