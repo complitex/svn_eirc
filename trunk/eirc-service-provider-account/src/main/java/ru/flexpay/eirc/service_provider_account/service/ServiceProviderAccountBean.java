@@ -66,7 +66,7 @@ public class ServiceProviderAccountBean extends AbstractBean {
     }
 
     private void update(ServiceProviderAccount serviceProviderAccount) {
-        ServiceProviderAccount oldObject = getEricAccountByPkId(serviceProviderAccount.getPkId());
+        ServiceProviderAccount oldObject = getServiceProviderAccountByPkId(serviceProviderAccount.getPkId());
         if (EqualsBuilder.reflectionEquals(oldObject, serviceProviderAccount)) {
             return;
         }
@@ -75,7 +75,7 @@ public class ServiceProviderAccountBean extends AbstractBean {
         sqlSession().insert(NS + ".insertServiceProviderAccount", serviceProviderAccount);
     }
 
-    public ServiceProviderAccount getEricAccountByPkId(long pkId) {
+    public ServiceProviderAccount getServiceProviderAccountByPkId(long pkId) {
         return sqlSession().selectOne(NS + ".selectServiceProviderAccountByPkId", pkId);
     }
 

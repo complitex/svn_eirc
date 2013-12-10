@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ru.flexpay.eirc.owner_exemption.service.OwnerExemptionBean">
+
+    <resultMap id="OwnerExemption" type="ru.flexpay.eirc.owner_exemption.entity.OwnerExemption">
+        <id column="owner_exemption_pk_id" property="pkId"/>
+        <result column="owner_exemption_object_id" property="id"/>
+        <result column="owner_exemption_begin_date" property="beginDate"/>
+        <result column="owner_exemption_end_date" property="endDate"/>
+        <result column="owner_exemption_inn" property="inn"/>
+
+        <association property="person" columnPrefix="owner_exemption_" resultMap="ru.flexpay.eirc.dictionary.entity.PersonBean.Person"/>
+
+        <collection property="exemptions" resultMap="ru.flexpay.eirc.owner_exemption.entity.ExemptionBean.Exemption"/>
+    </resultMap>
+
+    <sql id="ownerExemptionColumns">
+        oe.`pk_id` as `owner_exemption_pk_id`, oe.`object_id` as `owner_exemption_object_id`,
+        oe.`begin_date` as `owner_exemption_begin_date`, oe.`end_date` as `owner_exemption_end_date`,
+        oe.`first_name` as `owner_exemption_first_name`, oe.`last_name` as `owner_exemption_last_name`,
+        oe.`middle_name` as `owner_exemption_middle_name`,
+        oe.`inn` as `owner_exemption_inn`
+    </sql>
+
+    <sql id="ownerExemptionCondition">
+        <if test="object != null">
+            <if test="object.serviceProviderAccountId != null">
+                and oe.`owner_exemption_id` = #{object.serviceProviderAccountId}
+            </if>
+            <choose>
+                <when test="like">
+                    <if test="object.inn != null">
+                        and oe.`inn` like concat('%', #{object.inn}, '%')
+                    </if>
+        
+                    <if test="object.person != null">
+                        <if test="object.person.lastName != null">
+                            and oe.`last_name` like concat('%', #{object.person.lastName}, '%')
+                        </if>
+                        <if test="object.person.firstName != null">
+                            and oe.`first_name` like concat('%', #{object.person.firstName}, '%')
+                        </if>
+                        <if test="object.person.middleName != null">
+                            and oe.`middle_name` like concat('%', #{object.person.middleName}, '%')
+                        </if>
+                    </if>
+                </when>
+                <otherwise>
+                    <if test="object.inn != null">
+                        and oe.`inn` = #{object.inn}
+                    </if>
+
+                    <if test="object.person != null">
+                        <if test="object.person.lastName != null">
+                            and oe.`last_name` = #{object.person.lastName}
+                        </if>
+                        <if test="object.person.firstName != null">
+                            and oe.`first_name` = #{object.person.firstName}
+                        </if>
+                        <if test="object.person.middleName != null">
+                            and oe.`middle_name` = #{object.person.middleName}
+                        </if>
+                    </if>
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
+    <select id="selectOwnerExemptions" parameterType="org.complitex.dictionary.entity.FilterWrapper"
+            resultMap="OwnerExemption">
+        select
+        <include refid="ownerExemptionColumns"/>
+
+        from `owner_exemption` oe
+
+        where oe.`end_date` is null
+
+        <include refid="ownerExemptionCondition"/>
+
+        <if test="sortProperty != null">
+            order by
+            <choose>
+                <when test="sortProperty == 'owner_exemption_person'">
+                    oe.`last_name`
+                    <if test="asc">
+                        ${asc}
+                    </if>,
+                    oe.`first_name`
+                    <if test="asc">
+                        ${asc}
+                    </if>,
+                    oe.`middle_name`
+                </when>
+
+                <otherwise>
+                    ${sortProperty}
+                </otherwise>
+            </choose>
+            <if test="asc">
+                ${asc}
+            </if>
+        </if>
+        <if test="count > 0">
+            limit ${first},${count}
+        </if>
+    </select>
+
+    <select id="selectOwnerExemptionsWithExemptions" parameterType="org.complitex.dictionary.entity.FilterWrapper"
+            resultMap="OwnerExemption">
+        select oe.*,
+        <include refid="ru.flexpay.eirc.service_provider_account.service.ExemptionBean.exemptionColumns"/>
+
+        from (select
+        <include refid="ownerExemptionColumns"/>,
+
+        from `owner_exemption` oe
+
+        where oe.`end_date` is null
+
+        <include refid="ownerExemptionCondition"/>
+
+        <if test="sortProperty != null">
+            order by
+            <choose>
+                <when test="sortProperty == 'owner_exemption_person'">
+                    oe.`last_name`
+                    <if test="asc">
+                        ${asc}
+                    </if>,
+                    oe.`first_name`
+                    <if test="asc">
+                        ${asc}
+                    </if>,
+                    oe.`middle_name`
+                </when>
+
+                <otherwise>
+                    ${sortProperty}
+                </otherwise>
+            </choose>
+            <if test="asc">
+                ${asc}
+            </if>
+        </if>
+        <if test="count > 0">
+            limit ${first},${count}
+        </if>) oe
+        left join `exemption` e on e.`owner_exemption_id` = oe.`owner_exemption_object_id`
+        where e.`end_date` is null
+    </select>
+
+    <select id="countOwnerExemptions" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+        select count(distinct oe.`object_id`) from `owner_exemption` oe
+        where oe.`end_date` is null
+
+        <include refid="ownerExemptionCondition"/>
+    </select>
+
+    <select id="selectOwnerExemption" parameterType="long" resultMap="OwnerExemption">
+        select
+        <include refid="ownerExemptionColumns"/>
+
+        from `owner_exemption` oe
+
+        where oe.`object_id` = #{id} order by `owner_exemption_begin_date` desc
+    </select>
+
+    <select id="selectOwnerExemptionByPkId" parameterType="long" resultMap="OwnerExemption">
+        select
+        <include refid="ownerExemptionColumns"/>
+
+        from `owner_exemption` oe
+
+        where oe.`pk_id` = #{pkId}
+    </select>
+
+    <select id="selectOwnerExemptionsByPkId" parameterType="map" resultMap="OwnerExemption">
+        select
+        <include refid="ownerExemptionColumns"/>
+
+        from `owner_exemption` oe
+
+        where oe.`pk_id` in #{pkIds}
+    </select>
+
+    <insert id="insertOwnerExemption"
+            parameterType="ru.flexpay.eirc.owner_exemption.entity.OwnerExemption" keyProperty="pkId" useGeneratedKeys="true">
+        insert into `owner_exemption` (`object_id`, `inn`, `service_provider_account_id`,
+                                    `first_name`, `last_name`, `middle_name`, `begin_date`, `end_date`)
+                            values (#{id}, #{inn}, #{serviceProviderAccountId},
+                                    #{person.firstName}, #{person.lastName}, #{person.middleName}, #{beginDate}, #{endDate})
+    </insert>
+
+    <update id="updateOwnerExemptionEndDate"
+            parameterType="ru.flexpay.eirc.owner_exemption.entity.OwnerExemption">
+        update `owner_exemption` set `end_date` = #{endDate} where `pk_id` = #{pkId}
+    </update>
+
+</mapper>
