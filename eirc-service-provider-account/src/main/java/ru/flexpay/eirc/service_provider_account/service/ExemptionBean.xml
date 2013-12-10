@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ru.flexpay.eirc.exemption.service.ExemptionBean">
+
+    <resultMap id="Exemption" type="ru.flexpay.eirc.exemption.entity.Exemption">
+        <id column="exemption_pk_id" property="pkId"/>
+        <result column="exemption_object_id" property="id"/>
+        <result column="exemption_begin_date" property="beginDate"/>
+        <result column="exemption_end_date" property="endDate"/>
+        <result column="exemption_category" property="category"/>
+        <result column="exemption_number_using" property="numberUsing"/>
+
+    </resultMap>
+
+    <sql id="exemptionColumns">
+        e.`pk_id` as `exemption_pk_id`, e.`object_id` as `exemption_object_id`,
+        e.`begin_date` as `exemption_begin_date`, e.`end_date` as `exemption_end_date`,
+        e.`category` as `exemption_category`, e.`number_using` as `exemption_number_using`
+    </sql>
+
+    <sql id="exemptionCondition">
+        <if test="object != null">
+            <if test="object.serviceProviderAccountId != null">
+                and e.`owner_exemption_id` = #{object.exemptionId}
+            </if>
+            <if test="object.number_using != null">
+                and e.`number_using` = #{object.numberUsing}
+            </if>
+            <choose>
+                <when test="like">
+                    <if test="object.inn != null">
+                        and e.`category` like concat('%', #{object.category}, '%')
+                    </if>
+                </when>
+                <otherwise>
+                    <if test="object.inn != null">
+                        and e.`inn` = #{object.category}
+                    </if>
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
+    <select id="selectExemptions" parameterType="org.complitex.dictionary.entity.FilterWrapper"
+            resultMap="Exemption">
+        select
+        <include refid="exemptionColumns"/>
+
+        from `exemption` e
+
+        where e.`end_date` is null
+
+        <include refid="exemptionCondition"/>
+
+        <if test="sortProperty != null">
+            order by
+            <choose>
+                <when test="sortProperty == 'exemption_person'">
+                    e.`last_name`
+                    <if test="asc">
+                        ${asc}
+                    </if>,
+                    e.`first_name`
+                    <if test="asc">
+                        ${asc}
+                    </if>,
+                    e.`middle_name`
+                </when>
+
+                <otherwise>
+                    ${sortProperty}
+                </otherwise>
+            </choose>
+            <if test="asc">
+                ${asc}
+            </if>
+        </if>
+        <if test="count > 0">
+            limit ${first},${count}
+        </if>
+    </select>
+
+    <select id="countExemptions" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+        select count(distinct e.`object_id`) from `exemption` e
+        where e.`end_date` is null
+
+        <include refid="exemptionCondition"/>
+    </select>
+
+    <select id="selectExemption" parameterType="long" resultMap="Exemption">
+        select
+        <include refid="exemptionColumns"/>
+
+        from `exemption` e
+
+        where e.`object_id` = #{id} order by `exemption_begin_date` desc
+    </select>
+
+    <select id="selectExemptionByPkId" parameterType="long" resultMap="Exemption">
+        select
+        <include refid="exemptionColumns"/>
+
+        from `exemption` e
+
+        where e.`pk_id` = #{pkId}
+    </select>
+
+    <select id="selectExemptionsByPkId" parameterType="map" resultMap="Exemption">
+        select
+        <include refid="exemptionColumns"/>
+
+        from `exemption` e
+
+        where e.`pk_id` in #{pkIds}
+    </select>
+
+    <insert id="insertExemption"
+            parameterType="ru.flexpay.eirc.exemption.entity.Exemption" keyProperty="pkId" useGeneratedKeys="true">
+        insert into `exemption` (`object_id`, `inn`, `service_provider_account_id`,
+                                    `first_name`, `last_name`, `middle_name`, `begin_date`, `end_date`)
+                            values (#{id}, #{inn}, #{serviceProviderAccountId},
+                                    #{person.firstName}, #{person.lastName}, #{person.middleName}, #{beginDate}, #{endDate})
+    </insert>
+
+    <update id="updateExemptionEndDate"
+            parameterType="ru.flexpay.eirc.exemption.entity.Exemption">
+        update `exemption` set `end_date` = #{endDate} where `pk_id` = #{pkId}
+    </update>
+
+</mapper>
