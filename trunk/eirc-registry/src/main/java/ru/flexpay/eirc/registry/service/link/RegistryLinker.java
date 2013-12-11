@@ -78,6 +78,8 @@ public class RegistryLinker {
 
         final Long registryId = filter.getObject().getRegistryId();
 
+        final FilterWrapper<Registry> registryFilter = FilterWrapper.of(new Registry(registryId));
+
         imessenger.addMessageInfo("starting_link_registries", registryId);
         finishLink.init();
 
@@ -86,7 +88,7 @@ public class RegistryLinker {
             public Void execute() throws ExecuteException {
                 try {
 
-                    List<Registry> registries = registryBean.getRegistries(FilterWrapper.of(new Registry(registryId)));
+                    List<Registry> registries = registryBean.getRegistries(registryFilter);
 
                     // check registry exist
                     if (registries.size() == 0) {
@@ -95,25 +97,27 @@ public class RegistryLinker {
                     }
 
                     final Registry registry = registries.get(0);
+                    registryFilter.setObject(registry);
+
 
                     // one process on linking
                     synchronized (this) {
                         // check registry status
                         if (!registryWorkflowManager.canLink(registry)) {
-                            imessenger.addMessageError("registry_failed_status", registryId);
+                            imessenger.addMessageError("registry_failed_status", registry.getRegistryNumber());
                             return null;
                         }
 
                         // change registry status
                         if (!setLinkingStatus(registry)) {
-                            imessenger.addMessageError("registry_status_inner_error", registryId);
+                            imessenger.addMessageError("registry_status_inner_error", registry.getRegistryNumber());
                             return null;
                         }
                     }
 
                     // check registry records status
                     if (!registryRecordBean.hasRecordsToLinking(registry)) {
-                        imessenger.addMessageInfo("not_found_linking_registry_records", registryId);
+                        imessenger.addMessageInfo("not_found_linking_registry_records", registry.getRegistryNumber());
                         setLinkingStatus(registry);
                         return null;
                     }
@@ -148,11 +152,11 @@ public class RegistryLinker {
                                             return JobResult.SUCCESSFUL;
                                         } catch (Throwable th) {
                                             setErrorStatus(registry);
-                                            imessenger.addMessageError("registry_failed_linked", registryId);
+                                            imessenger.addMessageError("registry_failed_linked", registry.getRegistryNumber());
                                             throw new ExecuteException(th, "Failed upload registry " + registryId);
                                         } finally {
                                             if (recordLinkingCounter.decrementAndGet() == 0 && finishReadRecords.get()) {
-                                                imessenger.addMessageInfo("registry_finish_link", registryId);
+                                                imessenger.addMessageInfo("registry_finish_link", registry.getRegistryNumber());
                                                 finishLink.complete();
                                                 setLinkedStatus(registry);
                                             }
@@ -163,7 +167,7 @@ public class RegistryLinker {
                                 // next registry record`s id is last in this partition
                                 innerFilter.setFirst(recordsToLinking.get(recordsToLinking.size() - 1).getId().intValue() + 1);
                             } else if (recordLinkingCounter.get() == 0) {
-                                imessenger.addMessageInfo("registry_finish_link", registryId);
+                                imessenger.addMessageInfo("registry_finish_link", registry.getRegistryNumber());
                                 finishLink.complete();
                                 setLinkedStatus(registry);
                             }
@@ -179,7 +183,8 @@ public class RegistryLinker {
                     }
                 } finally {
                     if (!finishReadRecords.get()) {
-                        imessenger.addMessageInfo("registry_finish_link", registryId);
+                        imessenger.addMessageInfo("registry_finish_link", registryFilter.getObject().getRegistryNumber() != null?
+                                registryFilter.getObject().getRegistryNumber() : registryFilter.getObject().getId());
                         finishLink.complete();
                     }
                 }
