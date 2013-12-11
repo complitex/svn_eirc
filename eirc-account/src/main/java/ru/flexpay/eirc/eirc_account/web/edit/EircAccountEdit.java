@@ -1,9 +1,10 @@
 package ru.flexpay.eirc.eirc_account.web.edit;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.wicket.ajax.AjaxRequestTarget;
+import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.markup.html.form.Button;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
@@ -113,10 +114,10 @@ public class EircAccountEdit extends TemplatePage {
         form.add(new TextField<>("middleName", new PropertyModel<String>(eircAccount.getPerson(), "middleName")));
 
         // save button
-        Button save = new Button("save") {
+        AjaxButton save = new AjaxButton("save") {
 
             @Override
-            public void onSubmit() {
+            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
                 Address address = null;
                 DomainObject addressInput = componentState.get("room");
 

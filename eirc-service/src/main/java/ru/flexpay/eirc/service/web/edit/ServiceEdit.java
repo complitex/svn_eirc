@@ -1,8 +1,13 @@
 package ru.flexpay.eirc.service.web.edit;
 
+import org.apache.wicket.ajax.AjaxRequestTarget;
+import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.markup.html.form.*;
+import org.apache.wicket.markup.html.form.DropDownChoice;
+import org.apache.wicket.markup.html.form.Form;
+import org.apache.wicket.markup.html.form.IChoiceRenderer;
+import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.CompoundPropertyModel;
@@ -15,8 +20,6 @@ import org.complitex.dictionary.entity.Locale;
 import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.FormTemplatePage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service.web.list.ServiceList;
@@ -38,8 +41,6 @@ public class ServiceEdit extends FormTemplatePage {
 
     private Service service;
     private Service parentService;
-
-    private final Logger log = LoggerFactory.getLogger(ServiceEdit.class);
 
     public ServiceEdit() {
         init();
@@ -115,10 +116,10 @@ public class ServiceEdit extends FormTemplatePage {
         }).setNullValid(true));
 
         // save button
-        Button save = new Button("save") {
+        AjaxButton save = new AjaxButton("save") {
 
             @Override
-            public void onSubmit() {
+            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
 
                 if (parentService != null) {
                     service.setParentId(parentService.getId());

@@ -39,7 +39,6 @@ import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.UploadButton;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
-import org.slf4j.Logger;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.Registry;
@@ -62,15 +61,12 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static org.complitex.dictionary.util.PageUtil.newSorting;
-import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * @author Pavel Sknar
  */
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
 public class RegistryList extends TemplatePage {
-
-    private final Logger log = getLogger(RegistryList.class);
 
     private static final SimpleDateFormat CREATE_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd");
     private static final SimpleDateFormat LOAD_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -430,7 +426,7 @@ public class RegistryList extends TemplatePage {
                 try {
                     parser.parse(imessenger, finishCallback);
                 } catch (ExecuteException e) {
-                    log.error("Failed parse", e);
+                    log().error("Failed parse", e);
                 } finally {
                     showIMessages(target);
                 }

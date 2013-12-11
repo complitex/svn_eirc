@@ -1,9 +1,14 @@
 package ru.flexpay.eirc.service_provider_account.web.edit;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.wicket.ajax.AjaxRequestTarget;
+import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.markup.html.form.*;
+import org.apache.wicket.markup.html.form.DropDownChoice;
+import org.apache.wicket.markup.html.form.Form;
+import org.apache.wicket.markup.html.form.IChoiceRenderer;
+import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.IModel;
@@ -22,8 +27,6 @@ import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.search.CollapsibleInputSearchToolbarButton;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.FormTemplatePage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.dictionary.web.CollapsibleInputSearchComponent;
@@ -63,9 +66,6 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
     private SearchComponentState componentState;
 
     private ServiceProviderAccount serviceProviderAccount;
-
-
-    private final Logger log = LoggerFactory.getLogger(ServiceProviderAccountEdit.class);
 
     public ServiceProviderAccountEdit() {
         init();
@@ -187,10 +187,10 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
                 }).setRequired(true));
 
         // save button
-        Button save = new Button("save") {
+        AjaxButton save = new AjaxButton("save") {
 
             @Override
-            public void onSubmit() {
+            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
                 Address address = null;
                 DomainObject addressInput = componentState.get("room");
 
