@@ -180,38 +180,40 @@
 
     <select id="selectRecordsToProcessing" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="RegistryRecord">
 
-        select
-        <include refid="registryRecordColumns"/>,
+        select rr.*,
         <include refid="registryRecordContainerColumns"/>
+        from (select
+        <include refid="registryRecordColumns"/>
         from `registry_record` rr
-        left join `registry_record_container` rrc on rrc.`record_id` = rr.`id`
         where 5 >= rr.`status` and rr.`status` >= 4 and rr.`registry_id` = #{object.registryId} and rr.`id` >= ${first}
         order by rr.`id`
-        limit 0, ${count}
+        limit 0, ${count}) rr
+        left join `registry_record_container` rrc on rrc.`record_id` = rr.`registry_record_id`
 
     </select>
 
     <select id="selectRecordsToLinking" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="RegistryRecord">
 
-        select
-        <include refid="registryRecordColumns"/>,
+        select rr.*,
         <include refid="registryRecordContainerColumns"/>
+        from (select
+        <include refid="registryRecordColumns"/>
         from `registry_record` rr
-        left join `registry_record_container` rrc on rrc.`record_id` = rr.`id`
         where 3 >= rr.`status` and rr.`status` >= 2 and rr.`registry_id` = #{object.registryId} and rr.`id` >= ${first}
         order by rr.`id`
-        limit 0, ${count}
+        limit 0, ${count}) rr
+        left join `registry_record_container` rrc on rrc.`record_id` = rr.`registry_record_id`
 
     </select>
 
 
     <select id="selectCorrectionRecordsToLinking" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="RegistryRecord">
 
-        select
-        <include refid="registryRecordColumns"/>,
+        select rr.*,
         <include refid="registryRecordContainerColumns"/>
+        from (select
+        <include refid="registryRecordColumns"/>
         from `registry_record` rr
-        left join `registry_record_container` rrc on rrc.`record_id` = rr.`id`
         where rr.`status` = 3 and
         <choose>
             <when test="object.apartmentId != null">
@@ -251,7 +253,8 @@
         </choose>
         rr.`registry_id` = #{object.registryId} and rr.`id` >= ${first}
         order by rr.`id`
-        limit 0, ${count}
+        limit 0, ${count}) rr
+        left join `registry_record_container` rrc on rrc.`record_id` = rr.`registry_record_id`
 
     </select>
 

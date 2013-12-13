@@ -4,11 +4,15 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.complitex.dictionary.service.SessionBean;
+import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.util.ResourceUtil;
 
 import javax.ejb.EJB;
 import java.io.Serializable;
+import java.text.DateFormat;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
@@ -17,6 +21,8 @@ import java.util.Queue;
  * @author Pavel Sknar
  */
 public abstract class IMessenger {
+
+    private static final DateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss ");
 
     @EJB
     private SessionBean sessionBean;
@@ -57,7 +63,10 @@ public abstract class IMessenger {
     protected abstract String getResourceBundle();
 
     public class IMessage implements Serializable {
+
         private IMessageType type;
+
+        private Date date = DateUtil.getCurrentDate();
 
         private String data;
 
@@ -69,8 +78,19 @@ public abstract class IMessenger {
             this.parameters = parameters;
         }
 
+        private IMessage(IMessageType type, Date date, String data, Object... parameters) {
+            this.type = type;
+            this.date = date;
+            this.data = data;
+            this.parameters = parameters;
+        }
+
         public IMessageType getType() {
             return type;
+        }
+
+        public Date getDate() {
+            return date;
         }
 
         public String getData() {
@@ -83,7 +103,9 @@ public abstract class IMessenger {
 
         public String getLocalizedString(Locale locale) {
             String message = ResourceUtil.getString(getResourceBundle(), String.valueOf(getData()), locale);
-            return parameters != null && parameters.length > 0? MessageFormat.format(message, parameters) : message;
+            message = parameters != null && parameters.length > 0? MessageFormat.format(message, parameters) : message;
+
+            return TIME_FORMAT.format(date) + message;
         }
 
         @Override

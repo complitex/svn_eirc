@@ -26,6 +26,8 @@ import javax.ejb.TransactionAttributeType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Pavel Sknar
@@ -126,6 +128,8 @@ public class RegistryLinker {
 
                         final BatchProcessor<JobResult> batchProcessor = new BatchProcessor<>(10, processor);
 
+                        final Statistics statistics = new Statistics(registry.getRegistryNumber(), imessenger);
+
                         int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
                         List<RegistryRecord> registryRecords;
                         FilterWrapper<RegistryRecord> innerFilter = FilterWrapper.of(filter.getObject(), 0, numberFlushRegistryRecords);
@@ -147,7 +151,9 @@ public class RegistryLinker {
                                     public JobResult execute() throws ExecuteException {
 
                                         try {
-                                            linkRegistryRecords(registry, recordsToLinking);
+                                            int successLinked = linkRegistryRecords(registry, recordsToLinking);
+
+                                            statistics.add(recordsToLinking.size(), successLinked, recordsToLinking.size() - successLinked);
 
                                             return JobResult.SUCCESSFUL;
                                         } catch (Throwable th) {
@@ -194,7 +200,8 @@ public class RegistryLinker {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public void linkRegistryRecords(Registry registry, List<RegistryRecord> registryRecords) throws TransitionNotAllowed {
+    public int linkRegistryRecords(Registry registry, List<RegistryRecord> registryRecords) throws TransitionNotAllowed {
+        int successLinked = 0;
         for (RegistryRecord registryRecord : registryRecords) {
 
             // Search address
@@ -240,11 +247,14 @@ public class RegistryLinker {
             } else {
                 // success linked
                 registryRecordWorkflowManager.setNextSuccessStatus(registryRecord);
+                successLinked++;
             }
 
         }
 
         registryRecordBean.updateBulk(registryRecords);
+
+        return successLinked;
 
     }
 
@@ -279,6 +289,48 @@ public class RegistryLinker {
             log.error("Can not set error status. Current status: " + transitionNotAllowed.getType(), transitionNotAllowed);
         }
         return false;
+    }
+
+    private class Statistics {
+        private int totalLinkedRecords = 0;
+        private int successLinkedRecords = 0;
+        private int errorLinkedRecords = 0;
+
+        private Lock lock = new ReentrantLock();
+
+        private Long registryNumber;
+        private IMessenger imessenger;
+
+        private Statistics(Long registryNumber, IMessenger imessenger) {
+            this.registryNumber = registryNumber;
+            this.imessenger = imessenger;
+        }
+
+        public int getTotalLinkedRecords() {
+            return totalLinkedRecords;
+        }
+
+        public int getSuccessLinkedRecords() {
+            return successLinkedRecords;
+        }
+
+        public int getErrorLinkedRecords() {
+            return errorLinkedRecords;
+        }
+
+        public void add(int totalLinkedRecords, int successLinkedRecords, int errorLinkedRecords) {
+            lock.lock();
+            try {
+                this.totalLinkedRecords   += totalLinkedRecords;
+                this.successLinkedRecords += successLinkedRecords;
+                this.errorLinkedRecords   += errorLinkedRecords;
+
+                imessenger.addMessageInfo("linked_bulk_records", this.totalLinkedRecords, this.successLinkedRecords,
+                        this.errorLinkedRecords, registryNumber);
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 
 }
