@@ -37,7 +37,8 @@ public class RegistryWorkflowManager {
     // first status in lists is the successfull one, the second is transition with some processing error
     private static final Map<RegistryStatus, List<RegistryStatus>> transitions =
             ImmutableMap.<RegistryStatus, List<RegistryStatus>>builder().
-                put(LOADING, ImmutableList.of(LOADED, LOADED_WITH_ERROR)).
+                put(LOADING, ImmutableList.of(LOADED, LOADING_WITH_ERROR)).
+                put(LOADING_WITH_ERROR, ImmutableList.of(LOADED_WITH_ERROR, LOADED_WITH_ERROR)).
                 put(LOADED_WITH_ERROR, Collections.<RegistryStatus>emptyList()).
                 put(LOADED, ImmutableList.of(LINKING)).
                 put(LINKING, ImmutableList.of(LINKED, LINKING_WITH_ERROR, LINKING_CANCELED)).
@@ -63,6 +64,10 @@ public class RegistryWorkflowManager {
             ImmutableSet.of(LOADED, LINKED_WITH_ERROR, LINKING_CANCELED);
 
     private static final Set<RegistryStatus> linkingStates = ImmutableSet.of(LINKING, LINKING_WITH_ERROR);
+
+    private static final Set<RegistryStatus> loadingStates = ImmutableSet.of(LOADING, LOADING_WITH_ERROR);
+
+    private static final Set<RegistryStatus> loadedStates = ImmutableSet.of(LOADED, LOADED_WITH_ERROR);
 
 
     /**
@@ -105,6 +110,14 @@ public class RegistryWorkflowManager {
 
     public boolean isLinking(Registry registry) {
         return linkingStates.contains(registry.getStatus());
+    }
+
+    public boolean isLoading(Registry registry) {
+        return loadingStates.contains(registry.getStatus());
+    }
+
+    public boolean isLoaded(Registry registry) {
+        return loadedStates.contains(registry.getStatus());
     }
 
     /**
@@ -228,6 +241,27 @@ public class RegistryWorkflowManager {
         log.debug("Setting registry errors: {}", registry);
 
         if (registry.getStatus() == LINKING) {
+            log.debug("Updating registry status");
+            setNextErrorStatus(registry);
+        } else {
+            log.debug("Not updating registry status, current is {}", registry.getStatus());
+        }
+    }
+
+    /* Set registry loading status to {@load ru.flexpay.eirc.registry.entity.RegistryStatus#LOADING_WITH_ERROR}
+     *
+     * @param registry Registry to update
+     * @throws TransitionNotAllowed if registry status is not {@load ru.flexpay.eirc.registry.entity.RegistryStatus#LOADING}
+     *                              or {@load ru.flexpay.eirc.registry.entity.RegistryStatus#LOADING_WITH_ERROR}
+     */
+    public void markLoadingHasError(Registry registry) throws TransitionNotAllowed {
+        if (!loadingStates.contains(registry.getStatus())) {
+            throw new TransitionNotAllowed("Cannot mark not loading registry as having errors. Current registry code", registry.getStatus());
+        }
+
+        log.debug("Setting registry errors: {}", registry);
+
+        if (registry.getStatus() == LOADING) {
             log.debug("Updating registry status");
             setNextErrorStatus(registry);
         } else {

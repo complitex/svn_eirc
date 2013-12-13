@@ -1,11 +1,12 @@
 package ru.flexpay.eirc.registry.service.handle;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
 import org.complitex.correction.service.AddressService;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
-import org.complitex.dictionary.service.exception.AbstractException;
 import org.complitex.dictionary.service.executor.ExecuteException;
+import org.complitex.dictionary.util.EjbBeanLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.registry.entity.Container;
@@ -21,13 +22,12 @@ import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 import ru.flexpay.eirc.registry.service.parse.TransitionNotAllowed;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 
-import javax.ejb.EJB;
-import javax.ejb.Singleton;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionAttributeType;
+import javax.ejb.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Pavel Sknar
@@ -123,6 +123,8 @@ public class RegistryHandler {
 
                         final BatchProcessor<JobResult> batchProcessor = new BatchProcessor<>(10, processor);
 
+                        final Statistics statistics = new Statistics(registry.getRegistryNumber(), imessenger);
+
                         int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
                         List<RegistryRecord> registryRecords;
                         FilterWrapper<RegistryRecord> innerFilter = FilterWrapper.of(filter.getObject(), 0, numberFlushRegistryRecords);
@@ -141,17 +143,26 @@ public class RegistryHandler {
                                     @Override
                                     public JobResult execute() throws ExecuteException {
 
+                                        List<OperationResult> results = null;
                                         try {
-                                            List<OperationResult> results = handleRegistryRecords(registry, recordsToProcessing);
+                                            results = EjbBeanLocator.getBean(RegistryHandler.class).
+                                                    handleRegistryRecords(registry, recordsToProcessing);
 
                                             return JobResult.SUCCESSFUL;
                                         } catch (Throwable th) {
                                             setErrorStatus(registry);
-                                            imessenger.addMessageError("registry_failed_handle", registryId);
+                                            String message = th.getLocalizedMessage();
+                                            if (StringUtils.isEmpty(message) && th.getCause() != null) {
+                                                message = th.getCause().getLocalizedMessage();
+                                            }
+                                            imessenger.addMessageError("registry_failed_handle", registry.getRegistryNumber(), message);
                                             throw new ExecuteException(th, "Failed handle registry " + registryId);
                                         } finally {
+
+                                            statistics.add(recordsToProcessing.size(), results == null? 0 :results.size());
+
                                             if (recordHandlingCounter.decrementAndGet() == 0 && finishReadRecords.get()) {
-                                                imessenger.addMessageInfo("registry_finish_handle", registryId);
+                                                imessenger.addMessageInfo("registry_finish_handle", registry.getRegistryNumber());
                                                 finishHandle.complete();
                                                 setHandledStatus(registry);
                                             }
@@ -196,6 +207,7 @@ public class RegistryHandler {
             handelRegistryRecord(registry, results, recordResults, registryRecord);
             recordResults.clear();
         }
+        registryRecordBean.updateBulk(registryRecords);
         return results;
     }
 
@@ -210,10 +222,24 @@ public class RegistryHandler {
                 operation.process(registry, registryRecord, container, recordResults);
             }
             results.addAll(recordResults);
-        } catch (AbstractException ex) {
-            log.error("Can not handleRegistryRecords", ex);
-            registryRecordWorkflowManager.setNextErrorStatus(registryRecord, registry);
+            registryRecordWorkflowManager.setNextSuccessStatus(registryRecord);
+        } catch (Exception ex) {
+            EjbBeanLocator.getBean(RegistryHandler.class).setErrorStatus(registryRecord, registry);
+            throw new TransactionRolledbackLocalException("Error in registry record " + registryRecord.getId() +
+                    "(account number - " + registryRecord.getPersonalAccountExt() + ")", ex);
         }
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public boolean setErrorStatus(RegistryRecord registryRecord, Registry registry) {
+        try {
+            registryRecordWorkflowManager.setNextErrorStatus(registryRecord, registry);
+            registryRecordBean.save(registryRecord);
+            return true;
+        } catch (TransitionNotAllowed transitionNotAllowed) {
+            log.error("Can not set error status. Current status: " + transitionNotAllowed.getType(), transitionNotAllowed);
+        }
+        return false;
     }
 
 
@@ -235,6 +261,8 @@ public class RegistryHandler {
             return true;
         } catch (TransitionNotAllowed transitionNotAllowed) {
             log.error("Can set set handled status. Current status: " + transitionNotAllowed.getType(), transitionNotAllowed);
+        } catch (Exception ex) {
+            log.error("Can set set handled status", ex);
         }
         return false;
     }
@@ -246,9 +274,45 @@ public class RegistryHandler {
             return true;
         } catch (TransitionNotAllowed transitionNotAllowed) {
             log.error("Can not set error status. Current status: " + transitionNotAllowed.getType(), transitionNotAllowed);
+        } catch (Exception ex) {
+            log.error("Can not set error status", ex);
         }
         return false;
     }
 
+    private class Statistics {
+        private int totalHandledRecords = 0;
+        private int totalOperations = 0;
+
+        private Lock lock = new ReentrantLock();
+
+        private Long registryNumber;
+        private IMessenger imessenger;
+
+        private Statistics(Long registryNumber, IMessenger imessenger) {
+            this.registryNumber = registryNumber;
+            this.imessenger = imessenger;
+        }
+
+        public int getTotalHandledRecords() {
+            return totalHandledRecords;
+        }
+
+        public int getTotalOperations() {
+            return totalOperations;
+        }
+
+        public void add(int totalHandledRecords, int totalOperations) {
+            lock.lock();
+            try {
+                this.totalHandledRecords += totalHandledRecords;
+                this.totalOperations     += totalOperations;
+                imessenger.addMessageInfo("handled_records", this.totalHandledRecords, this.totalOperations,
+                        registryNumber);
+            } finally {
+                lock.unlock();
+            }
+        }
+    }
 
 }

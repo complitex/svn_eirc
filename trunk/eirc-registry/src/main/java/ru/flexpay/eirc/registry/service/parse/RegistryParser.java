@@ -143,7 +143,7 @@ public class RegistryParser implements Serializable {
                         if (context.getRegistry() == null) {
                             imessenger.addMessageError("file_is_not_registry", fileName);
                         }
-                        finalizeRegistry(context, imessenger, processLog);
+                        finalizeRegistry(context, processLog);
                         return registry;
                     }
                     String messageValue = message.getBody();
@@ -175,7 +175,7 @@ public class RegistryParser implements Serializable {
                         context.add(record);
                         flushRecordStack(context, processLog);
                     } else if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_FOOTER)) {
-                        processFooter(messageFieldList, processLog);
+                        processFooter(messageFieldList, context, processLog);
                     }
                 }
                 nextIterate = !listMessage.isEmpty();
@@ -185,6 +185,7 @@ public class RegistryParser implements Serializable {
         } catch(Exception e) {
             log.error("Processing error", e);
             processLog.error("Inner error");
+            setErrorStatus(context.getRegistry());
         } finally {
             try {
                 reader.close();
@@ -192,9 +193,10 @@ public class RegistryParser implements Serializable {
                 log.error("Failed reader", e);
                 processLog.error("Inner error");
             }
+            EjbBeanLocator.getBean(RegistryParser.class).setLoadedStatus(context);
         }
 
-        return null;
+        return context.getRegistry();
     }
 
     private Logger getProcessLogger() {
@@ -232,7 +234,7 @@ public class RegistryParser implements Serializable {
         }
     }
 
-    private void finalizeRegistry(Context context, IMessenger iMessenger, Logger processLog) throws ExecuteException {
+    private void finalizeRegistry(Context context, Logger processLog) throws ExecuteException {
 
         if (context.getRegistry() == null) {
             return;
@@ -247,7 +249,7 @@ public class RegistryParser implements Serializable {
         boolean failed = false;
 
         if (context.getRegistry().getRecordsCount() != context.getRecordCounter()) {
-            iMessenger.addMessageError("registry_records_number_error", context.getRegistry().getRegistryNumber(),
+            context.addMessageError("registry_records_number_error", context.getRegistry().getRegistryNumber(),
                     context.getRegistry().getRecordsCount(), context.getRecordCounter());
             processLog.error("Registry records number error, expected: {}, found: {}",
                     new Object[]{context.getRegistry().getRecordsCount(), context.getRecordCounter()});
@@ -255,7 +257,7 @@ public class RegistryParser implements Serializable {
         }
 
         if (!context.getRegistry().getAmount().equals(context.getTotalAmount())) {
-            iMessenger.addMessageError("total_amount_error", context.getRegistry().getRegistryNumber(),
+            context.addMessageError("total_amount_error", context.getRegistry().getRegistryNumber(),
                     context.getRegistry().getAmount(), context.getTotalAmount());
             processLog.error("Total amount error, expected: {}, found: {}",
                     new Object[]{context.getRegistry().getAmount(), context.getTotalAmount()});
@@ -265,12 +267,15 @@ public class RegistryParser implements Serializable {
         if (failed) {
             setNextErrorStatus(context);
         } else {
-            setNextSuccessStatus(context);
+            setLoadedStatus(context);
         }
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public void setNextSuccessStatus(Context context) throws ExecuteException {
+    public void setLoadedStatus(Context context) throws ExecuteException {
+        if (context.getRegistry() == null || registryWorkflowManager.isLoaded(context.getRegistry())) {
+            return;
+        }
         try {
             registryWorkflowManager.setNextSuccessStatus(context.getRegistry());
         } catch (TransitionNotAllowed transitionNotAllowed) {
@@ -280,11 +285,27 @@ public class RegistryParser implements Serializable {
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void setNextErrorStatus(Context context) throws ExecuteException {
+        if (context.getRegistry() == null) {
+            return;
+        }
         try {
             registryWorkflowManager.setNextErrorStatus(context.getRegistry());
         } catch (TransitionNotAllowed transitionNotAllowed) {
             throw new ExecuteException("Does not finalize registry", transitionNotAllowed);
         }
+    }
+
+    public boolean setErrorStatus(Registry registry) {
+        if (registry == null) {
+            return false;
+        }
+        try {
+            registryWorkflowManager.markLoadingHasError(registry);
+            return true;
+        } catch (TransitionNotAllowed transitionNotAllowed) {
+            log.error("Can not set error status. Current status: " + transitionNotAllowed.getType(), transitionNotAllowed);
+        }
+        return false;
     }
 
     private Registry processHeader(IMessenger iMessenger, String fileName, List<String> messageFieldList, Logger processLog) {
@@ -338,7 +359,7 @@ public class RegistryParser implements Serializable {
 
             processLog.info("Creating new registry: {}", newRegistry);
 
-            Organization recipient = getRecipient(newRegistry, processLog);
+            Organization recipient = getRecipient(newRegistry, iMessenger, processLog);
             if (recipient == null) {
                 iMessenger.addMessageError("recipient_not_found", newRegistry.getRegistryNumber());
                 processLog.error("Failed processing registry header, recipient not found: #{}", newRegistry.getRecipientOrganizationId());
@@ -432,9 +453,15 @@ public class RegistryParser implements Serializable {
         return sender;
     }
 
-    private Organization getRecipient(Registry registry, Logger processLog) {
+    private Organization getRecipient(Registry registry, IMessenger iMessenger, Logger processLog) {
 
         Integer eircOrganizationId = configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true);
+
+        if (eircOrganizationId == null) {
+            iMessenger.addMessageError("eirc_organization_id_not_defined");
+            processLog.error("Eirc organization is not defined in config");
+            return null;
+        }
 
         if (registry.getRecipientOrganizationId() == null || registry.getRecipientOrganizationId() == 0) {
             processLog.debug("Recipient is EIRC, code=0");
@@ -443,6 +470,7 @@ public class RegistryParser implements Serializable {
         }
 
         if (!registry.getRecipientOrganizationId().equals(eircOrganizationId.longValue())) {
+            iMessenger.addMessageError("recipient_not_eirc_organization", registry.getRegistryNumber());
             processLog.error("Recipient is not EIRC organization");
             return null;
         }
@@ -626,21 +654,24 @@ public class RegistryParser implements Serializable {
 
             // setup record status
             recordWorkflowManager.setInitialStatus(record, failed);
+            if (failed) {
+                setErrorStatus(registry);
+            }
 
             return record;
-        } catch (NumberFormatException | RegistryFormatException | TransitionNotAllowed e) {
-            log.error("Record number parse error", e);
-        } catch (ParseException e) {
+        } catch (Exception e) {
             log.error("Record parse error", e);
+            setErrorStatus(registry);
         }
         processLog.error("Record number parse error");
         return null;
     }
 
-    public void processFooter(List<String> messageFieldList, Logger processLog) throws ExecuteException {
+    public void processFooter(List<String> messageFieldList, Context context, Logger processLog) throws ExecuteException {
         if (messageFieldList.size() < 2) {
+            setNextErrorStatus(context);
             processLog.error("Message footer error, invalid number of fields");
-            throw new ExecuteException("Message footer error, invalid number of fields");
+            context.addMessageError("footer_invalid_number_fields", context.getRegistry().getRegistryNumber());
         }
     }
 

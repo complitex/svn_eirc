@@ -126,8 +126,7 @@ public class RegistryList extends TemplatePage {
 
 
         if (imessenger.countIMessages() > 0 || !finishCallback.isCompleted()) {
-            timerBehavior = new MessageBehavior(Duration.seconds(5));
-            this.container.add(timerBehavior);
+            initTimerBehavior();
         }
 
 
@@ -202,12 +201,7 @@ public class RegistryList extends TemplatePage {
                     public void onClick(AjaxRequestTarget target) {
                         if (registryWorkflowManager.canLink(registry)) {
 
-                            if (timerBehavior == null) {
-
-                                timerBehavior = new MessageBehavior(Duration.seconds(5));
-
-                                RegistryList.this.container.add(timerBehavior);
-                            }
+                            initTimerBehavior();
 
                             try {
                                 linker.link(registry.getId(), imessenger, finishCallback);
@@ -216,6 +210,9 @@ public class RegistryList extends TemplatePage {
                             }
 
                         } else if (registryWorkflowManager.canProcess(registry)) {
+
+                            initTimerBehavior();
+
                             try {
                                 handler.handle(registry.getId(), imessenger, finishCallback);
                             } finally {
@@ -416,12 +413,7 @@ public class RegistryList extends TemplatePage {
             @Override
             protected void onClick(final AjaxRequestTarget target) {
 
-                if (timerBehavior == null) {
-
-                    timerBehavior = new MessageBehavior(Duration.seconds(5));
-
-                    container.add(timerBehavior);
-                }
+                RegistryList.this.initTimerBehavior();
 
                 try {
                     parser.parse(imessenger, finishCallback);
@@ -432,6 +424,15 @@ public class RegistryList extends TemplatePage {
                 }
             }
         });
+    }
+
+    private void initTimerBehavior() {
+        if (timerBehavior == null) {
+
+            timerBehavior = new MessageBehavior(Duration.seconds(5));
+
+            container.add(timerBehavior);
+        }
     }
 
     private void showIMessages(AjaxRequestTarget target) {

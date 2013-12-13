@@ -74,7 +74,7 @@ public class RegistryRecordBean extends AbstractBean {
     }
 
     @Transactional(executorType = ExecutorType.BATCH)
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    @TransactionAttribute(TransactionAttributeType.MANDATORY)
     public void updateBulk(List<RegistryRecord> registryRecords) {
         SqlSession session = sqlSession();
 
