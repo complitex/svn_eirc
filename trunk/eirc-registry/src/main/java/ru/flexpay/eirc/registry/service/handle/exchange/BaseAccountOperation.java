@@ -17,7 +17,7 @@ public abstract class BaseAccountOperation extends Operation {
     protected BaseAccountOperationData getContainerData(Container container) throws ContainerDataException {
         List<String> containerData = splitEscapableData(container.getData());
         if (containerData.size() < 2) {
-            throw new ContainerDataException("Failed container format: {}", container);
+            throw new ContainerDataException("Failed container format: {0}", container);
         }
         BaseAccountOperationData data = new BaseAccountOperationData();
         try {

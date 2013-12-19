@@ -10,5 +10,6 @@
         <menu class="ru.flexpay.eirc.organization_type.web.OrganizationTypeMenu"/>
         <menu class="org.complitex.address.menu.AddressMenu"/>
         <menu class="org.complitex.address.menu.AddressDescriptionMenu"/>
+        <menu class="ru.flexpay.eirc.web.correction.CorrectionMenu"/>
     </sidebar>
 </template>
