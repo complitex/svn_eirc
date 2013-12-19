@@ -257,6 +257,10 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.apartmentId = apartmentId;
     }
 
+    public void addContainer(Container container) {
+        containers.add(container);
+    }
+
     public Address getAddress() {
         if (apartmentId != null) {
             return new Address(apartmentId, AddressEntity.APARTMENT);

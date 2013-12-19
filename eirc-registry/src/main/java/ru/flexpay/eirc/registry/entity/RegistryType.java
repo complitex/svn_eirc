@@ -10,7 +10,7 @@ import java.util.Locale;
  */
 public enum RegistryType implements IFixedIdType {
     UNKNOWN(0L), 
-    SALDO(1L), 
+    SALDO_SIMPLE(1L),
     INCOME(2L), 
     MESSAGE(3L), 
     CLOSED_ACCOUNTS(4L), 

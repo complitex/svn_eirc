@@ -47,6 +47,7 @@ import ru.flexpay.eirc.registry.entity.RegistryType;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryBean;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
+import ru.flexpay.eirc.registry.service.converter.MbCorrectionsFileConverter;
 import ru.flexpay.eirc.registry.service.handle.RegistryHandler;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
@@ -102,6 +103,9 @@ public class RegistryList extends TemplatePage {
 
     @EJB
     private RegistryWorkflowManager registryWorkflowManager;
+
+    @EJB
+    private MbCorrectionsFileConverter mbCorrectionsFileConverter;
 
     private AjaxSelfUpdatingTimerBehavior timerBehavior;
 
@@ -408,22 +412,39 @@ public class RegistryList extends TemplatePage {
     @Override
     protected List<? extends ToolbarButton> getToolbarButtons(String id) {
 
-        return ImmutableList.of(new UploadButton(id, true) {
+        return ImmutableList.of(
+                new UploadButton(id, true) {
 
-            @Override
-            protected void onClick(final AjaxRequestTarget target) {
+                    @Override
+                    protected void onClick(final AjaxRequestTarget target) {
 
-                RegistryList.this.initTimerBehavior();
+                        RegistryList.this.initTimerBehavior();
 
-                try {
-                    parser.parse(imessenger, finishCallback);
-                } catch (ExecuteException e) {
-                    log().error("Failed parse", e);
-                } finally {
-                    showIMessages(target);
+                        try {
+                            parser.parse(imessenger, finishCallback);
+                        } catch (ExecuteException e) {
+                            log().error("Failed parse", e);
+                        } finally {
+                            showIMessages(target);
+                        }
+                    }
+                }, new UploadButton(id, true) {
+
+                    @Override
+                    protected void onClick(final AjaxRequestTarget target) {
+
+                        RegistryList.this.initTimerBehavior();
+
+                        try {
+                            mbCorrectionsFileConverter.convert(imessenger, finishCallback);
+                        } catch (ExecutionException e) {
+                            log().error("Failed convert", e);
+                        } finally {
+                            showIMessages(target);
+                        }
+                    }
                 }
-            }
-        });
+        );
     }
 
     private void initTimerBehavior() {

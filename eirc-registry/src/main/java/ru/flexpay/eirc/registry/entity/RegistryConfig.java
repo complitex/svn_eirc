@@ -8,7 +8,9 @@ import org.complitex.dictionary.entity.IConfig;
 public enum  RegistryConfig implements IConfig {
 
     SELF_ORGANIZATION_ID("-1", "general"),
+    MB_ORGANIZATION_ID("-1", "general"),
 
+    TMP_DIR("/tmp", "import"),
     NUMBER_FLUSH_REGISTRY_RECORDS("10000", "import"),
     NUMBER_READ_CHARS("32000", "import");
 

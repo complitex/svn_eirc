@@ -250,7 +250,7 @@ public class RegistryParser implements Serializable {
 
         if (context.getRegistry().getRecordsCount() != context.getRecordCounter()) {
             context.addMessageError("registry_records_number_error", context.getRegistry().getRegistryNumber(),
-                    context.getRegistry().getRecordsCount(), context.getRecordCounter());
+                    context.getRecordCounter(), context.getRegistry().getRecordsCount());
             processLog.error("Registry records number error, expected: {}, found: {}",
                     new Object[]{context.getRegistry().getRecordsCount(), context.getRecordCounter()});
             failed = true;
@@ -351,7 +351,7 @@ public class RegistryParser implements Serializable {
             if (StringUtils.isNotEmpty(amountStr)) {
                 newRegistry.setAmount(new BigDecimal(amountStr));
             }
-            if (messageFieldList.size() > n) {
+            if (messageFieldList.size() > n + 1) {
                 if (!parseContainers(newRegistry.getContainers(), messageFieldList.get(++n), processLog)) {
                     return null;
                 }
