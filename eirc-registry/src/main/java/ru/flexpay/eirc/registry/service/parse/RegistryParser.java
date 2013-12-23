@@ -168,7 +168,7 @@ public class RegistryParser implements Serializable {
                         context.addMessageInfo("registry_creating", registry.getRegistryNumber(), fileName);
                         log.debug("Creating registry {}", registry.getId());
                     } else if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_RECORD)) {
-                        RegistryRecord record = processRecord(registry, messageFieldList, processLog);
+                        RegistryRecordData record = processRecord(registry, messageFieldList, processLog);
                         if (record == null) {
                             return null;
                         }
@@ -217,7 +217,7 @@ public class RegistryParser implements Serializable {
         if (context.getRecords() != null &&
                 (context.getRecords().size() >= context.getNumberFlushRegistryRecords() || finalize)) {
 
-            final List<RegistryRecord> records = context.getRecords();
+            final List<RegistryRecordData> records = context.getRecords();
 
             context.getBatchProcessor().processJob(new AbstractJob<JobResult>() {
                 @Override
@@ -561,7 +561,7 @@ public class RegistryParser implements Serializable {
         return true;
     }
 
-    private RegistryRecord processRecord(Registry registry, List<String> messageFieldList, Logger processLog) {
+    private RegistryRecordData processRecord(Registry registry, List<String> messageFieldList, Logger processLog) {
         if (messageFieldList.size() < 10) {
             processLog.error("Message record error, invalid number of fields: {}", messageFieldList.size());
             return null;
@@ -678,7 +678,7 @@ public class RegistryParser implements Serializable {
     private class Context {
         private Registry registry;
 
-        private List<RegistryRecord> records = Lists.newArrayList();
+        private List<RegistryRecordData> records = Lists.newArrayList();
 
         private AtomicInteger recordCounter = new AtomicInteger(0);
 
@@ -704,7 +704,7 @@ public class RegistryParser implements Serializable {
             this.registry = registry;
         }
 
-        public List<RegistryRecord> getRecords() {
+        public List<RegistryRecordData> getRecords() {
             return records;
         }
 
@@ -728,7 +728,7 @@ public class RegistryParser implements Serializable {
             return batchProcessor;
         }
 
-        public void add(RegistryRecord registryRecord) {
+        public void add(RegistryRecordData registryRecord) {
             if (registryRecord.getAmount() != null) {
                 totalAmount.addAndGet(registryRecord.getAmount().doubleValue());
             }

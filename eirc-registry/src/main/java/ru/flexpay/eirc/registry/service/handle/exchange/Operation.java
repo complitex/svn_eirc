@@ -3,7 +3,7 @@ package ru.flexpay.eirc.registry.service.handle.exchange;
 import org.complitex.dictionary.service.exception.AbstractException;
 import ru.flexpay.eirc.registry.entity.Container;
 import ru.flexpay.eirc.registry.entity.Registry;
-import ru.flexpay.eirc.registry.entity.RegistryRecord;
+import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 import ru.flexpay.eirc.registry.util.StringUtil;
 
 import java.util.List;
@@ -33,7 +33,7 @@ public abstract class Operation {
 	 *
      * @throws AbstractException if failure occurs
 	 */
-	abstract public void process(Registry registry, RegistryRecord registryRecord, Container container,
+	abstract public void process(Registry registry, RegistryRecordData registryRecord, Container container,
                                  List<OperationResult> results) throws AbstractException;
 
 	/**
@@ -42,7 +42,7 @@ public abstract class Operation {
 	 * @param watchContext OperationWatchContext
 	 * @throws AbstractException if failure occurs
 	 */
-	public final void process(Registry registry, RegistryRecord registryRecord, Container container,
+	public final void process(Registry registry, RegistryRecordData registryRecord, Container container,
                               List<OperationResult> results, OperationWatchContext watchContext)
 			throws AbstractException {
 		watchContext.before(this);

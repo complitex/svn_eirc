@@ -7,7 +7,7 @@ import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import ru.flexpay.eirc.registry.entity.Container;
 import ru.flexpay.eirc.registry.entity.Registry;
-import ru.flexpay.eirc.registry.entity.RegistryRecord;
+import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
@@ -21,11 +21,11 @@ import java.util.List;
 public class RegistryRecordBean extends AbstractBean {
     private static final String NS = RegistryRecordBean.class.getName();
 
-    public List<RegistryRecord> getRegistryRecords(FilterWrapper<RegistryRecord> filter) {
+    public List<RegistryRecordData> getRegistryRecords(FilterWrapper<RegistryRecordData> filter) {
         return getSqlSessionManager().selectList(NS + ".selectRegistryRecords", filter);
     }
 
-    public int count(FilterWrapper<RegistryRecord> filter) {
+    public int count(FilterWrapper<RegistryRecordData> filter) {
         return getSqlSessionManager().selectOne(NS + ".countRegistryRecords", filter);
     }
 
@@ -34,7 +34,7 @@ public class RegistryRecordBean extends AbstractBean {
      * @param filter Filter must content registryId, count, first
      * @return registry records
      */
-    public List<RegistryRecord> getRecordsToLinking(FilterWrapper<RegistryRecord> filter) {
+    public List<RegistryRecordData> getRecordsToLinking(FilterWrapper<RegistryRecordData> filter) {
         return getSqlSessionManager().selectList(NS + ".selectRecordsToLinking", filter);
     }
 
@@ -43,7 +43,7 @@ public class RegistryRecordBean extends AbstractBean {
      * @param filter Filter must content registryId, count, first
      * @return registry records
      */
-    public List<RegistryRecord> getCorrectionRecordsToLinking(FilterWrapper<RegistryRecord> filter) {
+    public List<RegistryRecordData> getCorrectionRecordsToLinking(FilterWrapper<RegistryRecordData> filter) {
         return getSqlSessionManager().selectList(NS + ".selectCorrectionRecordsToLinking", filter);
     }
 
@@ -52,22 +52,22 @@ public class RegistryRecordBean extends AbstractBean {
      * @param filter Filter must content registryId, count, first
      * @return registry records
      */
-    public List<RegistryRecord> getRecordsToProcessing(FilterWrapper<RegistryRecord> filter) {
+    public List<RegistryRecordData> getRecordsToProcessing(FilterWrapper<RegistryRecordData> filter) {
         return getSqlSessionManager().selectList(NS + ".selectRecordsToProcessing", filter);
     }
 
     @Transactional(executorType = ExecutorType.BATCH)
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public void createBulk(List<RegistryRecord> registryRecords) {
+    public void createBulk(List<RegistryRecordData> registryRecords) {
         SqlSession session = sqlSession();
 
-        for (RegistryRecord registryRecord : registryRecords) {
+        for (RegistryRecordData registryRecord : registryRecords) {
             saveRegistryRecord(session, registryRecord);
         }
 
         session.flushStatements();
 
-        for (RegistryRecord registryRecord : registryRecords) {
+        for (RegistryRecordData registryRecord : registryRecords) {
             saveRegistryRecordContainers(session, registryRecord);
         }
 
@@ -75,17 +75,17 @@ public class RegistryRecordBean extends AbstractBean {
 
     @Transactional(executorType = ExecutorType.BATCH)
     @TransactionAttribute(TransactionAttributeType.MANDATORY)
-    public void updateBulk(List<RegistryRecord> registryRecords) {
+    public void updateBulk(List<RegistryRecordData> registryRecords) {
         SqlSession session = sqlSession();
 
-        for (RegistryRecord registryRecord : registryRecords) {
+        for (RegistryRecordData registryRecord : registryRecords) {
             saveRegistryRecord(session, registryRecord);
         }
 
     }
 
     @Transactional
-    public void save(RegistryRecord registryRecord) {
+    public void save(RegistryRecordData registryRecord) {
         SqlSession session = sqlSession();
         if (saveRegistryRecord(session, registryRecord)) {
             saveRegistryRecordContainers(session, registryRecord);
@@ -99,7 +99,7 @@ public class RegistryRecordBean extends AbstractBean {
      * @param registryRecord Registry record
      * @return <code>true</code> if registry record was created otherwise <code>false</code>
      */
-    private boolean saveRegistryRecord(SqlSession session, RegistryRecord registryRecord) {
+    private boolean saveRegistryRecord(SqlSession session, RegistryRecordData registryRecord) {
         if (registryRecord.getId() == null) {
             session.insert(NS + ".insertRegistryRecord", registryRecord);
             return true;
@@ -108,7 +108,7 @@ public class RegistryRecordBean extends AbstractBean {
         return false;
     }
 
-    private void saveRegistryRecordContainers(SqlSession session, RegistryRecord registryRecord) {
+    private void saveRegistryRecordContainers(SqlSession session, RegistryRecordData registryRecord) {
 
         for (Container container : registryRecord.getContainers()) {
             container.setParentId(registryRecord.getId());

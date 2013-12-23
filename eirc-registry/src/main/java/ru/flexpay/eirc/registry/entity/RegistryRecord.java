@@ -3,20 +3,20 @@ package ru.flexpay.eirc.registry.entity;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.complitex.address.entity.AddressEntity;
-import org.complitex.correction.entity.AddressLinkData;
 import org.complitex.correction.entity.LinkStatus;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.DictionaryObject;
 import ru.flexpay.eirc.dictionary.entity.Person;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.List;
 
 /**
  * @author Pavel Sknar
  */
-public class RegistryRecord extends DictionaryObject implements AddressLinkData {
+public class RegistryRecord extends DictionaryObject implements RegistryRecordData {
 
     private String serviceCode;
     // лиц. счёт поставщика услуг
@@ -57,6 +57,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.registryId = registryId;
     }
 
+    @Override
     public String getServiceCode() {
         return serviceCode;
     }
@@ -65,6 +66,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.serviceCode = serviceCode;
     }
 
+    @Override
     public String getPersonalAccountExt() {
         return personalAccountExt;
     }
@@ -129,6 +131,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.apartment = apartment;
     }
 
+    @Override
     public String getFirstName() {
         return firstName;
     }
@@ -137,6 +140,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.firstName = firstName;
     }
 
+    @Override
     public String getMiddleName() {
         return middleName;
     }
@@ -145,6 +149,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.middleName = middleName;
     }
 
+    @Override
     public String getLastName() {
         return lastName;
     }
@@ -153,6 +158,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.lastName = lastName;
     }
 
+    @Override
     public Date getOperationDate() {
         return operationDate;
     }
@@ -161,6 +167,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.operationDate = operationDate;
     }
 
+    @Override
     public Long getUniqueOperationNumber() {
         return uniqueOperationNumber;
     }
@@ -169,6 +176,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.uniqueOperationNumber = uniqueOperationNumber;
     }
 
+    @Override
     public BigDecimal getAmount() {
         return amount;
     }
@@ -177,6 +185,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.amount = amount;
     }
 
+    @Override
     public RegistryRecordStatus getStatus() {
         return status;
     }
@@ -185,6 +194,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.status = status;
     }
 
+    @Override
     public List<Container> getContainers() {
         return containers;
     }
@@ -193,6 +203,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.containers = containers;
     }
 
+    @Override
     public ImportErrorType getImportErrorType() {
         return importErrorType;
     }
@@ -201,6 +212,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.importErrorType = importErrorType;
     }
 
+    @Override
     public Long getRegistryId() {
         return registryId;
     }
@@ -209,6 +221,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.registryId = registryId;
     }
 
+    @Override
     public Long getCityTypeId() {
         return cityTypeId;
     }
@@ -217,6 +230,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.cityTypeId = cityTypeId;
     }
 
+    @Override
     public Long getCityId() {
         return cityId;
     }
@@ -225,6 +239,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.cityId = cityId;
     }
 
+    @Override
     public Long getStreetTypeId() {
         return streetTypeId;
     }
@@ -233,6 +248,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.streetTypeId = streetTypeId;
     }
 
+    @Override
     public Long getStreetId() {
         return streetId;
     }
@@ -241,6 +257,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.streetId = streetId;
     }
 
+    @Override
     public Long getBuildingId() {
         return buildingId;
     }
@@ -249,6 +266,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.buildingId = buildingId;
     }
 
+    @Override
     public Long getApartmentId() {
         return apartmentId;
     }
@@ -257,10 +275,12 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         this.apartmentId = apartmentId;
     }
 
+    @Override
     public void addContainer(Container container) {
         containers.add(container);
     }
 
+    @Override
     public Address getAddress() {
         if (apartmentId != null) {
             return new Address(apartmentId, AddressEntity.APARTMENT);
@@ -270,6 +290,7 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
         return null;
     }
 
+    @Override
     public Person getPerson() {
         Person person = new Person();
         person.setLastName(lastName);
@@ -292,6 +313,11 @@ public class RegistryRecord extends DictionaryObject implements AddressLinkData 
     @Override
     public String getStreetCode() {
         return null;
+    }
+
+    @Override
+    public void writeContainers(ByteBuffer buffer) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

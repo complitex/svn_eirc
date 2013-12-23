@@ -18,6 +18,8 @@
     <select id="selectServiceCorrectionsCount" resultType="int"
             parameterType="org.complitex.dictionary.entity.FilterWrapper">
         select count(*) from `service_correction` c
-        <include refid="org.complitex.dictionary.entity.Correction.selectCorrectionWhere"/>
+        <where>
+            <include refid="org.complitex.dictionary.entity.Correction.selectCorrectionWhereIf"/>
+        </where>
     </select>
 </mapper>
