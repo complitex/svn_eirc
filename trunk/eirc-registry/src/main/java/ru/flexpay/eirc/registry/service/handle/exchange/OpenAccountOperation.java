@@ -13,7 +13,7 @@ import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
 import ru.flexpay.eirc.registry.entity.Container;
 import ru.flexpay.eirc.registry.entity.ContainerType;
 import ru.flexpay.eirc.registry.entity.Registry;
-import ru.flexpay.eirc.registry.entity.RegistryRecord;
+import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
@@ -47,7 +47,7 @@ public class OpenAccountOperation extends BaseAccountOperation {
     }
 
     @Override
-    public void process(Registry registry, RegistryRecord registryRecord, Container container,
+    public void process(Registry registry, RegistryRecordData registryRecord, Container container,
                         List<OperationResult> results) throws AbstractException {
         Address address = registryRecord.getAddress();
         Person person = registryRecord.getPerson();

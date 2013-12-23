@@ -66,14 +66,14 @@ public class RegistryLinker {
     private ServiceProviderAccountBean serviceProviderAccountBean;
 
     public void link(final Long registryId, final IMessenger imessenger, final FinishCallback finishLink) {
-        link(FilterWrapper.of(new RegistryRecord(registryId)), imessenger, finishLink, false);
+        link(FilterWrapper.<RegistryRecordData>of(new RegistryRecord(registryId)), imessenger, finishLink, false);
     }
 
-    public void linkAfterCorrection(RegistryRecord record, final IMessenger imessenger, final FinishCallback finishLink) {
-        link(FilterWrapper.of(record), imessenger, finishLink, true);
+    public void linkAfterCorrection(RegistryRecordData record, final IMessenger imessenger, final FinishCallback finishLink) {
+        link(FilterWrapper.<RegistryRecordData>of(record), imessenger, finishLink, true);
     }
 
-    private void link(final FilterWrapper<RegistryRecord> filter, final IMessenger imessenger,
+    private void link(final FilterWrapper<RegistryRecordData> filter, final IMessenger imessenger,
                       final FinishCallback finishLink, final boolean afterCorrection) {
         final AtomicBoolean finishReadRecords = new AtomicBoolean(false);
         final AtomicInteger recordLinkingCounter = new AtomicInteger(0);
@@ -131,10 +131,10 @@ public class RegistryLinker {
                         final Statistics statistics = new Statistics(registry.getRegistryNumber(), imessenger);
 
                         int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
-                        List<RegistryRecord> registryRecords;
-                        FilterWrapper<RegistryRecord> innerFilter = FilterWrapper.of(filter.getObject(), 0, numberFlushRegistryRecords);
+                        List<RegistryRecordData> registryRecords;
+                        FilterWrapper<RegistryRecordData> innerFilter = FilterWrapper.of(filter.getObject(), 0, numberFlushRegistryRecords);
                         do {
-                            final List<RegistryRecord> recordsToLinking = afterCorrection?
+                            final List<RegistryRecordData> recordsToLinking = afterCorrection?
                                     registryRecordBean.getCorrectionRecordsToLinking(innerFilter) :
                                     registryRecordBean.getRecordsToLinking(innerFilter);
 
@@ -200,9 +200,9 @@ public class RegistryLinker {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public int linkRegistryRecords(Registry registry, List<RegistryRecord> registryRecords) throws TransitionNotAllowed {
+    public int linkRegistryRecords(Registry registry, List<RegistryRecordData> registryRecords) throws TransitionNotAllowed {
         int successLinked = 0;
-        for (RegistryRecord registryRecord : registryRecords) {
+        for (RegistryRecordData registryRecord : registryRecords) {
 
             // Search address
             if (registryRecord.getStatus() == RegistryRecordStatus.LOADED ||

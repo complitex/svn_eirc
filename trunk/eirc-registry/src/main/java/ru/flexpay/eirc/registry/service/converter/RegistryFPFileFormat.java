@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.registry.entity.Container;
 import ru.flexpay.eirc.registry.entity.Registry;
-import ru.flexpay.eirc.registry.entity.RegistryRecord;
+import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 import ru.flexpay.eirc.registry.entity.RegistryType;
 
 import javax.ejb.EJB;
@@ -29,6 +29,8 @@ public class RegistryFPFileFormat {
 
 	private Logger log = LoggerFactory.getLogger(getClass());
 
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(FPRegistryConstants.OPERATION_DATE_FORMAT);
+
     @EJB
 	private RSASignatureService signatureService;
 
@@ -38,13 +40,13 @@ public class RegistryFPFileFormat {
 
     public void writeRecordsAndFooter(DataSource dataSource, ByteBuffer buffer) throws IOException, AbstractException {
 
-        RegistryRecord record;
+        RegistryRecordData record;
         while ((record = dataSource.getNextRecord()) != null) {
-            writeLine(buffer, buildRecord(dataSource.getRegistry(), record), null);
+            writeRecord(buffer, dataSource.getRegistry(), record);
         }
 
-        buffer.put(getEncodingBytes(buildFooter(dataSource.getRegistry(), null)));
-        buffer.put(getEncodingBytes("\n"));
+        write(buffer, buildFooter(dataSource.getRegistry(), null));
+        write(buffer, "\n");
     }
 
     public void writeAll(DataSource dataSource, ByteBuffer buffer, String privateKey) throws IOException, AbstractException {
@@ -53,13 +55,13 @@ public class RegistryFPFileFormat {
 
         writeLine(buffer, buildHeader(dataSource.getRegistry()), privateSignature);
 
-        RegistryRecord record;
+        RegistryRecordData record;
         while ((record = dataSource.getNextRecord()) != null) {
             writeLine(buffer, buildRecord(dataSource.getRegistry(), record), privateSignature);
         }
 
-        buffer.put(getEncodingBytes(buildFooter(dataSource.getRegistry(), privateSignature)));
-        buffer.put(getEncodingBytes("\n"));
+        write(buffer, buildFooter(dataSource.getRegistry(), privateSignature));
+        write(buffer, "\n");
     }
 
     private void writeLine(ByteBuffer buffer, String line, Signature privateSignature) throws IOException {
@@ -71,12 +73,8 @@ public class RegistryFPFileFormat {
                 throw new IOException("Can not update signature", e);
             }
         }
-        buffer.put(getEncodingBytes(line));
-        buffer.put(getEncodingBytes("\n"));
-    }
-
-    private byte[] getEncodingBytes(String s) {
-        return s.getBytes(Charset.forName(FPRegistryConstants.EXPORT_FILE_ENCODING));
+        write(buffer, line);
+        write(buffer, "\n");
     }
 
 	public String fileName(Registry registry) throws AbstractException {
@@ -144,7 +142,7 @@ public class RegistryFPFileFormat {
 		return header.toString();
 	}
 
-	protected String buildRecord(Registry registry, RegistryRecord record) {
+	protected String buildRecord(Registry registry, RegistryRecordData record) {
 
 		log.debug("Building string for record = {}", record);
 
@@ -204,6 +202,49 @@ public class RegistryFPFileFormat {
 
 	}
 
+    protected void writeRecord(ByteBuffer buffer, Registry registry, RegistryRecordData record) {
+
+        log.debug("Building string for record = {}", record);
+
+        write(buffer, FPRegistryConstants.REGISTRY_RECORD_MESSAGE_TYPE_CHAR);
+        write(buffer, FPRegistryConstants.FIELD_SEPARATOR);
+        write(buffer, StringUtil.valueOf(registry.getRegistryNumber()));
+        write(buffer, FPRegistryConstants.FIELD_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getServiceCode()));
+        write(buffer, FPRegistryConstants.FIELD_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getPersonalAccountExt()));
+        write(buffer, FPRegistryConstants.FIELD_SEPARATOR);
+        //default town is empty
+        //write(byteBuffer, StringUtil.valueOf(record.getTownName()));
+        write(buffer, FPRegistryConstants.ADDRESS_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getStreetType()));
+        write(buffer, FPRegistryConstants.ADDRESS_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getStreet()));
+        write(buffer, FPRegistryConstants.ADDRESS_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getBuildingNumber()));
+        write(buffer, FPRegistryConstants.ADDRESS_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getBuildingCorp()));
+        write(buffer, FPRegistryConstants.ADDRESS_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getApartment()));
+        write(buffer, FPRegistryConstants.FIELD_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getLastName()));
+        write(buffer, FPRegistryConstants.FIO_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getFirstName()));
+        write(buffer, FPRegistryConstants.FIO_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getMiddleName()));
+        write(buffer, FPRegistryConstants.FIELD_SEPARATOR);
+        write(buffer, StringUtil.valueOf(DATE_FORMAT.format(record.getOperationDate())));
+        write(buffer, FPRegistryConstants.FIELD_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getUniqueOperationNumber()));
+        write(buffer, FPRegistryConstants.FIELD_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getAmount()));
+        write(buffer, FPRegistryConstants.FIELD_SEPARATOR);
+
+        record.writeContainers(buffer);
+
+        write(buffer, "\n");
+    }
+
 	protected String buildFooter(Registry registry, Signature privateSignature) throws IOException {
 
 		StringBuilder footer = new StringBuilder();
@@ -226,4 +267,20 @@ public class RegistryFPFileFormat {
 
 		return footer.toString();
 	}
+
+    private void write(ByteBuffer buffer, String s) {
+        buffer.put(getEncodingBytes(s));
+    }
+
+    private void write(ByteBuffer buffer, long value) {
+        buffer.put(getEncodingBytes(value));
+    }
+
+    private byte[] getEncodingBytes(long value) {
+        return getEncodingBytes(Long.toString(value));
+    }
+
+    private byte[] getEncodingBytes(String s) {
+        return s.getBytes(Charset.forName(FPRegistryConstants.EXPORT_FILE_ENCODING));
+    }
 }

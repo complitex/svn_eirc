@@ -9,10 +9,7 @@ import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.util.EjbBeanLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.flexpay.eirc.registry.entity.Container;
-import ru.flexpay.eirc.registry.entity.Registry;
-import ru.flexpay.eirc.registry.entity.RegistryConfig;
-import ru.flexpay.eirc.registry.entity.RegistryRecord;
+import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.handle.exchange.Operation;
 import ru.flexpay.eirc.registry.service.handle.exchange.OperationFactory;
@@ -69,10 +66,10 @@ public class RegistryHandler {
     private OperationFactory operationFactory;
 
     public void handle(final Long registryId, final IMessenger imessenger, final FinishCallback finishLink) {
-        handle(FilterWrapper.of(new RegistryRecord(registryId)), imessenger, finishLink);
+        handle(FilterWrapper.<RegistryRecordData>of(new RegistryRecord(registryId)), imessenger, finishLink);
     }
 
-    private void handle(final FilterWrapper<RegistryRecord> filter, final IMessenger imessenger,
+    private void handle(final FilterWrapper<RegistryRecordData> filter, final IMessenger imessenger,
                       final FinishCallback finishHandle) {
         final AtomicBoolean finishReadRecords = new AtomicBoolean(false);
         final AtomicInteger recordHandlingCounter = new AtomicInteger(0);
@@ -126,10 +123,10 @@ public class RegistryHandler {
                         final Statistics statistics = new Statistics(registry.getRegistryNumber(), imessenger);
 
                         int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
-                        List<RegistryRecord> registryRecords;
-                        FilterWrapper<RegistryRecord> innerFilter = FilterWrapper.of(filter.getObject(), 0, numberFlushRegistryRecords);
+                        List<RegistryRecordData> registryRecords;
+                        FilterWrapper<RegistryRecordData> innerFilter = FilterWrapper.of(filter.getObject(), 0, numberFlushRegistryRecords);
                         do {
-                            final List<RegistryRecord> recordsToProcessing = registryRecordBean.getRecordsToProcessing(innerFilter);
+                            final List<RegistryRecordData> recordsToProcessing = registryRecordBean.getRecordsToProcessing(innerFilter);
 
                             if (recordsToProcessing.size() < numberFlushRegistryRecords) {
                                 finishReadRecords.set(true);
@@ -200,10 +197,10 @@ public class RegistryHandler {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public List<OperationResult> handleRegistryRecords(Registry registry, List<RegistryRecord> registryRecords) throws TransitionNotAllowed {
+    public List<OperationResult> handleRegistryRecords(Registry registry, List<RegistryRecordData> registryRecords) throws TransitionNotAllowed {
         List<OperationResult> results = Lists.newArrayListWithCapacity(registryRecords.size());
         List<OperationResult> recordResults = Lists.newArrayList();
-        for (RegistryRecord registryRecord : registryRecords) {
+        for (RegistryRecordData registryRecord : registryRecords) {
             handelRegistryRecord(registry, results, recordResults, registryRecord);
             recordResults.clear();
         }
@@ -215,7 +212,7 @@ public class RegistryHandler {
     public void handelRegistryRecord(Registry registry,
                                      List<OperationResult> results,
                                      List<OperationResult> recordResults,
-                                     RegistryRecord registryRecord) throws TransitionNotAllowed {
+                                     RegistryRecordData registryRecord) throws TransitionNotAllowed {
         try {
             for (Container container : registryRecord.getContainers()) {
                 Operation operation = operationFactory.getOperation(container);
@@ -231,7 +228,7 @@ public class RegistryHandler {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public boolean setErrorStatus(RegistryRecord registryRecord, Registry registry) {
+    public boolean setErrorStatus(RegistryRecordData registryRecord, Registry registry) {
         try {
             registryRecordWorkflowManager.setNextErrorStatus(registryRecord, registry);
             registryRecordBean.save(registryRecord);

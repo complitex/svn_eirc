@@ -86,7 +86,7 @@ public class RegistryRecordList extends TemplatePage {
     @EJB
     private RegistryFinishCallback finishCallback;
 
-    private IModel<RegistryRecord> filterModel = new CompoundPropertyModel<>(new RegistryRecord());
+    private IModel<RegistryRecordData> filterModel = new CompoundPropertyModel<RegistryRecordData>(new RegistryRecord());
 
     private Registry registry;
 
@@ -108,7 +108,7 @@ public class RegistryRecordList extends TemplatePage {
             return;
         }
         registry = registries.get(0);
-        filterModel.getObject().setRegistryId(registry.getId());
+        ((RegistryRecord)filterModel.getObject()).setRegistryId(registry.getId());
         init();
     }
 
@@ -133,15 +133,15 @@ public class RegistryRecordList extends TemplatePage {
         }
 
         //Form
-        final Form<RegistryRecord> filterForm = new Form<>("filterForm", filterModel);
+        final Form<RegistryRecordData> filterForm = new Form<>("filterForm", filterModel);
         container.add(filterForm);
 
         //Панель коррекции адреса
-        final AddressCorrectionPanel<RegistryRecord> addressCorrectionPanel = new AddressCorrectionPanel<RegistryRecord>("addressCorrectionPanel",
+        final AddressCorrectionPanel<RegistryRecordData> addressCorrectionPanel = new AddressCorrectionPanel<RegistryRecordData>("addressCorrectionPanel",
                 registry.getRecipientOrganizationId(), container) {
 
             @Override
-            protected void correctAddress(RegistryRecord registryRecord, AddressEntity entity, Long cityId, Long streetTypeId, Long streetId,
+            protected void correctAddress(RegistryRecordData registryRecord, AddressEntity entity, Long cityId, Long streetTypeId, Long streetId,
                                           Long buildingId, Long apartmentId, Long userOrganizationId)
                     throws DuplicateCorrectionException, MoreOneCorrectionException, NotFoundCorrectionException {
 
@@ -171,11 +171,11 @@ public class RegistryRecordList extends TemplatePage {
         add(addressCorrectionPanel);
 
         //Data Provider
-        final DataProvider<RegistryRecord> dataProvider = new DataProvider<RegistryRecord>() {
+        final DataProvider<RegistryRecordData> dataProvider = new DataProvider<RegistryRecordData>() {
 
             @Override
-            protected Iterable<? extends RegistryRecord> getData(int first, int count) {
-                FilterWrapper<RegistryRecord> filterWrapper = FilterWrapper.of(filterModel.getObject(), first, count);
+            protected Iterable<? extends RegistryRecordData> getData(int first, int count) {
+                FilterWrapper<RegistryRecordData> filterWrapper = FilterWrapper.of(filterModel.getObject(), first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
                 filterWrapper.setLike(true);
@@ -185,18 +185,18 @@ public class RegistryRecordList extends TemplatePage {
 
             @Override
             protected int getSize() {
-                FilterWrapper<RegistryRecord> filterWrapper = FilterWrapper.of(filterModel.getObject());
+                FilterWrapper<RegistryRecordData> filterWrapper = FilterWrapper.of(filterModel.getObject());
                 return registryRecordBean.count(filterWrapper);
             }
         };
         dataProvider.setSort("registry_record_id", SortOrder.ASCENDING);
 
         //Data View
-        DataView<RegistryRecord> dataView = new DataView<RegistryRecord>("data", dataProvider, 1) {
+        DataView<RegistryRecordData> dataView = new DataView<RegistryRecordData>("data", dataProvider, 1) {
 
             @Override
-            protected void populateItem(Item<RegistryRecord> item) {
-                final RegistryRecord registryRecord = item.getModelObject();
+            protected void populateItem(Item<RegistryRecordData> item) {
+                final RegistryRecordData registryRecord = item.getModelObject();
 
                 item.setModel(new CompoundPropertyModel<>(item.getModel()));
 
@@ -311,7 +311,7 @@ public class RegistryRecordList extends TemplatePage {
 
             @Override
             public String getObject() {
-                RegistryRecord filterObject = filterModel.getObject();
+                RegistryRecordData filterObject = filterModel.getObject();
                 return StringUtils.join(new String[]{
                         filterObject.getLastName(), filterObject.getFirstName(), filterObject.getMiddleName()
                 }, " ");
@@ -319,26 +319,27 @@ public class RegistryRecordList extends TemplatePage {
 
             @Override
             public void setObject(String fio) {
+                RegistryRecord registryRecord = (RegistryRecord)filterModel.getObject();
                 if (StringUtils.isBlank(fio)) {
-                    filterModel.getObject().setLastName(null);
-                    filterModel.getObject().setFirstName(null);
-                    filterModel.getObject().setMiddleName(null);
+                    registryRecord.setLastName(null);
+                    registryRecord.setFirstName(null);
+                    registryRecord.setMiddleName(null);
                 } else {
                     fio = fio.trim();
                     String[] personFio = fio.split(" ", 3);
 
                     if (personFio.length > 0) {
-                        filterModel.getObject().setLastName(personFio[0]);
+                        registryRecord.setLastName(personFio[0]);
                     }
                     if (personFio.length > 1) {
-                        filterModel.getObject().setFirstName(personFio[1]);
+                        registryRecord.setFirstName(personFio[1]);
                     } else {
-                        filterModel.getObject().setFirstName(null);
+                        registryRecord.setFirstName(null);
                     }
                     if (personFio.length > 2) {
-                        filterModel.getObject().setMiddleName(personFio[2]);
+                        registryRecord.setMiddleName(personFio[2]);
                     } else {
-                        filterModel.getObject().setMiddleName(null);
+                        registryRecord.setMiddleName(null);
                     }
 
                 }
