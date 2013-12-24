@@ -6,16 +6,14 @@ import ru.flexpay.eirc.registry.service.JobProcessor;
 import ru.flexpay.eirc.registry.service.QueueProcessor;
 
 import javax.annotation.PostConstruct;
-import javax.ejb.ConcurrencyManagement;
-import javax.ejb.ConcurrencyManagementType;
-import javax.ejb.EJB;
-import javax.ejb.Singleton;
+import javax.ejb.*;
 
 /**
  * @author Pavel Sknar
  */
 @Singleton
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class MbConverterQueueProcessor extends QueueProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(MbConverterQueueProcessor.class);

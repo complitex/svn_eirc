@@ -37,6 +37,8 @@ public class ServiceProviderAccountStrategy extends TemplateStrategy {
     public static final long LIVE_SQUARE = 6003L;
     // Площадь отапливаемая
     public static final long HEATED_SQUARE = 6004L;
+    // Площадь отапливаемая
+    public static final long RESPONSIBLE_PERSON = 6005L;
 
     @EJB
     private StringCultureBean stringBean;

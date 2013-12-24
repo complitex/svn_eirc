@@ -31,8 +31,10 @@ public class RegistryFPFileFormat {
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(FPRegistryConstants.OPERATION_DATE_FORMAT);
 
+    private static final String REGISTRY_RECORD_MESSAGE_TYPE = String.valueOf(FPRegistryConstants.REGISTRY_RECORD_MESSAGE_TYPE_CHAR);
+
     @EJB
-	private RSASignatureService signatureService;
+    private RSASignatureService signatureService;
 
     public void writeHeader(DataSource dataSource, ByteBuffer buffer) throws IOException {
         writeLine(buffer, buildHeader(dataSource.getRegistry()), null);
@@ -206,7 +208,7 @@ public class RegistryFPFileFormat {
 
         log.debug("Building string for record = {}", record);
 
-        write(buffer, FPRegistryConstants.REGISTRY_RECORD_MESSAGE_TYPE_CHAR);
+        write(buffer, REGISTRY_RECORD_MESSAGE_TYPE);
         write(buffer, FPRegistryConstants.FIELD_SEPARATOR);
         write(buffer, StringUtil.valueOf(registry.getRegistryNumber()));
         write(buffer, FPRegistryConstants.FIELD_SEPARATOR);

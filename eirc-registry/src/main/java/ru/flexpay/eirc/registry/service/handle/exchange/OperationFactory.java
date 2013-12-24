@@ -30,6 +30,9 @@ public class OperationFactory {
     @EJB
     private SetTotalSquareOperation setTotalSquareOperation;
 
+    @EJB
+    private SetResponsiblePerson setResponsiblePerson;
+
     private Map<ContainerType, Operation> operations = null;
 
     public Operation getOperation(Container container) throws AbstractException {
@@ -50,6 +53,7 @@ public class OperationFactory {
                     put(ContainerType.SET_NUMBER_ON_HABITANTS, setNumberOfHabitantsOperation).
                     put(ContainerType.SET_LIVE_SQUARE, setLiveSquareOperation).
                     put(ContainerType.SET_TOTAL_SQUARE, setTotalSquareOperation).
+                    put(ContainerType.SET_RESPONSIBLE_PERSON, setResponsiblePerson).
                     build();
         }
     }

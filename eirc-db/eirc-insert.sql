@@ -60,6 +60,10 @@ INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (6005, 1, UPPER(
 INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (6004, 6000, 0, 6005, 1);
 INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (6004, 6004, UPPER('string'));
 
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (6006, 1, UPPER('ФИО основного квартиросъемщика')), (6006, 2, UPPER('ПIБ основного квартиронаймача'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (6005, 6000, 0, 6006, 1);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (6005, 6005, UPPER('string'));
+
 INSERT INTO `registry_status` (`code`, `name`) values
     (0, 'Загружается'),
     (1, 'Загружается с ошибкой'),
