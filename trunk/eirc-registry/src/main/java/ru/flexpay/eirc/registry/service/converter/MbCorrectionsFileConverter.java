@@ -2,6 +2,7 @@ package ru.flexpay.eirc.registry.service.converter;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.io.PatternFilenameFilter;
@@ -33,6 +34,8 @@ import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 
 import javax.ejb.EJB;
 import javax.ejb.Singleton;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import java.io.*;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -43,24 +46,23 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Singleton
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class MbCorrectionsFileConverter {
 
     private static final Logger log = LoggerFactory.getLogger(MbCorrectionsFileConverter.class);
 
-	private static final String MODIFICATIONS_START_DATE_FORMAT = "ddMMyy";
+	private static final SimpleDateFormat MODIFICATIONS_START_DATE_FORMAT = new SimpleDateFormat("ddMMyy");
+	private static final SimpleDateFormat OPERATION_DATE_FORMAT = new SimpleDateFormat("ddMMyyyy");
 
     private static final String DELIMITER = "=";
 
-    private static final long FIELDS_LENGTH = 28;
     private static final long FIELDS_LENGTH_SKIP_RECORD = 20;
-    private static final long FIELDS_LENGTH_EMPTY_FOOTER = 21;
-
-    private static final long BUFFER_SIZE = 1_048_576*10;
 
     @EJB
     private OrganizationCorrectionBean organizationCorrectionBean;
@@ -135,7 +137,7 @@ public class MbCorrectionsFileConverter {
 		initRegistry(registry);
 
 		try {
-			parseFile(reader, registry, fileLength, imessenger);
+			parseFile(reader, registry, fileName, fileLength, imessenger);
 		} finally {
 			IOUtils.closeQuietly(reader);
 		}
@@ -150,7 +152,8 @@ public class MbCorrectionsFileConverter {
 	}
 
 	@SuppressWarnings ({"unchecked"})
-	public void parseFile(final BufferedReader reader, final Registry registry, long fileLength, final IMessenger imessenger) throws AbstractException {
+	public void parseFile(final BufferedReader reader, final Registry registry, final String mbFileName,
+                          long fileLength, final IMessenger imessenger) throws AbstractException {
 
         final AtomicInteger lineNum = new AtomicInteger(0);
         final AtomicInteger recordNum = new AtomicInteger(0);
@@ -186,7 +189,7 @@ public class MbCorrectionsFileConverter {
                     }
 
                     if (lineNum.get()%10000 == 0) {
-                        imessenger.addMessageInfo("processed_lines", lineNum.get());
+                        imessenger.addMessageInfo("processed_lines", lineNum.get(), mbFileName);
                     }
 
                     String line = reader.readLine();
@@ -198,13 +201,15 @@ public class MbCorrectionsFileConverter {
                     }
                     countChar += line.length() + 2;
                     if (lineNum.get() == 1) {
-                        parseHeader(line.split(DELIMITER), registry, mbOrganizationId, eircOrganizationId);
+                        parseHeader(line.split(DELIMITER), registry, context);
                         line = reader.readLine();
                     }
                     int count;
                     do {
                         if (line.startsWith(MbParsingConstants.LAST_FILE_STRING_BEGIN) || line == null) {
                             registry.setRecordsCount(recordNum.get());
+                            registry.setFromDate(context.getFromDate());
+                            registry.setTillDate(context.getTillDate());
                             log.info("Total {} records created", recordNum.get());
                             countChar = -1;
                             return null;
@@ -238,8 +243,8 @@ public class MbCorrectionsFileConverter {
             final String dir = configBean.getString(DictionaryConfig.IMPORT_FILE_STORAGE_DIR, true);
             final String tmpDir = configBean.getString(RegistryConfig.TMP_DIR, true);
 
-            String fileName = registryFPFileFormat.fileName(registry);
-            File tmpFile = new File(tmpDir, fileName + "_tmp");
+            String eircFileName = registryFPFileFormat.fileName(registry);
+            File tmpFile = new File(tmpDir, eircFileName + "_tmp");
 
             FileChannel rwChannel = null;
             FileChannel outChannel = null;
@@ -251,7 +256,7 @@ public class MbCorrectionsFileConverter {
                 registryFPFileFormat.writeRecordsAndFooter(dataSource, buffer);
 
                 // Create registry file
-                outChannel = new FileOutputStream(new File(dir, fileName)).getChannel();
+                outChannel = new FileOutputStream(new File(dir, eircFileName)).getChannel();
                 ByteBuffer buff = ByteBuffer.allocateDirect(32 * 1024);
 
                 registryFPFileFormat.writeHeader(dataSource, buff);
@@ -272,7 +277,7 @@ public class MbCorrectionsFileConverter {
                 }
             }
 
-            imessenger.addMessageInfo("total_lines", lineNum.get());
+            imessenger.addMessageInfo("total_lines", lineNum.get(), mbFileName, eircFileName);
 
 		} catch (IOException e) {
 			throw new MbParseException("Error reading file ", e);
@@ -286,11 +291,12 @@ public class MbCorrectionsFileConverter {
 		registry.setType(RegistryType.SALDO_SIMPLE);
 	}
 
-	private void parseHeader(String[] fields, Registry registry, Long mbOrganizationId, Long eircOrganizationId) throws AbstractException {
+	private void parseHeader(String[] fields, Registry registry, Context context) throws AbstractException {
 		log.debug("fields: {}", fields);
 		log.debug("Getting service provider with id = {} from DB", fields[1]);
 		List<OrganizationCorrection> organizationCorrections = organizationCorrectionBean.getOrganizationCorrections(
-                FilterWrapper.of(new OrganizationCorrection(null, null, fields[1], mbOrganizationId, eircOrganizationId, null)));
+                FilterWrapper.of(new OrganizationCorrection(null, null, fields[1],
+                        context.getMbOrganizationId(), context.getEircOrganizationId(), null)));
 		if (organizationCorrections.size() <= 0) {
 			throw new MbParseException("No service provider correction with id {0}", fields[1]);
 		}
@@ -305,14 +311,13 @@ public class MbCorrectionsFileConverter {
 		}
 
 		registry.setSenderOrganizationId(organization.getId());
-		registry.setRecipientOrganizationId(eircOrganizationId);
+		registry.setRecipientOrganizationId(context.getEircOrganizationId());
 
 		try {
 			Date period = new SimpleDateFormat(MbParsingConstants.FILE_CREATION_DATE_FORMAT).parse(fields[2]);
-			registry.setFromDate(period);
-			registry.setTillDate(period);
+            registry.setCreationDate(period);
 		} catch (ParseException e) {
-			// do nothing
+            //
 		}
 	}
 
@@ -329,16 +334,20 @@ public class MbCorrectionsFileConverter {
 		if (fields.length > FIELDS_LENGTH_SKIP_RECORD &&
 				StringUtils.isEmpty(fields[9]) &&
 				StringUtils.isEmpty(fields[10]) &&
-				StringUtils.isEmpty(getModificationDate(fields[19]))) {
+				StringUtils.isEmpty(fields[19])) {
 			fields = (String[]) ArrayUtils.remove(fields, 9);
 			fields[9] = "-";
 		}
 
+        if (StringUtils.isNotEmpty(fields[9])) {
+            fields[9] = StringUtils.replace(fields[9], ";", "\\;");
+        }
+
 		// remove duplicates in service codes
-		//Set<String> serviceCodes = ImmutableSet.<String>builder().add(fields[20].split(";")).build();
+		Set<String> serviceCodes = ImmutableSet.<String>builder().add(fields[20].split(";")).build();
 
 		int count = 0;
-		for (String serviceCode : fields[20].split(";")) {
+		for (String serviceCode : serviceCodes) {
 			if (StringUtils.isEmpty(serviceCode) || "0".equals(serviceCode)) {
 				return 0;
 			}
@@ -358,14 +367,6 @@ public class MbCorrectionsFileConverter {
 		return count;
 	}
 
-	private void setBuildingAddress(RegistryRecord record, String addr) {
-		String[] parts = parseBuildingAddress(addr);
-		record.setBuildingNumber(parts[0]);
-		if (parts.length > 1) {
-			record.setBuildingCorp(parts[1]);
-		}
-	}
-
 	protected String[] parseBuildingAddress(String mbBuidingAddress) {
 		String[] parts = StringUtils.split(mbBuidingAddress, ' ');
 		if (parts.length > 1 && parts[1].startsWith(MbParsingConstants.BUILDING_BULK_PREFIX)) {
@@ -374,88 +375,8 @@ public class MbCorrectionsFileConverter {
 		return parts;
 	}
 
-	private String getModificationDate(String field) {
-
-		try {
-			return new SimpleDateFormat("ddMMyyyy").format(
-					new SimpleDateFormat(MODIFICATIONS_START_DATE_FORMAT).parse(field));
-		} catch (ParseException e) {
-			return "";
-		}
-	}
-
-	private long addCreateAccountContainer(RegistryRecordData record, String[] fields) {
-
-		String modificationStartDate = getModificationDate(fields[19]);
-		Container container = new Container(ContainerType.OPEN_ACCOUNT.getId() + ":" + modificationStartDate + "::", ContainerType.OPEN_ACCOUNT);
-		record.addContainer(container);
-
-		return 1;
-	}
-
 	private String getErcAccount(String[] fields) {
 		return fields[0];
-	}
-
-	private RegistryRecordData setInfoContainers(RegistryRecordData record, String[] fields, Long mbOrganizationId) {
-
-		String modificationStartDate = getModificationDate(fields[19]);
-
-        record.addContainer(
-                new Container(ContainerType.EXTERNAL_ORGANIZATION_ACCOUNT.getId() + ":" + modificationStartDate + "::" +
-                        getErcAccount(fields) + ":" + mbOrganizationId,
-                        ContainerType.EXTERNAL_ORGANIZATION_ACCOUNT)
-        );
-
-		// ФИО
-		record.addContainer(
-                new Container(ContainerType.SET_RESPONSIBLE_PERSON.getId() + ":" + modificationStartDate + "::" + fields[2],
-                        ContainerType.SET_RESPONSIBLE_PERSON)
-        );
-
-		// Количество проживающих
-		String containerValue = StringUtils.isEmpty(fields[15])? "0": fields[15];
-		record.addContainer(
-                new Container(ContainerType.SET_NUMBER_ON_HABITANTS.getId() + ":" + modificationStartDate + "::" + containerValue,
-                        ContainerType.SET_NUMBER_ON_HABITANTS)
-        );
-
-		// Отапливаемая площадь
-		containerValue = StringUtils.isEmpty(fields[10])? "0.00": fields[10];
-        record.addContainer(
-                new Container(ContainerType.SET_WARM_SQUARE.getId() + ":" + modificationStartDate + "::" + containerValue,
-                        ContainerType.SET_WARM_SQUARE)
-        );
-
-
-		// Тип льготы
-		/*
-		if (StringUtils.isNotEmpty(fields[17]) && !"0".equals(fields[17])) {
-			container = new RegistryRecordContainer();
-			container.setData("8:" + modificationStartDate + "::" + fields[17]);
-			record.addContainer(container);
-		}
-             */
-		// ФИО носителя льготы
-		/*
-		if (fields.length != CorrectionsRecordValidator.FIELDS_LENGTH_EMPTY_FOOTER &&
-				StringUtils.isNotEmpty(fields[26]) && !"0".equals(fields[26])) {
-			container = new RegistryRecordContainer();
-			container.setData("9:" + modificationStartDate + "::" + fields[26]);
-			record.addContainer(container);
-		}
-		*/
-
-		// Количество пользующихся льготой
-		/*
-		if (StringUtils.isNotEmpty(fields[16]) && !"0".equals(fields[16])) {
-			container = new RegistryRecordContainer();
-			container.setData("12:" + modificationStartDate + "::" + fields[16]);
-			record.addContainer(container);
-		}
-        	*/
-		
-		return record;
 	}
 
     private class Context {
@@ -466,6 +387,8 @@ public class MbCorrectionsFileConverter {
         private Long mbOrganizationId;
         private Long eircOrganizationId;
         private String city;
+        private Date fromDate;
+        private Date tillDate;
 
         private Cache<String, String> serviceCache = CacheBuilder.newBuilder().
                 maximumSize(1000).
@@ -491,6 +414,14 @@ public class MbCorrectionsFileConverter {
             return eircOrganizationId;
         }
 
+        public Date getFromDate() {
+            return fromDate;
+        }
+
+        public Date getTillDate() {
+            return tillDate;
+        }
+
         public RegistryRecordData getRegistryRecord(String[] fields, String serviceCode) throws MbParseException {
             for (RegistryRecordData registryRecord : registryRecords) {
                 if (!((RegistryRecordMapped)registryRecord).isUsing()) {
@@ -509,6 +440,7 @@ public class MbCorrectionsFileConverter {
             private String[] fields;
             private String[] buildingFields;
             private String serviceCode;
+            private Date modificationDate;
 
             private boolean using = false;
 
@@ -532,6 +464,17 @@ public class MbCorrectionsFileConverter {
                     }
                     this.serviceCode = String.valueOf(serviceCorrections.get(0).getObjectId());
                     serviceCache.put(serviceCode, this.serviceCode);
+                }
+                try {
+                    this.modificationDate = MODIFICATIONS_START_DATE_FORMAT.parse(fields[19]);
+                } catch (ParseException e) {
+                    throw new MbParseException("Failed parse modification start date", e);
+                }
+                if (fromDate == null || this.modificationDate.before(fromDate)) {
+                    fromDate = this.modificationDate;
+                }
+                if (tillDate == null || this.modificationDate.after(tillDate)) {
+                    tillDate = this.modificationDate;
                 }
                 buildingFields = parseBuildingAddress(fields[8]);
                 using = true;
@@ -667,18 +610,18 @@ public class MbCorrectionsFileConverter {
 
             @Override
             public void writeContainers(ByteBuffer buffer) {
-                String modificationStartDate = getModificationDate(fields[19]);
+                String operationDate = OPERATION_DATE_FORMAT.format(modificationDate);
 
                 write(buffer, ContainerType.OPEN_ACCOUNT.getId());
                 write(buffer, ":");
-                write(buffer, modificationStartDate);
+                write(buffer, operationDate);
                 write(buffer, "::");
 
                 write(buffer, FPRegistryConstants.CONTAINER_SEPARATOR);
 
                 write(buffer, ContainerType.EXTERNAL_ORGANIZATION_ACCOUNT.getId());
                 write(buffer, ":");
-                write(buffer, modificationStartDate);
+                write(buffer, operationDate);
                 write(buffer, "::");
                 write(buffer, getErcAccount(fields));
                 write(buffer, ":");
@@ -689,7 +632,7 @@ public class MbCorrectionsFileConverter {
                 // ФИО
                 write(buffer, ContainerType.SET_RESPONSIBLE_PERSON.getId());
                 write(buffer, ":");
-                write(buffer, modificationStartDate);
+                write(buffer, operationDate);
                 write(buffer, "::");
                 write(buffer, fields[2]);
 
@@ -699,7 +642,7 @@ public class MbCorrectionsFileConverter {
                 String containerValue = StringUtils.isEmpty(fields[15])? "0": fields[15];
                 write(buffer, ContainerType.SET_NUMBER_ON_HABITANTS.getId());
                 write(buffer, ":");
-                write(buffer, modificationStartDate);
+                write(buffer, operationDate);
                 write(buffer, "::");
                 write(buffer, containerValue);
 
@@ -709,7 +652,7 @@ public class MbCorrectionsFileConverter {
                 containerValue = StringUtils.isEmpty(fields[10])? "0.00": fields[10];
                 write(buffer, ContainerType.SET_WARM_SQUARE.getId());
                 write(buffer, ":");
-                write(buffer, modificationStartDate);
+                write(buffer, operationDate);
                 write(buffer, "::");
                 write(buffer, containerValue);
             }

@@ -316,7 +316,7 @@ public class RegistryParser implements Serializable {
 
         processLog.info("Adding header: {}", messageFieldList);
 
-        DateFormat dateFormat = ParseRegistryConstants.DATE_FORMAT;
+        DateFormat dateFormat = ParseRegistryConstants.HEADER_DATE_FORMAT;
 
         final Registry newRegistry = new Registry();
         try {
@@ -613,7 +613,7 @@ public class RegistryParser implements Serializable {
             }
 
             // setup ParseRegistryConstants.date
-            record.setOperationDate(ParseRegistryConstants.DATE_FORMAT.parse(messageFieldList.get(++n)));
+            record.setOperationDate(ParseRegistryConstants.RECORD_DATE_FORMAT.parse(messageFieldList.get(++n)));
 
             // setup unique operation number
             String uniqueOperationNumberStr = messageFieldList.get(++n);
