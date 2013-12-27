@@ -1,9 +1,12 @@
 package ru.flexpay.eirc.registry.entity;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import org.complitex.dictionary.mybatis.IFixedIdType;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import static ru.flexpay.eirc.registry.entity.RegistryType.*;
 
@@ -12,25 +15,27 @@ import static ru.flexpay.eirc.registry.entity.RegistryType.*;
  */
 public enum ContainerType implements IFixedIdType {
     UNDEFINED(0L, null),
-    OPEN_ACCOUNT(1L, INFO),
+    OPEN_ACCOUNT(1L, INFO, SALDO_SIMPLE),
     CLOSE_ACCOUNT(2L, CLOSED_ACCOUNTS),
-    SET_RESPONSIBLE_PERSON(3L, INFO),
-    SET_NUMBER_ON_HABITANTS(4L, INFO),
+    SET_RESPONSIBLE_PERSON(3L, INFO, SALDO_SIMPLE),
+    SET_NUMBER_ON_HABITANTS(4L, INFO, SALDO_SIMPLE),
     SET_TOTAL_SQUARE(5L, INFO),
     SET_LIVE_SQUARE(6L, INFO),
-    SET_WARM_SQUARE(7L, INFO),
+    SET_WARM_SQUARE(7L, INFO, SALDO_SIMPLE),
     SET_PRIVILEGE_TYPE(8L, INFO),
     SET_PRIVILEGE_OWNER(9L, INFO),
     SET_PRIVILEGE_PERSON(10L, INFO),
     SET_PRIVILEGE_APPROVAL_DOCUMENT(11L, INFO),
     SET_PRIVILEGE_PERSONS_NUMBER(12L, INFO),
     OPEN_SUBACCOUNT(14L, INFO),
-    EXTERNAL_ORGANIZATION_ACCOUNT(15L, INFO),
+    EXTERNAL_ORGANIZATION_ACCOUNT(15L, INFO, SALDO_SIMPLE),
 
     SIMPLE_PAYMENT(50L, CASH_PAYMENTS),
     BANK_PAYMENT(52L, BANK_PAYMENTS),
 
     BASE(100L, QUITTANCE),
+    CHARGE(101L, SALDO_SIMPLE),
+    SALDO_OUT(102L, SALDO_SIMPLE),
 
     ADDRESS_CORRECTION(150L, CORRECTIONS),
 
@@ -60,11 +65,11 @@ public enum ContainerType implements IFixedIdType {
     }
 
     private Long id;
-    private RegistryType registryType;
+    private Set<RegistryType> registryTypes;
 
-    private ContainerType(Long id, RegistryType registryType) {
+    private ContainerType(Long id, RegistryType... registryTypes) {
         this.id = id;
-        this.registryType = registryType;
+        this.registryTypes = registryTypes == null? Collections.<RegistryType>emptySet(): Sets.newHashSet(registryTypes);
     }
 
     @Override
@@ -72,8 +77,12 @@ public enum ContainerType implements IFixedIdType {
         return id;
     }
 
-    public RegistryType getRegistryType() {
-        return registryType;
+    public Set<RegistryType> getRegistryTypes() {
+        return registryTypes;
+    }
+
+    public boolean isSupport(RegistryType registryType) {
+        return registryTypes.contains(registryType);
     }
 
     public static ContainerType valueOf(Long id) {
