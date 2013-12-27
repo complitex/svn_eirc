@@ -18,7 +18,6 @@ import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.util.StringUtil;
-import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
 
 import javax.ejb.EJB;
@@ -571,18 +570,19 @@ public class RegistryParser implements Serializable {
         RegistryRecord record = new RegistryRecord();
         record.setRegistryId(registry.getId());
         try {
-            log.info("adding record: '{}'", StringUtils.join(messageFieldList, '-'));
             int n = 1;
             record.setServiceCode(messageFieldList.get(++n));
             record.setPersonalAccountExt(messageFieldList.get(++n));
 
             //TODO find by external id, if service code started by # (maybe using correction)
+            /*
             FilterWrapper<Service> filter = FilterWrapper.of(new Service(record.getServiceCode()));
             filter.setSortProperty(null);
             List<Service> services = serviceBean.getServices(filter);
             if (services.size() == 0) {
                 processLog.warn("Not found service by code {}", record.getServiceCode());
             }
+            */
 
             // setup consumer address
             String addressStr = messageFieldList.get(++n);
@@ -635,8 +635,7 @@ public class RegistryParser implements Serializable {
 
             // validate containers
             for (Container container : record.getContainers()) {
-                RegistryType containerRegistryType = container.getType().getRegistryType();
-                if (containerRegistryType == null || !containerRegistryType.equals(registry.getType())) {
+                if (!container.getType().isSupport(registry.getType())) {
                     processLog.error("Failed container {} for account {}", container, record.getPersonalAccountExt());
                     failed = true;
                 }
