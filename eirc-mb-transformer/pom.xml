@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>eirc</artifactId>
+        <groupId>ru.flexpay.eirc</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>eirc-mb-transformer</artifactId>
+    <packaging>war</packaging>
+
+    <name>EIRC - MB transformer</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.complitex</groupId>
+            <artifactId>complitex-dictionary</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.complitex</groupId>
+            <artifactId>complitex-resources</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.complitex</groupId>
+            <artifactId>complitex-images</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.complitex</groupId>
+            <artifactId>complitex-template</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.complitex</groupId>
+            <artifactId>complitex-admin</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.complitex</groupId>
+            <artifactId>complitex-logging</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.complitex</groupId>
+            <artifactId>complitex-organization-type</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.complitex</groupId>
+            <artifactId>complitex-organization</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.complitex</groupId>
+            <artifactId>complitex-correction</artifactId>
+        </dependency>
+	    <dependency>
+            <groupId>ru.flexpay.eirc</groupId>
+            <artifactId>eirc-dictionary</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ru.flexpay.eirc</groupId>
+            <artifactId>eirc-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ru.flexpay.eirc</groupId>
+            <artifactId>eirc-organization</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ru.flexpay.eirc</groupId>
+            <artifactId>eirc-registry</artifactId>
+        </dependency>
+    </dependencies>
+</project>

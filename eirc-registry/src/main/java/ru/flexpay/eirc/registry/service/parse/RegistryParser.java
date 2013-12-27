@@ -535,7 +535,7 @@ public class RegistryParser implements Serializable {
             }
             List<String> containerData = StringUtil.splitEscapable(
                     data, ParseRegistryConstants.CONTAINER_DATA_DELIMITER, ParseRegistryConstants.ESCAPE_SYMBOL);
-            if (data.length() < 1) {
+            if (containerData.size() < 1) {
                 processLog.error("Failed container format: {}", containerData);
                 return false;
             }

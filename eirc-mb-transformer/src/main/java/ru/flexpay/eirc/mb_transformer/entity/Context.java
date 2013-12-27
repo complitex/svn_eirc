@@ -1,9 +1,11 @@
-package ru.flexpay.eirc.registry.service.converter;
+package ru.flexpay.eirc.mb_transformer.entity;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import org.complitex.dictionary.entity.FilterWrapper;
+import ru.flexpay.eirc.mb_transformer.service.MbParseException;
+import ru.flexpay.eirc.mb_transformer.util.FPRegistryConstants;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.service.entity.ServiceCorrection;
@@ -92,7 +94,7 @@ public abstract class Context {
         return serviceCode;
     }
 
-    protected abstract RegistryRecordMapped getRegistryRecordInstance(String[] fields, String serviceCode) throws MbParseException;
+    protected abstract RegistryRecordMapped getRegistryRecordInstance(String[] fields, String serviceCode) throws MbParseException, MbParseException;
 
     protected void write(ByteBuffer buffer, String s) {
         buffer.put(getEncodingBytes(s));
