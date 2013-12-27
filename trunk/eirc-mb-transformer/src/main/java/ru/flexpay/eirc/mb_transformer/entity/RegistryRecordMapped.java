@@ -1,5 +1,6 @@
-package ru.flexpay.eirc.registry.service.converter;
+package ru.flexpay.eirc.mb_transformer.entity;
 
+import ru.flexpay.eirc.mb_transformer.service.MbParseException;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 
 import java.util.Date;
@@ -19,7 +20,7 @@ public abstract class RegistryRecordMapped implements RegistryRecordData {
         initData(fields, serviceCode);
     }
 
-    public void initData(String[] fields, String serviceCode) throws MbParseException {
+    public void initData(String[] fields, String serviceCode) throws MbParseException, MbParseException {
         this.fields = fields;
         this.serviceCode = serviceCode;
         using = true;

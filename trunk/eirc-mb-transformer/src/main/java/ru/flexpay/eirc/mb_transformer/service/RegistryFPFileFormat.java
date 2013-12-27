@@ -1,9 +1,11 @@
-package ru.flexpay.eirc.registry.service.converter;
+package ru.flexpay.eirc.mb_transformer.service;
 
 import org.complitex.dictionary.service.exception.AbstractException;
 import org.complitex.dictionary.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.flexpay.eirc.mb_transformer.entity.DataSource;
+import ru.flexpay.eirc.mb_transformer.util.FPRegistryConstants;
 import ru.flexpay.eirc.registry.entity.Container;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;

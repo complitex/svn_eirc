@@ -13,7 +13,7 @@ import java.util.Locale;
 
 /**
  *
- * @author Artem
+ * @author Pavel Sknar
  */
 public class CorrectionMenu extends ResourceTemplateMenu {
 

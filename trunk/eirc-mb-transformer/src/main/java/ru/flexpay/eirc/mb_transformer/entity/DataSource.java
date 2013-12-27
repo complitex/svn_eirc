@@ -1,4 +1,4 @@
-package ru.flexpay.eirc.registry.service.converter;
+package ru.flexpay.eirc.mb_transformer.entity;
 
 import org.complitex.dictionary.service.exception.AbstractException;
 import ru.flexpay.eirc.registry.entity.Registry;

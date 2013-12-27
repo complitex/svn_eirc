@@ -1,4 +1,4 @@
-package ru.flexpay.eirc.registry.service.converter;
+package ru.flexpay.eirc.mb_transformer.service;
 
 import javax.ejb.Stateless;
 import java.io.DataInputStream;

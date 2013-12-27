@@ -1,4 +1,4 @@
-package ru.flexpay.eirc.registry.service.converter;
+package ru.flexpay.eirc.mb_transformer.service;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -24,6 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.Person;
+import ru.flexpay.eirc.mb_transformer.entity.Context;
+import ru.flexpay.eirc.mb_transformer.entity.DataSource;
+import ru.flexpay.eirc.mb_transformer.entity.RegistryRecordMapped;
+import ru.flexpay.eirc.mb_transformer.util.FPRegistryConstants;
+import ru.flexpay.eirc.mb_transformer.util.MbParsingConstants;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.*;
