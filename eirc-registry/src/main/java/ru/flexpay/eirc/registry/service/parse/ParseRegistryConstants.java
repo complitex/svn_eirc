@@ -1,6 +1,10 @@
 package ru.flexpay.eirc.registry.service.parse;
 
-import java.text.SimpleDateFormat;
+import com.google.common.collect.ImmutableSet;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
+import java.util.Set;
 
 /**
  * @author Pavel Sknar
@@ -38,8 +42,15 @@ public class ParseRegistryConstants {
 
     public static final int MAX_CONTAINER_SIZE = 2048;
 
-    public static final SimpleDateFormat HEADER_DATE_FORMAT = new SimpleDateFormat("ddMMyyyyHHmmss");
-    public static final SimpleDateFormat RECORD_DATE_FORMAT = new SimpleDateFormat("ddMMyyyyHHmmss");
+    public static final Set<Character> DELIMITERS = ImmutableSet.of(
+            CONTAINER_DELIMITER,
+            CONTAINER_DATA_DELIMITER,
+            RECORD_DELIMITER,
+            ADDRESS_DELIMITER
+    );
+
+    public static final DateTimeFormatter HEADER_DATE_FORMAT = DateTimeFormat.forPattern("ddMMyyyyHHmmss");
+    public static final DateTimeFormatter RECORD_DATE_FORMAT = DateTimeFormat.forPattern("ddMMyyyyHHmmss");
     public static final int MESSAGE_TYPE_HEADER = 0xC;
     public static final int MESSAGE_TYPE_RECORD = 0x3;
     public static final int MESSAGE_TYPE_FOOTER = 0xB;

@@ -6,20 +6,23 @@ import org.apache.commons.lang.StringUtils;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Pavel Sknar
  */
 public class StringUtil {
-    public static String format(String str, char delimiter, char escapeChar) {
+    public static String format(String str, Set<Character> delimiter, char escapeChar) {
         if (str == null) {
             return str;
         }
 
         StringBuilder buf = new StringBuilder(str.length());
         for (char c : str.toCharArray()) {
-            if (c == delimiter) {
-                buf.append(escapeChar);
+            for (Character character : delimiter) {
+                if (c == character) {
+                    buf.append(escapeChar);
+                }
             }
             buf.append(c);
         }

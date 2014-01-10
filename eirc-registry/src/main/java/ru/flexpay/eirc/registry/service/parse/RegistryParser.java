@@ -11,6 +11,7 @@ import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.util.EjbBeanLocator;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.organization.entity.Organization;
@@ -29,8 +30,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
-import java.text.DateFormat;
-import java.text.ParseException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -67,6 +66,8 @@ public class RegistryParser implements Serializable {
 
     @EJB
     private ParserQueueProcessor parserQueueProcessor;
+
+    //private AtomicInteger inc = new AtomicInteger(0);
 
     public void parse(final IMessenger imessenger, final FinishCallback finishUpload) throws ExecuteException {
         imessenger.addMessageInfo("starting_upload_registries");
@@ -221,6 +222,13 @@ public class RegistryParser implements Serializable {
             context.getBatchProcessor().processJob(new AbstractJob<JobResult>() {
                 @Override
                 public JobResult execute() throws ExecuteException {
+                    /*
+                    long i = context.getNumberFlushRegistryRecords()*inc.incrementAndGet();
+                    for (RegistryRecordData record : records) {
+                        ((RegistryRecord)record).setUniqueOperationNumber(i);
+                        ((RegistryRecord)record).setContainers(Lists.newArrayList(new Container(String.valueOf(i), ContainerType.BASE)));
+                        i++;
+                    }*/
                     registryRecordService.createBulk(records);
                     //TODO save intermediate state
                     int currentCounter = context.addRecordCounter(records.size());
@@ -255,7 +263,7 @@ public class RegistryParser implements Serializable {
             failed = true;
         }
 
-        if (!context.getRegistry().getAmount().equals(context.getTotalAmount())) {
+        if (!context.checkTotalAmount()) {
             context.addMessageError("total_amount_error", context.getRegistry().getRegistryNumber(),
                     context.getRegistry().getAmount(), context.getTotalAmount());
             processLog.error("Total amount error, expected: {}, found: {}",
@@ -315,7 +323,7 @@ public class RegistryParser implements Serializable {
 
         processLog.info("Adding header: {}", messageFieldList);
 
-        DateFormat dateFormat = ParseRegistryConstants.HEADER_DATE_FORMAT;
+        DateTimeFormatter dateFormat = ParseRegistryConstants.HEADER_DATE_FORMAT;
 
         final Registry newRegistry = new Registry();
         try {
@@ -341,9 +349,9 @@ public class RegistryParser implements Serializable {
             }
             newRegistry.setType(registryType);
             newRegistry.setRecordsCount(Integer.valueOf(messageFieldList.get(++n)));
-            newRegistry.setCreationDate(dateFormat.parse(messageFieldList.get(++n)));
-            newRegistry.setFromDate(dateFormat.parse(messageFieldList.get(++n)));
-            newRegistry.setTillDate(dateFormat.parse(messageFieldList.get(++n)));
+            newRegistry.setCreationDate(dateFormat.parseDateTime(messageFieldList.get(++n)).toDate());
+            newRegistry.setFromDate(dateFormat.parseDateTime(messageFieldList.get(++n)).toDate());
+            newRegistry.setTillDate(dateFormat.parseDateTime(messageFieldList.get(++n)).toDate());
             newRegistry.setSenderOrganizationId(Long.valueOf(messageFieldList.get(++n)));
             newRegistry.setRecipientOrganizationId(Long.valueOf(messageFieldList.get(++n)));
             String amountStr = messageFieldList.get(++n);
@@ -383,7 +391,7 @@ public class RegistryParser implements Serializable {
             newRegistry.setLoadDate(DateUtil.getCurrentDate());
 
             return newRegistry;
-        } catch (NumberFormatException | ParseException | TransitionNotAllowed e) {
+        } catch (Exception e) {
             iMessenger.addMessageError("header_parse_error", fileName, e.getMessage());
             processLog.error("Header parse error in file: {}", fileName, e);
         }
@@ -613,7 +621,22 @@ public class RegistryParser implements Serializable {
             }
 
             // setup ParseRegistryConstants.date
-            record.setOperationDate(ParseRegistryConstants.RECORD_DATE_FORMAT.parse(messageFieldList.get(++n)));
+            String operationDate = messageFieldList.get(++n);
+            try {
+                record.setOperationDate(ParseRegistryConstants.RECORD_DATE_FORMAT.parseDateTime(operationDate).toDate());
+            } catch (Exception e) {
+                throw e;
+            }
+
+            // validate operation date
+            if (registry.getFromDate().after(record.getOperationDate()) ||
+                    registry.getTillDate().before(record.getOperationDate())) {
+
+                processLog.error("Failed operation date {} in operation number {} for account {}",
+                        new Object[]{record.getOperationDate(), record.getUniqueOperationNumber(),
+                                record.getPersonalAccountExt()});
+                failed = true;
+            }
 
             // setup unique operation number
             String uniqueOperationNumberStr = messageFieldList.get(++n);
@@ -641,16 +664,6 @@ public class RegistryParser implements Serializable {
                 }
             }
 
-            // validate operation date
-            if (registry.getFromDate().after(record.getOperationDate()) ||
-                    registry.getTillDate().before(record.getOperationDate())) {
-
-                processLog.error("Failed operation date {} in operation number {} for account {}",
-                        new Object[]{record.getOperationDate(), record.getUniqueOperationNumber(),
-                                record.getPersonalAccountExt()});
-                failed = true;
-            }
-
             // setup record status
             recordWorkflowManager.setInitialStatus(record, failed);
             if (failed) {
@@ -659,7 +672,7 @@ public class RegistryParser implements Serializable {
 
             return record;
         } catch (Exception e) {
-            log.error("Record parse error", e);
+            log.error("Record parse error. Message fields: " + messageFieldList, e);
             setErrorStatus(registry);
         }
         processLog.error("Record number parse error");
@@ -717,6 +730,14 @@ public class RegistryParser implements Serializable {
 
         public BigDecimal getTotalAmount() {
             return BigDecimal.valueOf(totalAmount.get());
+        }
+
+        public boolean checkTotalAmount() {
+            if (registry.getAmount() == null && totalAmount.get() > 0) {
+                return false;
+            }
+
+            return registry.getAmount() == null || registry.getAmount().equals(getTotalAmount());
         }
 
         public int getNumberFlushRegistryRecords() {

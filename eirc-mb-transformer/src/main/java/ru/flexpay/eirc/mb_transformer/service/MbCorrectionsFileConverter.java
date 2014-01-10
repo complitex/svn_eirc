@@ -36,6 +36,8 @@ import ru.flexpay.eirc.registry.service.AbstractJob;
 import ru.flexpay.eirc.registry.service.FinishCallback;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.handle.MbConverterQueueProcessor;
+import ru.flexpay.eirc.registry.service.parse.ParseRegistryConstants;
+import ru.flexpay.eirc.registry.util.StringUtil;
 import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 
 import javax.ejb.EJB;
@@ -44,7 +46,6 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -187,7 +188,7 @@ public class MbCorrectionsFileConverter {
                         imessenger.addMessageInfo("processed_lines", lineNum.get(), getFileName());
                     }
 
-                    String line = getReader().readLine();
+                    String line = readLine();
                     //log.debug("totalLineNum={}, line: {}", new Object[]{totalLineNum, line});
                     if (line == null) {
                         log.debug("End of file, lineNum = {}", lineNum.get());
@@ -197,8 +198,9 @@ public class MbCorrectionsFileConverter {
                     countChar += line.length() + 2;
                     if (lineNum.get() == 1) {
                         parseHeader(line.split(MbParsingConstants.DELIMITER), registry, getContext());
-                        line = getReader().readLine();
+                        line = readLine();
                     }
+
                     int count;
                     do {
                         if (line.startsWith(MbParsingConstants.LAST_FILE_STRING_BEGIN) || line == null) {
@@ -211,7 +213,7 @@ public class MbCorrectionsFileConverter {
                         count = parseRecord(line, recordStack, getContext());
 
                         if (count == 0) {
-                            line = getReader().readLine();
+                            line = readLine();
                         } else {
                             recordNum.addAndGet(count);
                         }
@@ -362,19 +364,19 @@ public class MbCorrectionsFileConverter {
                 //
             }
             try {
-                Date operationMonth = MbParsingConstants.OPERATION_MONTH_DATE_FORMAT.parse(fields[idx]);
+                Date operationMonth = MbParsingConstants.OPERATION_MONTH_DATE_FORMAT.parseDateTime(fields[idx]).toDate();
                 registry.setFromDate(operationMonth);
                 registry.setTillDate(getLastDayOfMonth(operationMonth));
-            } catch (ParseException e) {
+            } catch (Exception e) {
                 //
             }
             idx++;
         }
 
 		try {
-			Date creationDate = MbParsingConstants.FILE_CREATION_DATE_FORMAT.parse(fields[idx]);
+			Date creationDate = MbParsingConstants.FILE_CREATION_DATE_FORMAT.parseDateTime(fields[idx]).toDate();
             registry.setCreationDate(creationDate);
-		} catch (ParseException e) {
+		} catch (Exception e) {
             //
 		}
 	}
@@ -387,7 +389,7 @@ public class MbCorrectionsFileConverter {
         }
 
 		// remove duplicates in service codes
-		Set<String> serviceCodes = ImmutableSet.<String>builder().add(context.getServiceCodes(fields).split(";")).build();
+		Set<String> serviceCodes = ImmutableSet.<String>builder().add(context.getServiceCodes(fields).split("\\\\;")).build();
 
 		int count = 0;
 		for (String serviceCode : serviceCodes) {
@@ -466,10 +468,10 @@ public class MbCorrectionsFileConverter {
                 fields = (String[]) ArrayUtils.remove(fields, 9);
                 fields[9] = "-";
             }
-
+/*
             if (StringUtils.isNotEmpty(fields[9])) {
                 fields[9] = StringUtils.replace(fields[9], ";", "\\;");
-            }
+            }*/
             return fields;
         }
 
@@ -510,9 +512,9 @@ public class MbCorrectionsFileConverter {
 
                 Date modificationDate;
                 try {
-                    modificationDate = MbParsingConstants.CORRECTIONS_MODIFICATIONS_START_DATE_FORMAT.parse(fields[19]);
+                    modificationDate = MbParsingConstants.CORRECTIONS_MODIFICATIONS_START_DATE_FORMAT.parseDateTime(fields[19]).toDate();
                     setModificationDate(modificationDate);
-                } catch (ParseException e) {
+                } catch (Exception e) {
                     throw new MbParseException("Failed parse modification start date", e);
                 }
                 if (fromDate == null || modificationDate.before(fromDate)) {
@@ -642,7 +644,7 @@ public class MbCorrectionsFileConverter {
 
             @Override
             public void writeContainers(ByteBuffer buffer) {
-                String operationDate = MbParsingConstants.OPERATION_DATE_FORMAT.format(getModificationDate());
+                String operationDate = MbParsingConstants.OPERATION_DATE_FORMAT.print(getModificationDate().getTime());
 
                 write(buffer, ContainerType.OPEN_ACCOUNT.getId());
                 write(buffer, ":");
@@ -783,8 +785,8 @@ public class MbCorrectionsFileConverter {
             return context;
         }
 
-        public BufferedReader getReader() {
-            return reader;
+        public String readLine() throws IOException {
+            return StringUtil.format(reader.readLine(), ParseRegistryConstants.DELIMITERS, ParseRegistryConstants.ESCAPE_SYMBOL);
         }
 
         public String getFileName() {
@@ -833,9 +835,9 @@ public class MbCorrectionsFileConverter {
 
                 Date modificationDate;
                 try {
-                    modificationDate = MbParsingConstants.CHARGES_MODIFICATIONS_START_DATE_FORMAT.parse(fields[5]);
+                    modificationDate = MbParsingConstants.CHARGES_MODIFICATIONS_START_DATE_FORMAT.parseDateTime(fields[5]).toDate();
                     setModificationDate(modificationDate);
-                } catch (ParseException e) {
+                } catch (Exception e) {
                     throw new MbParseException("Failed parse modification start date", e);
                 }
             }
@@ -961,7 +963,7 @@ public class MbCorrectionsFileConverter {
                     return;
                 }
 
-                String operationDate = MbParsingConstants.OPERATION_DATE_FORMAT.format(getModificationDate());
+                String operationDate = MbParsingConstants.OPERATION_DATE_FORMAT.print(getModificationDate().getTime());
 
                 BigDecimal charge = getMoney(getField(1));
                 BigDecimal outgoingBalance = getMoney(getField(2));

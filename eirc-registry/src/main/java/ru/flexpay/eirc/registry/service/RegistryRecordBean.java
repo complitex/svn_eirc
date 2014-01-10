@@ -1,5 +1,7 @@
 package ru.flexpay.eirc.registry.service;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.complitex.dictionary.entity.FilterWrapper;
@@ -13,11 +15,13 @@ import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Pavel Sknar
  */
 @Stateless
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class RegistryRecordBean extends AbstractBean {
     private static final String NS = RegistryRecordBean.class.getName();
 
@@ -56,9 +60,13 @@ public class RegistryRecordBean extends AbstractBean {
         return getSqlSessionManager().selectList(NS + ".selectRecordsToProcessing", filter);
     }
 
-    @Transactional(executorType = ExecutorType.BATCH)
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void createBulk(List<RegistryRecordData> registryRecords) {
+        Map<String, Object> params = createBulkRecords(registryRecords);
+        List<Container> containers = Lists.newArrayList();
+        long id = ((Long)params.get("id"));
+        createBulkRecordContainers(registryRecords, containers, id);
+
+        /*
         SqlSession session = sqlSession();
 
         for (RegistryRecordData registryRecord : registryRecords) {
@@ -69,8 +77,32 @@ public class RegistryRecordBean extends AbstractBean {
 
         for (RegistryRecordData registryRecord : registryRecords) {
             saveRegistryRecordContainers(session, registryRecord);
-        }
+        }*/
 
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public void createBulkRecordContainers(List<RegistryRecordData> registryRecords, List<Container> containers, long id) {
+        for (RegistryRecordData registryRecord : registryRecords) {
+            for (Container container : registryRecord.getContainers()) {
+                container.setParentId(id);
+                containers.add(container);
+            }
+            id++;
+        }
+        getSqlSessionManager().insert(NS + ".insertRegistryRecordContainers", containers);
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public Map<String, Object> createBulkRecords(List<RegistryRecordData> registryRecords) {
+        for (RegistryRecordData registryRecord : registryRecords) {
+            registryRecord.getUniqueOperationNumber();
+        }
+        Map<String, Object> params = Maps.newHashMap();
+        params.put("registryRecords", registryRecords);
+        params.put("id", 0L);
+        getSqlSessionManager().insert(NS + ".insertRegistryRecords", params);
+        return params;
     }
 
     @Transactional(executorType = ExecutorType.BATCH)
