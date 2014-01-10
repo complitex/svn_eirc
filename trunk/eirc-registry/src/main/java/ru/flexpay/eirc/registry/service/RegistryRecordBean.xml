@@ -299,6 +299,54 @@
         )
     </insert>
 
+    <insert id="insertRegistryRecords" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecord" keyProperty="id"
+            keyColumn="id" useGeneratedKeys="true">
+        insert into `registry_record`
+        (
+            service_code,
+            personal_account_ext,
+            city_type,
+            city,
+            street_type,
+            street,
+            building_number,
+            bulk_number,
+            apartment_number,
+            first_name,
+            middle_name,
+            last_name,
+            operation_date,
+            unique_operation_number,
+            amount,
+            status,
+            import_error_type,
+            registry_id
+        ) values
+        <foreach collection="registryRecords" separator="," item="rr" index="index">
+            (
+                #{rr.serviceCode}, #{rr.personalAccountExt}, #{rr.cityType}, #{rr.city}, #{rr.streetType}, #{rr.street}, #{rr.buildingNumber},
+                #{rr.buildingCorp}, #{rr.apartment}, #{rr.firstName}, #{rr.middleName}, #{rr.lastName}, #{rr.operationDate}, #{rr.uniqueOperationNumber},
+                #{rr.amount}, #{rr.status.id},
+                <choose>
+                    <when test="rr.importErrorType != null">#{rr.importErrorType.id}</when>
+                    <otherwise>null</otherwise>
+                </choose>,
+                #{rr.registryId}
+            )
+        </foreach>
+        <!--selectKey resultType="long" order="AFTER" keyProperty="id">
+            SELECT LAST_INSERT_ID() as id
+        </selectKey-->
+    </insert>
+
+    <insert id="insertRegistryRecordContainers" parameterType="list">
+        insert into `registry_record_container` (`data`, `record_id`, `type`)
+        values
+        <foreach collection="list" separator="," item="rrc" index="index">
+          (#{rrc.data}, #{rrc.parentId}, #{rrc.type.id})
+        </foreach>
+    </insert>
+
     <insert id="insertRegistryRecordContainer" parameterType="ru.flexpay.eirc.registry.entity.Container"
             keyProperty="container.id" useGeneratedKeys="true">
         insert into `registry_record_container` (`data`, `record_id`, `type`) value (#{data}, #{parentId}, #{type.id})
