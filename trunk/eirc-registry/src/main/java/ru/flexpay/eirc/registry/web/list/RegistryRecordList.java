@@ -31,7 +31,7 @@ import org.complitex.correction.service.exception.MoreOneCorrectionException;
 import org.complitex.correction.service.exception.NotFoundCorrectionException;
 import org.complitex.correction.web.component.AddressCorrectionPanel;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.web.component.AjaxFeedbackPanel;
+import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.DatePicker;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
