@@ -2,6 +2,5 @@
 <template xmlns="http://www.complitex.org/web/template">
     <sidebar>
         <menu class="ru.flexpay.eirc.mb_transformer.web.MbTransformerTemplateMenu"/>
-        <menu class="ru.flexpay.eirc.mb_transformer.web.correction.CorrectionMenu"/>
     </sidebar>
 </template>

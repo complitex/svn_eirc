@@ -176,6 +176,30 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
         return (List<DomainObject>) find(example);
     }
 
+    /**
+     * Figures out all EIRC organizations visible to current user
+     * and returns them sorted by organization's name in given {@code locale}.
+     *
+     * @param locale Locale. It is used in sorting of organizations by name.
+     * @return All EIRC organizations.
+     */
+    @SuppressWarnings("unchecked")
+    @Transactional
+    public List<DomainObject> getAllPaymentCollectors(Locale locale) {
+        DomainObjectExample example = new DomainObjectExample();
+
+        example.addAdditionalParam(ORGANIZATION_TYPE_PARAMETER, ImmutableList.of(OrganizationType.PAYMENT_COLLECTOR.getId()));
+        if (locale != null) {
+            example.setOrderByAttributeTypeId(NAME);
+            example.setLocaleId(localeBean.convert(locale).getId());
+            example.setAsc(true);
+        }
+
+        configureExample(example, ImmutableMap.<String, Long>of(), null);
+
+        return (List<DomainObject>) find(example);
+    }
+
     @Override
     public boolean isSimpleAttributeType(EntityAttributeType entityAttributeType) {
         if (ALL_ATTRIBUTE_TYPES.contains(entityAttributeType.getId())) {

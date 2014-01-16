@@ -30,12 +30,16 @@ public abstract class IMessenger {
     private Map<Long, Queue<IMessage>> imessages = Maps.newConcurrentMap();
 
     public void addMessageInfo(String message, Object... parameters) {
-        getIMessages().add(new IMessage(IMessageType.INFO, message, parameters));
+        addMessage(new IMessage(IMessageType.INFO, message, parameters));
 
     }
 
     public void addMessageError(String message, Object... parameters) {
-        getIMessages().add(new IMessage(IMessageType.ERROR, message, parameters));
+        addMessage(new IMessage(IMessageType.ERROR, message, parameters));
+    }
+
+    protected void addMessage(IMessage imessage) {
+        getIMessages().add(imessage);
     }
 
     public Queue<IMessage> getIMessages() {

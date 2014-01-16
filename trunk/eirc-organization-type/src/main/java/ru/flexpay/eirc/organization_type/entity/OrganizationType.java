@@ -8,7 +8,7 @@ import ru.flexpay.eirc.dictionary.entity.DictionaryObject;
  */
 public enum OrganizationType implements IFixedIdType {
 
-    USER_ORGANIZATION(1L), SERVICE_PROVIDER(2L);
+    USER_ORGANIZATION(1L), SERVICE_PROVIDER(2L), PAYMENT_COLLECTOR(3L);
 
     private DictionaryObject object = new DictionaryObject() {};
 

@@ -4,9 +4,11 @@ INSERT INTO `sequence` (`sequence_name`, `sequence_value`) VALUES
 -- --------------------------------
 -- Organization type
 -- --------------------------------
-INSERT INTO `organization_type`(`object_id`) VALUES (2);
+INSERT INTO `organization_type`(`object_id`) VALUES (2, 3);
 INSERT INTO `organization_type_string_culture`(`id`, `locale_id`, `value`) VALUES (2, 1, UPPER('Поставщик услуг')), (2, 2,UPPER('Постачальник послуг'));
 INSERT INTO `organization_type_attribute`(`attribute_id`, `object_id`, `attribute_type_id`, `value_id`, `value_type_id`) VALUES (1,2,2300,2,2300);
+INSERT INTO `organization_type_string_culture`(`id`, `locale_id`, `value`) VALUES (3, 1, UPPER('Сборщик платежей')), (3, 2,UPPER('Збирач платежів'));
+INSERT INTO `organization_type_attribute`(`attribute_id`, `object_id`, `attribute_type_id`, `value_id`, `value_type_id`) VALUES (2,3,2300,3,2300);
 
 -- --------------------------------
 -- Organization
