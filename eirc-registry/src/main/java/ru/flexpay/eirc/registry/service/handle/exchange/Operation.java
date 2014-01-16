@@ -33,7 +33,7 @@ public abstract class Operation {
 	 *
      * @throws AbstractException if failure occurs
 	 */
-	abstract public void process(Registry registry, RegistryRecordData registryRecord, Container container,
+	public abstract void process(Registry registry, RegistryRecordData registryRecord, Container container,
                                  List<OperationResult> results) throws AbstractException;
 
 	/**
@@ -42,7 +42,7 @@ public abstract class Operation {
 	 * @param watchContext OperationWatchContext
 	 * @throws AbstractException if failure occurs
 	 */
-	public final void process(Registry registry, RegistryRecordData registryRecord, Container container,
+	public void process(Registry registry, RegistryRecordData registryRecord, Container container,
                               List<OperationResult> results, OperationWatchContext watchContext)
 			throws AbstractException {
 		watchContext.before(this);

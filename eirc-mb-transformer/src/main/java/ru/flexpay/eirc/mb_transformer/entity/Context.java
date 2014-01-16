@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 import org.complitex.dictionary.entity.FilterWrapper;
 import ru.flexpay.eirc.mb_transformer.service.MbParseException;
 import ru.flexpay.eirc.mb_transformer.util.FPRegistryConstants;
+import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.service.entity.ServiceCorrection;
@@ -28,18 +29,21 @@ public abstract class Context {
     private Long eircOrganizationId;
     private boolean skipHeader;
 
+    private Registry registry;
+
     private Cache<String, String> serviceCache = CacheBuilder.newBuilder().
             maximumSize(1000).
             expireAfterWrite(10, TimeUnit.MINUTES).
             build();
 
     public Context(IMessenger imessenger, ServiceCorrectionBean serviceCorrectionBean,
-                   Long mbOrganizationId, Long eircOrganizationId, boolean skipHeader) {
+                   Long mbOrganizationId, Long eircOrganizationId, boolean skipHeader, Registry registry) {
         this.imessenger = imessenger;
         this.mbOrganizationId = mbOrganizationId;
         this.eircOrganizationId = eircOrganizationId;
         this.skipHeader = skipHeader;
         this.serviceCorrectionBean = serviceCorrectionBean;
+        this.registry = registry;
     }
 
     public IMessenger getIMessenger() {
@@ -56,6 +60,10 @@ public abstract class Context {
 
     public boolean isSkipHeader() {
         return skipHeader;
+    }
+
+    public Registry getRegistry() {
+        return registry;
     }
 
     public RegistryRecordData getRegistryRecord(String[] fields, String serviceCode) throws MbParseException {
@@ -79,7 +87,8 @@ public abstract class Context {
         String serviceCode = serviceCache.getIfPresent(outServiceCode);
         if (serviceCode == null) {
             List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(
-                    FilterWrapper.of(new ServiceCorrection(null, null, outServiceCode, mbOrganizationId, eircOrganizationId, null))
+                    FilterWrapper.of(new ServiceCorrection(null, null, outServiceCode, mbOrganizationId,
+                            registry.getSenderOrganizationId(), null))
             );
             if (serviceCorrections.size() <= 0) {
                 throw new MbParseException(

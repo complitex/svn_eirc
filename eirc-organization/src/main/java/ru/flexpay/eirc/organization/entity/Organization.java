@@ -25,6 +25,8 @@ public class Organization extends DomainObject {
                 result.add(OrganizationType.SERVICE_PROVIDER);
             } else if (type.getValueId().equals(OrganizationType.USER_ORGANIZATION.getId())) {
                 result.add(OrganizationType.USER_ORGANIZATION);
+            } else if (type.getValueId().equals(OrganizationType.PAYMENT_COLLECTOR.getId())) {
+                result.add(OrganizationType.PAYMENT_COLLECTOR);
             }
         }
         return result;
@@ -35,6 +37,17 @@ public class Organization extends DomainObject {
         for (Attribute type : types) {
             if (type.getValueId() != null &&
                     type.getValueId().equals(OrganizationType.SERVICE_PROVIDER.getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isPaymentCollector() {
+        List<Attribute> types = getAttributes(IOrganizationStrategy.ORGANIZATION_TYPE);
+        for (Attribute type : types) {
+            if (type.getValueId() != null &&
+                    type.getValueId().equals(OrganizationType.PAYMENT_COLLECTOR.getId())) {
                 return true;
             }
         }

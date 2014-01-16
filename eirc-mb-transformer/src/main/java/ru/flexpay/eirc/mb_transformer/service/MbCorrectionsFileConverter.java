@@ -26,6 +26,7 @@ import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.mb_transformer.entity.Context;
 import ru.flexpay.eirc.mb_transformer.entity.DataSource;
+import ru.flexpay.eirc.mb_transformer.entity.MbFile;
 import ru.flexpay.eirc.mb_transformer.entity.RegistryRecordMapped;
 import ru.flexpay.eirc.mb_transformer.util.FPRegistryConstants;
 import ru.flexpay.eirc.mb_transformer.util.MbParsingConstants;
@@ -85,6 +86,8 @@ public class MbCorrectionsFileConverter {
                         try {
 
                             final String dir = configBean.getString(DictionaryConfig.IMPORT_FILE_STORAGE_DIR, true);
+                            final String tmpDir = configBean.getString(RegistryConfig.TMP_DIR, true);
+                            final Long mbOrganizationId = configBean.getInteger(RegistryConfig.MB_ORGANIZATION_ID, true).longValue();
 
                             String[] fileNames = new File(dir).list(new PatternFilenameFilter(".+\\.(kor|nac)"));
                             Arrays.sort(fileNames);
@@ -102,7 +105,8 @@ public class MbCorrectionsFileConverter {
 
                                 try {
                                     EjbBeanLocator.getBean(MbCorrectionsFileConverter.class).
-                                            convertFile(correctionsFiles.get(fileEntry.getKey()), fileEntry.getValue(), imessenger);
+                                            convertFile(correctionsFiles.get(fileEntry.getKey()), fileEntry.getValue(),
+                                                    dir, null, tmpDir, mbOrganizationId, imessenger);
                                 } catch (Exception e) {
                                     log.error("Can not convert file " + fileEntry.getKey(), e);
                                     imessenger.addMessageError("mb_registry_fail_convert", fileEntry.getKey(),
@@ -150,7 +154,9 @@ public class MbCorrectionsFileConverter {
     }
 
     @SuppressWarnings ({"unchecked"})
-	public void convertFile(final MbFile correctionsFile, final MbFile chargesFile, final IMessenger imessenger) throws AbstractException {
+	public void convertFile(final MbFile correctionsFile, final MbFile chargesFile, String dir, String eircFileName,
+                            final String tmpDir, Long mbOrganizationId,
+                            final IMessenger imessenger) throws AbstractException {
 
         final Registry registry = new Registry();
         initRegistry(registry);
@@ -158,7 +164,7 @@ public class MbCorrectionsFileConverter {
         final AtomicInteger lineNum = new AtomicInteger(0);
         final AtomicInteger recordNum = new AtomicInteger(0);
 
-        final Map<String, int[]> chargesContainers = Maps.newHashMapWithExpectedSize(((int)chargesFile.fileLength)/30);
+        final Map<String, int[]> chargesContainers = Maps.newHashMapWithExpectedSize(((int)chargesFile.getFileLength())/30);
 
 		try {
 
@@ -237,11 +243,7 @@ public class MbCorrectionsFileConverter {
                 }
             };
 
-            Long mbOrganizationId = configBean.getInteger(RegistryConfig.MB_ORGANIZATION_ID, true).longValue();
             Long eircOrganizationId = configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true).longValue();
-
-            final String dir = configBean.getString(DictionaryConfig.IMPORT_FILE_STORAGE_DIR, true);
-            final String tmpDir = configBean.getString(RegistryConfig.TMP_DIR, true);
 
             File chargeContainersFile = new File(tmpDir, DateUtil.getCurrentDate().getTime() + "_ch");
             File tmpFile = new File(tmpDir, DateUtil.getCurrentDate().getTime() + "_co_ch");
@@ -256,7 +258,7 @@ public class MbCorrectionsFileConverter {
 
                 dataSource.initContextDataSource(new ChargesContext(imessenger, mbOrganizationId, eircOrganizationId,
                         false, registry),
-                        reader, chargesFile.fileName);
+                        reader, chargesFile.getFileName());
 
                 //  Create a read-write charges containers memory-mapped file
                 balanceChannel = new RandomAccessFile(chargeContainersFile, "rw").getChannel();
@@ -274,7 +276,7 @@ public class MbCorrectionsFileConverter {
                 //Corrections file
                 reader = getBufferedReader(correctionsFile);
                 dataSource.initContextDataSource(new CorrectionsContext(imessenger, mbOrganizationId, eircOrganizationId,
-                        "ХАРЬКОВ", true, chargesContainers, chargesBuffer), reader, correctionsFile.getFileName());
+                        "ХАРЬКОВ", true, registry, chargesContainers, chargesBuffer), reader, correctionsFile.getFileName());
 
                 //  Create a read-write corrections memory-mapped file
                 rwChannel = new RandomAccessFile(tmpFile, "rw").getChannel();
@@ -282,7 +284,9 @@ public class MbCorrectionsFileConverter {
 
                 registryFPFileFormat.writeRecordsAndFooter(dataSource, buffer);
 
-                String eircFileName = registryFPFileFormat.fileName(registry);
+                if (eircFileName == null) {
+                    eircFileName = registryFPFileFormat.fileName(registry);
+                }
 
                 // Create registry file
                 outChannel = new FileOutputStream(new File(dir, eircFileName)).getChannel();
@@ -346,7 +350,7 @@ public class MbCorrectionsFileConverter {
         if (organizationCorrections.size() > 1) {
             throw new MbParseException("Found several correction for service provider {0}", fields[1]);
         }
-		Organization organization = organizationStrategy.findById(organizationCorrections.get(0).getObjectId(), false);
+		Organization organization = organizationStrategy.findById(organizationCorrections.get(0).getObjectId(), true);
 		if (organization == null) {
 			throw new MbParseException(
                     "Incorrect header line (can't find service provider with id {0})",
@@ -437,8 +441,9 @@ public class MbCorrectionsFileConverter {
                 build();
 
         public CorrectionsContext(IMessenger imessenger, Long mbOrganizationId, Long eircOrganizationId, String city,
-                                  boolean skipHeader, Map<String, int[]> charges, ByteBuffer chargesBuffer) {
-            super(imessenger, serviceCorrectionBean, mbOrganizationId,eircOrganizationId, skipHeader);
+                                  boolean skipHeader, Registry registry,
+                                  Map<String, int[]> charges, ByteBuffer chargesBuffer) {
+            super(imessenger, serviceCorrectionBean, mbOrganizationId,eircOrganizationId, skipHeader, registry);
             this.city = city;
             this.charges = charges;
             this.chargesBuffer = chargesBuffer;
@@ -796,12 +801,9 @@ public class MbCorrectionsFileConverter {
 
     private class ChargesContext extends Context {
 
-        private Registry registry;
-
         public ChargesContext(IMessenger imessenger, Long mbOrganizationId, Long eircOrganizationId, boolean skipHeader,
                               Registry registry) {
-            super(imessenger, serviceCorrectionBean, mbOrganizationId, eircOrganizationId, skipHeader);
-            this.registry = registry;
+            super(imessenger, serviceCorrectionBean, mbOrganizationId, eircOrganizationId, skipHeader, registry);
         }
 
         @Override
@@ -959,7 +961,7 @@ public class MbCorrectionsFileConverter {
 
             @Override
             public void writeContainers(ByteBuffer buffer) {
-                if (!registry.getFromDate().equals(getModificationDate())) {
+                if (!getRegistry().getFromDate().equals(getModificationDate())) {
                     return;
                 }
 
@@ -1060,57 +1062,4 @@ public class MbCorrectionsFileConverter {
         }
     }
 
-    private enum MbFileType {
-        CHARGES(".nac"), CORRECTIONS(".kor");
-
-
-        private String extension;
-
-        MbFileType(String extension) {
-            this.extension = extension;
-        }
-
-        public String getExtension() {
-            return extension;
-        }
-    }
-
-    private class MbFile {
-        private String fileName;
-        private String shortName;
-        private MbFileType fileType;
-        private long fileLength;
-        private InputStream inputStream;
-
-        private MbFile(String dir, String fileName) throws FileNotFoundException {
-            File mbFile = new File(dir, fileName);
-
-            this.fileName = fileName;
-
-            inputStream = new FileInputStream(mbFile);
-            fileLength = mbFile.length();
-            fileType = fileName.endsWith(MbFileType.CHARGES.getExtension()) ? MbFileType.CHARGES : MbFileType.CORRECTIONS;
-            shortName = StringUtils.removeEnd(fileName, fileType.getExtension());
-        }
-
-        public String getFileName() {
-            return fileName;
-        }
-
-        public long getFileLength() {
-            return fileLength;
-        }
-
-        public InputStream getInputStream() {
-            return inputStream;
-        }
-
-        public MbFileType getFileType() {
-            return fileType;
-        }
-
-        public String getShortName() {
-            return shortName;
-        }
-    }
 }

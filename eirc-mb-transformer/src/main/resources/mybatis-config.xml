@@ -14,8 +14,11 @@
     <environments default="local">
         <environment id="local">
             <transactionManager type="MANAGED"/>
-            <dataSource type="JNDI">
-                <property name="data_source" value="jdbc/eircResource"/>
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql://localhost:3306/eirc"/>
+                <property name="username" value="eirc"/>
+                <property name="password" value="eirc"/>
             </dataSource>
         </environment>
     </environments>
@@ -46,10 +49,6 @@
         <mapper resource="org/complitex/correction/service/OrganizationCorrectionBean.xml"/>
         <mapper resource="ru/flexpay/eirc/service/service/ServiceCorrectionBean.xml"/>
 
-        <mapper resource="ru/flexpay/eirc/dictionary/service/PersonBean.xml"/>
         <mapper resource="ru/flexpay/eirc/service/service/ServiceBean.xml"/>
-        <mapper resource="ru/flexpay/eirc/registry/service/ContainerBean.xml"/>
-        <mapper resource="ru/flexpay/eirc/registry/service/RegistryRecordBean.xml"/>
-        <mapper resource="ru/flexpay/eirc/registry/service/RegistryBean.xml"/>
     </mappers>
 </configuration>
