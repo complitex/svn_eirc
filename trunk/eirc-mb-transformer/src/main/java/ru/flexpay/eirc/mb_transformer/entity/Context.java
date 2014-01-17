@@ -87,8 +87,8 @@ public abstract class Context {
         String serviceCode = serviceCache.getIfPresent(outServiceCode);
         if (serviceCode == null) {
             List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(
-                    FilterWrapper.of(new ServiceCorrection(null, null, outServiceCode, mbOrganizationId,
-                            registry.getSenderOrganizationId(), null))
+                    FilterWrapper.of(new ServiceCorrection(null, null, outServiceCode, registry.getSenderOrganizationId(),
+                            eircOrganizationId, null))
             );
             if (serviceCorrections.size() <= 0) {
                 throw new MbParseException(

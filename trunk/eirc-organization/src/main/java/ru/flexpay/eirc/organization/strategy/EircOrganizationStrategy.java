@@ -36,7 +36,7 @@ import java.util.Map;
  */
 @Stateless(name = IOrganizationStrategy.BEAN_NAME)
 public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
-    public final static Long MODULE_ID = 3L;
+    public final static Long MODULE_ID = 0L;
 
     /**
      * KPP. It is EIRC only attribute.

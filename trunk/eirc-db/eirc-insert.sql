@@ -13,6 +13,12 @@ INSERT INTO `organization_type_attribute`(`attribute_id`, `object_id`, `attribut
 -- --------------------------------
 -- Organization
 -- --------------------------------
+-- Itself organization
+INSERT INTO `organization`(`object_id`) VALUES (0);
+INSERT INTO `organization_string_culture` (`id`, `locale_id`, `value`) VALUES
+  (1, 1, UPPER('Модуль ЕИРЦ №1')), (1, 2,UPPER('Модуль ЕIРЦ №1'));
+INSERT INTO `organization_attribute`(`attribute_id`, `object_id`, `attribute_type_id`, `value_id`, `value_type_id`) VALUES
+  (1,0,900,1,900);
 
 -- Reference to jdbc data source. It is calculation center only attribute. --
 INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (914, 1, UPPER('КПП')), (914, 2, UPPER('КПП'));
