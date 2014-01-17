@@ -1,19 +1,19 @@
 package ru.flexpay.eirc.service.web.edit;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.wicket.Page;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.model.IModel;
-import org.apache.wicket.model.LoadableDetachableModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.complitex.correction.web.component.AbstractCorrectionEditPanel;
-import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.FormTemplatePage;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
+import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.service.ServiceBean;
@@ -42,30 +42,15 @@ public class ServiceCorrectionEdit extends FormTemplatePage {
     @EJB(name = IOrganizationStrategy.BEAN_NAME, beanInterface = IOrganizationStrategy.class)
     private EircOrganizationStrategy organizationStrategy;
 
+    private static final List<Long> ORGANIZATION_TYPES = ImmutableList.of(OrganizationType.SERVICE_PROVIDER.getId());
+
     public ServiceCorrectionEdit(PageParameters params) {
         add(new AbstractCorrectionEditPanel<ServiceCorrection>("service_edit_panel",
                 params.get(CORRECTION_ID).toOptionalLong()) {
 
             @Override
-            protected IModel<List<DomainObject>> getAllOuterOrganizationsModel() {
-                return new LoadableDetachableModel<List<DomainObject>>() {
-
-                    @Override
-                    protected List<DomainObject> load() {
-                        return organizationStrategy.getAllPaymentCollectors(getLocale());
-                    }
-                };
-            }
-
-            @Override
-            protected IModel<List<DomainObject>> getAllUserOrganizationsModel() {
-                return new LoadableDetachableModel<List<DomainObject>>() {
-
-                    @Override
-                    protected List<DomainObject> load() {
-                        return organizationStrategy.getAllServiceProviders(getLocale());
-                    }
-                };
+            protected List<Long> getOrganizationTypeIds() {
+                return ORGANIZATION_TYPES;
             }
 
             @Override
