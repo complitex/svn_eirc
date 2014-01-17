@@ -236,7 +236,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
 
     @Transactional
     @Override
-    public Organization findById(long id, boolean runAsAdmin) {
+    public Organization findById(Long id, boolean runAsAdmin) {
         DomainObject object = super.findById(id, runAsAdmin);
         if (object == null) {
             return null;
