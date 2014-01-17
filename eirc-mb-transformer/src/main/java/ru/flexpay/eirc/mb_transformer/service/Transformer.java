@@ -7,17 +7,18 @@ import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.mb_transformer.entity.MbFile;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
 
-import javax.ejb.embeddable.EJBContainer;
-import javax.naming.Context;
-import javax.naming.NamingException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Properties;
+
+/*
+import javax.ejb.embeddable.EJBContainer;
+import javax.naming.Context;
+import javax.naming.NamingException;
+*/
 
 /**
  * @author Pavel Sknar
@@ -31,6 +32,7 @@ public class Transformer {
     private static final String PROPERTIES_FILE = "config.properties";
 
     private static final String MB_ORGANIZATION_ID = "mbOrganizationId";
+    private static final String EIRC_ORGANIZATION_ID = "eircOrganizationId";
     private static final String TMP_DIR = "tmpDir";
 
     public static void main(String... args) throws ParseException {
@@ -69,8 +71,12 @@ public class Transformer {
             log.error("Can not read properties", e);
             return;
         }
-        Long mbOrganizationId = getMbOrganizationId(transformerProperties);
+        Long mbOrganizationId = getLong(transformerProperties, MB_ORGANIZATION_ID);
         if (mbOrganizationId == null) {
+            return;
+        }
+        Long eircOrganizationId = getLong(transformerProperties, EIRC_ORGANIZATION_ID);
+        if (eircOrganizationId == null) {
             return;
         }
         String tmpDir = transformerProperties.getProperty(TMP_DIR);
@@ -79,14 +85,12 @@ public class Transformer {
             return;
         }
 
-        Map<String, Object> properties = new HashMap<>();
-        // Use the MODULES property to specify the set of modules to be initialized,
-        // in this case a java.io.File
+        /*Map<String, Object> properties = new HashMap<>();
         properties.put(EJBContainer.MODULES, new File("build/jar"));
 
         EJBContainer ec = EJBContainer.createEJBContainer(properties);
         Context ctx = ec.getContext();
-
+        */
         try {
             RegistryMessenger messenger = new RegistryMessenger() {
                 @Override
@@ -102,7 +106,9 @@ public class Transformer {
                 }
             };
             //RegistryFinishCallback callback = (RegistryFinishCallback) ctx.lookup("java:global/eirc-mb-transformer-1.0.0-SNAPSHOT-jar-with-dependencies/RegistryFinishCallback");
-            MbCorrectionsFileConverter converter = (MbCorrectionsFileConverter) ctx.lookup("java:global/eirc-mb-transformer-1.0.0-SNAPSHOT-jar-with-dependencies/MbCorrectionsFileConverter");
+            //MbCorrectionsFileConverter converter = (MbCorrectionsFileConverter) ctx.lookup("java:global/eirc-mb-transformer-1.0.0-SNAPSHOT-jar-with-dependencies/MbCorrectionsFileConverter");
+            MbCorrectionsFileConverter converter = new MbCorrectionsFileConverter();
+            converter.init();
 
             MbFile correctionsFile = getMbFile(correctionsFileName);
             MbFile chargesFile = getMbFile(chargesFileName);
@@ -111,7 +117,7 @@ public class Transformer {
             }
 
             converter.convertFile(correctionsFile, chargesFile, registryFile.getParent(),
-                    registryFile.getName(), tmpDir, mbOrganizationId, messenger);
+                    registryFile.getName(), tmpDir, mbOrganizationId, eircOrganizationId, messenger);
 
             /*
             while (!callback.isCompleted()) {
@@ -119,24 +125,24 @@ public class Transformer {
                 Thread.sleep(2000);
             }*/
 
-        } catch (NamingException | FileNotFoundException | AbstractException e) {
+        } catch (FileNotFoundException | AbstractException e) {
             log.error("Can not transform", e);
         } finally {
-            ec.close();
+            //ec.close();
         }
 
     }
 
-    public static Long getMbOrganizationId(Properties transformerProperties) {
-        String mbOrganizationId = transformerProperties.getProperty(MB_ORGANIZATION_ID);
-        if (mbOrganizationId == null) {
-            log.error("Config did not content {}", MB_ORGANIZATION_ID);
+    public static Long getLong(Properties transformerProperties, String propertyName) {
+        String value = transformerProperties.getProperty(propertyName);
+        if (value == null) {
+            log.error("Config did not content {}", propertyName);
             return null;
         }
         try {
-            return Long.parseLong(mbOrganizationId);
+            return Long.parseLong(value);
         } catch (NumberFormatException e) {
-            log.error("{} have failed number format", mbOrganizationId);
+            log.error("{} have failed number format", value);
         }
         return null;
     }

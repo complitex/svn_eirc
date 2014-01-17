@@ -15,6 +15,7 @@ import org.complitex.correction.entity.OrganizationCorrection;
 import org.complitex.correction.service.OrganizationCorrectionBean;
 import org.complitex.dictionary.entity.DictionaryConfig;
 import org.complitex.dictionary.entity.FilterWrapper;
+import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.exception.AbstractException;
 import org.complitex.dictionary.service.executor.ExecuteException;
@@ -30,8 +31,6 @@ import ru.flexpay.eirc.mb_transformer.entity.MbFile;
 import ru.flexpay.eirc.mb_transformer.entity.RegistryRecordMapped;
 import ru.flexpay.eirc.mb_transformer.util.FPRegistryConstants;
 import ru.flexpay.eirc.mb_transformer.util.MbParsingConstants;
-import ru.flexpay.eirc.organization.entity.Organization;
-import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.AbstractJob;
 import ru.flexpay.eirc.registry.service.FinishCallback;
@@ -67,14 +66,30 @@ public class MbCorrectionsFileConverter {
     private ConfigBean configBean;
 
     @EJB
-    private EircOrganizationStrategy organizationStrategy;
-
-    @EJB
     private RegistryFPFileFormat registryFPFileFormat;
 
     @EJB
     private MbConverterQueueProcessor mbConverterQueueProcessor;
 
+    public void init() {
+        SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
+
+        organizationCorrectionBean = new OrganizationCorrectionBean();
+        organizationCorrectionBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+
+        serviceCorrectionBean = new ServiceCorrectionBean();
+        serviceCorrectionBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+
+        registryFPFileFormat = new RegistryFPFileFormat();
+    }
+
+    /**
+     * Use only with glassfish
+     *
+     * @param imessenger
+     * @param finishConvert
+     * @throws ExecutionException
+     */
     public void convert(final IMessenger imessenger, final FinishCallback finishConvert) throws ExecutionException {
         imessenger.addMessageInfo("mb_registry_convert_starting");
         finishConvert.init();
@@ -88,6 +103,7 @@ public class MbCorrectionsFileConverter {
                             final String dir = configBean.getString(DictionaryConfig.IMPORT_FILE_STORAGE_DIR, true);
                             final String tmpDir = configBean.getString(RegistryConfig.TMP_DIR, true);
                             final Long mbOrganizationId = configBean.getInteger(RegistryConfig.MB_ORGANIZATION_ID, true).longValue();
+                            final Long eircOrganizationId = configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true).longValue();
 
                             String[] fileNames = new File(dir).list(new PatternFilenameFilter(".+\\.(kor|nac)"));
                             Arrays.sort(fileNames);
@@ -106,7 +122,7 @@ public class MbCorrectionsFileConverter {
                                 try {
                                     EjbBeanLocator.getBean(MbCorrectionsFileConverter.class).
                                             convertFile(correctionsFiles.get(fileEntry.getKey()), fileEntry.getValue(),
-                                                    dir, null, tmpDir, mbOrganizationId, imessenger);
+                                                    dir, null, tmpDir, mbOrganizationId, eircOrganizationId, imessenger);
                                 } catch (Exception e) {
                                     log.error("Can not convert file " + fileEntry.getKey(), e);
                                     imessenger.addMessageError("mb_registry_fail_convert", fileEntry.getKey(),
@@ -153,9 +169,22 @@ public class MbCorrectionsFileConverter {
         return reader;
     }
 
+    /**
+     * Can be using in console application. Before starting execute init() method
+     *
+     * @param correctionsFile
+     * @param chargesFile
+     * @param dir
+     * @param eircFileName
+     * @param tmpDir
+     * @param mbOrganizationId
+     * @param eircOrganizationId
+     * @param imessenger
+     * @throws AbstractException
+     */
     @SuppressWarnings ({"unchecked"})
 	public void convertFile(final MbFile correctionsFile, final MbFile chargesFile, String dir, String eircFileName,
-                            final String tmpDir, Long mbOrganizationId,
+                            final String tmpDir, Long mbOrganizationId, Long eircOrganizationId,
                             final IMessenger imessenger) throws AbstractException {
 
         final Registry registry = new Registry();
@@ -242,8 +271,6 @@ public class MbCorrectionsFileConverter {
                     lineNum.incrementAndGet();
                 }
             };
-
-            Long eircOrganizationId = configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true).longValue();
 
             File chargeContainersFile = new File(tmpDir, DateUtil.getCurrentDate().getTime() + "_ch");
             File tmpFile = new File(tmpDir, DateUtil.getCurrentDate().getTime() + "_co_ch");
@@ -350,14 +377,9 @@ public class MbCorrectionsFileConverter {
         if (organizationCorrections.size() > 1) {
             throw new MbParseException("Found several correction for service provider {0}", fields[1]);
         }
-		Organization organization = organizationStrategy.findById(organizationCorrections.get(0).getObjectId(), true);
-		if (organization == null) {
-			throw new MbParseException(
-                    "Incorrect header line (can't find service provider with id {0})",
-                    registry.getSenderOrganizationId());
-		}
+        Long serviceProviderId = organizationCorrections.get(0).getObjectId();
 
-		registry.setSenderOrganizationId(organization.getId());
+		registry.setSenderOrganizationId(serviceProviderId);
 		registry.setRecipientOrganizationId(context.getEircOrganizationId());
 
         int idx = 2;
