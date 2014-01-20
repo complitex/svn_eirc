@@ -26,17 +26,17 @@ import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.mb_transformer.entity.Context;
-import ru.flexpay.eirc.mb_transformer.entity.DataSource;
 import ru.flexpay.eirc.mb_transformer.entity.MbFile;
 import ru.flexpay.eirc.mb_transformer.entity.RegistryRecordMapped;
-import ru.flexpay.eirc.mb_transformer.util.FPRegistryConstants;
 import ru.flexpay.eirc.mb_transformer.util.MbParsingConstants;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.AbstractJob;
 import ru.flexpay.eirc.registry.service.FinishCallback;
 import ru.flexpay.eirc.registry.service.IMessenger;
+import ru.flexpay.eirc.registry.service.file.RegistryFPFileService;
 import ru.flexpay.eirc.registry.service.handle.MbConverterQueueProcessor;
 import ru.flexpay.eirc.registry.service.parse.ParseRegistryConstants;
+import ru.flexpay.eirc.registry.util.FPRegistryConstants;
 import ru.flexpay.eirc.registry.util.StringUtil;
 import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 
@@ -66,7 +66,7 @@ public class MbCorrectionsFileConverter {
     private ConfigBean configBean;
 
     @EJB
-    private RegistryFPFileFormat registryFPFileFormat;
+    private RegistryFPFileService registryFPFileService;
 
     @EJB
     private MbConverterQueueProcessor mbConverterQueueProcessor;
@@ -80,7 +80,7 @@ public class MbCorrectionsFileConverter {
         serviceCorrectionBean = new ServiceCorrectionBean();
         serviceCorrectionBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
 
-        registryFPFileFormat = new RegistryFPFileFormat();
+        registryFPFileService = new RegistryFPFileService();
     }
 
     /**
@@ -309,17 +309,17 @@ public class MbCorrectionsFileConverter {
                 rwChannel = new RandomAccessFile(tmpFile, "rw").getChannel();
                 ByteBuffer buffer = rwChannel.map(FileChannel.MapMode.READ_WRITE, 0, correctionsFile.getFileLength()*2);
 
-                registryFPFileFormat.writeRecordsAndFooter(dataSource, buffer);
+                registryFPFileService.writeRecordsAndFooter(dataSource, buffer);
 
                 if (eircFileName == null) {
-                    eircFileName = registryFPFileFormat.fileName(registry);
+                    eircFileName = registryFPFileService.fileName(registry);
                 }
 
                 // Create registry file
                 outChannel = new FileOutputStream(new File(dir, eircFileName)).getChannel();
                 ByteBuffer buff = ByteBuffer.allocateDirect(32 * 1024);
 
-                registryFPFileFormat.writeHeader(dataSource, buff);
+                registryFPFileService.writeHeader(dataSource, buff);
 
                 buff.flip();
                 outChannel.write(buff);

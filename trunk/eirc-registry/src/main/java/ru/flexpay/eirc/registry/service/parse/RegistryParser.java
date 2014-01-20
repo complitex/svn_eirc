@@ -473,7 +473,7 @@ public class RegistryParser implements Serializable {
         if (registry.getRecipientOrganizationId() == null || registry.getRecipientOrganizationId() == 0) {
             processLog.debug("Recipient is EIRC, code=0");
             configBean.getConfigs();
-            return organizationStrategy.findById(eircOrganizationId, false);
+            return organizationStrategy.findById(eircOrganizationId.longValue(), false);
         }
 
         if (!registry.getRecipientOrganizationId().equals(eircOrganizationId.longValue())) {
