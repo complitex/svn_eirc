@@ -55,7 +55,7 @@ public class ServiceProviderAccountStrategy extends TemplateStrategy {
 
     @Transactional
     @Override
-    public DomainObject findById(long id, boolean runAsAdmin) {
+    public DomainObject findById(Long id, boolean runAsAdmin) {
 
         DomainObject object = new DomainObject(id);
 

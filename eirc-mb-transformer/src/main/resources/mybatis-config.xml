@@ -38,10 +38,6 @@
         <mapper resource="org/complitex/dictionary/service/NameBean.xml"/>
         <mapper resource="org/complitex/dictionary/service/ConfigBean.xml"/>
 
-        <mapper resource="org/complitex/admin/service/UserBean.xml"/>
-        <mapper resource="org/complitex/admin/service/UserProfileBean.xml"/>
-        <mapper resource="org/complitex/logging/service/LogListBean.xml"/>
-
         <mapper resource="org/complitex/organization/strategy/Organization.xml"/>
         <mapper resource="org/complitex/organization/service/OrganizationImportBean.xml"/>
 
