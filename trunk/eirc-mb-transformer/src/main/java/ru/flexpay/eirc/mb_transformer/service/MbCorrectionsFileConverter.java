@@ -38,6 +38,7 @@ import ru.flexpay.eirc.registry.service.handle.MbConverterQueueProcessor;
 import ru.flexpay.eirc.registry.service.parse.ParseRegistryConstants;
 import ru.flexpay.eirc.registry.util.FPRegistryConstants;
 import ru.flexpay.eirc.registry.util.StringUtil;
+import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 
 import javax.ejb.EJB;
@@ -63,6 +64,9 @@ public class MbCorrectionsFileConverter {
     private ServiceCorrectionBean serviceCorrectionBean;
 
     @EJB
+    private ServiceBean serviceBean;
+
+    @EJB
     private ConfigBean configBean;
 
     @EJB
@@ -79,6 +83,9 @@ public class MbCorrectionsFileConverter {
 
         serviceCorrectionBean = new ServiceCorrectionBean();
         serviceCorrectionBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+
+        serviceBean = new ServiceBean();
+        serviceBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
 
         registryFPFileService = new RegistryFPFileService();
     }
@@ -159,14 +166,42 @@ public class MbCorrectionsFileConverter {
         }
     }
 
-    private BufferedReader getBufferedReader(MbFile mbFile) throws MbParseException {
+    private BufferedReader getBufferedReader(MbFile mbFile) throws MbConverterException {
         BufferedReader reader;
         try {
-            reader = new BufferedReader(new InputStreamReader(mbFile.getInputStream(), MbParsingConstants.REGISTRY_FILE_ENCODING), (int)mbFile.getFileLength());
-        } catch (IOException e) {
-            throw new MbParseException("Error open file " + mbFile.getFileName(), e);
+            reader = new BufferedReader(new InputStreamReader(mbFile.getInputStream(), MbParsingConstants.REGISTRY_FILE_CHARSET), (int)mbFile.getFileLength());
+        } catch (Exception e) {
+            throw new MbConverterException("Error open file " + mbFile.getFileName(), e);
         }
         return reader;
+    }
+
+    public void convertFile(final MbFile correctionsFile, final MbFile chargesFile, final String dir, final String eircFileName,
+                            final String tmpDir, final Long mbOrganizationId, final Long eircOrganizationId,
+                            final IMessenger imessenger, final FinishCallback finishConvert) throws AbstractException {
+        imessenger.addMessageInfo("mb_registry_convert_starting");
+        finishConvert.init();
+
+        mbConverterQueueProcessor.execute(
+            new AbstractJob<Void>() {
+                @Override
+                public Void execute() throws ExecuteException {
+                    try {
+                        EjbBeanLocator.getBean(MbCorrectionsFileConverter.class).
+                                convertFile(correctionsFile, chargesFile, dir, eircFileName, tmpDir, mbOrganizationId,
+                                        eircOrganizationId, imessenger);
+                    } catch (Exception e) {
+                        log.error("Can not convert files", e);
+                        imessenger.addMessageError("mb_registries_fail_convert",
+                                e.getMessage() != null ? e.getMessage() : e.getCause().getMessage());
+                    } finally {
+                        imessenger.addMessageInfo("mb_registry_convert_finish");
+                        finishConvert.complete();
+                    }
+                    return null;
+                }
+            }
+        );
     }
 
     /**
@@ -347,7 +382,7 @@ public class MbCorrectionsFileConverter {
             }
 
 		} catch (IOException e) {
-			throw new MbParseException("Error reading file ", e);
+			throw new MbConverterException("Error reading file ", e);
 		}
 
 	}
@@ -372,10 +407,10 @@ public class MbCorrectionsFileConverter {
                 FilterWrapper.of(new OrganizationCorrection(null, null, fields[1],
                         context.getMbOrganizationId(), context.getEircOrganizationId(), null)));
 		if (organizationCorrections.size() <= 0) {
-			throw new MbParseException("No service provider correction with id {0}", fields[1]);
+			throw new MbConverterException("No service provider correction with id {0}", fields[1]);
 		}
         if (organizationCorrections.size() > 1) {
-            throw new MbParseException("Found several correction for service provider {0}", fields[1]);
+            throw new MbConverterException("Found several correction for service provider {0}", fields[1]);
         }
         Long serviceProviderId = organizationCorrections.get(0).getObjectId();
 
@@ -465,7 +500,7 @@ public class MbCorrectionsFileConverter {
         public CorrectionsContext(IMessenger imessenger, Long mbOrganizationId, Long eircOrganizationId, String city,
                                   boolean skipHeader, Registry registry,
                                   Map<String, int[]> charges, ByteBuffer chargesBuffer) {
-            super(imessenger, serviceCorrectionBean, mbOrganizationId,eircOrganizationId, skipHeader, registry);
+            super(imessenger, serviceCorrectionBean, serviceBean, mbOrganizationId,eircOrganizationId, skipHeader, registry);
             this.city = city;
             this.charges = charges;
             this.chargesBuffer = chargesBuffer;
@@ -508,7 +543,7 @@ public class MbCorrectionsFileConverter {
         }
 
         @Override
-        protected RegistryRecordMapped getRegistryRecordInstance(String[] fields, String serviceCode) throws MbParseException {
+        protected RegistryRecordMapped getRegistryRecordInstance(String[] fields, String serviceCode) throws MbConverterException {
             return new CorrectionMapped(fields, serviceCode);
         }
 
@@ -530,11 +565,11 @@ public class MbCorrectionsFileConverter {
 
             private String[] buildingFields;
 
-            private CorrectionMapped(String[] fields, String serviceCode) throws MbParseException {
+            private CorrectionMapped(String[] fields, String serviceCode) throws MbConverterException {
                 super(fields, serviceCode);
             }
 
-            public void initData(String[] fields, String serviceCode) throws MbParseException {
+            public void initData(String[] fields, String serviceCode) throws MbConverterException {
                 super.initData(fields, serviceCode);
 
                 Date modificationDate;
@@ -542,7 +577,7 @@ public class MbCorrectionsFileConverter {
                     modificationDate = MbParsingConstants.CORRECTIONS_MODIFICATIONS_START_DATE_FORMAT.parseDateTime(fields[19]).toDate();
                     setModificationDate(modificationDate);
                 } catch (Exception e) {
-                    throw new MbParseException("Failed parse modification start date", e);
+                    throw new MbConverterException("Failed parse modification start date", e);
                 }
                 if (fromDate == null || modificationDate.before(fromDate)) {
                     fromDate = modificationDate;
@@ -825,7 +860,7 @@ public class MbCorrectionsFileConverter {
 
         public ChargesContext(IMessenger imessenger, Long mbOrganizationId, Long eircOrganizationId, boolean skipHeader,
                               Registry registry) {
-            super(imessenger, serviceCorrectionBean, mbOrganizationId, eircOrganizationId, skipHeader, registry);
+            super(imessenger, serviceCorrectionBean, serviceBean, mbOrganizationId, eircOrganizationId, skipHeader, registry);
         }
 
         @Override
@@ -839,7 +874,7 @@ public class MbCorrectionsFileConverter {
         }
 
         @Override
-        protected RegistryRecordMapped getRegistryRecordInstance(String[] fields, String serviceCode) throws MbParseException {
+        protected RegistryRecordMapped getRegistryRecordInstance(String[] fields, String serviceCode) throws MbConverterException {
             return new ChargeMapped(fields, serviceCode);
         }
 
@@ -850,11 +885,11 @@ public class MbCorrectionsFileConverter {
 
         private class ChargeMapped extends RegistryRecordMapped {
 
-            private ChargeMapped(String[] fields, String serviceCode) throws MbParseException {
+            private ChargeMapped(String[] fields, String serviceCode) throws MbConverterException {
                 super(fields, serviceCode);
             }
 
-            public void initData(String[] fields, String serviceCode) throws MbParseException {
+            public void initData(String[] fields, String serviceCode) throws MbConverterException {
                 super.initData(fields, serviceCode);
 
                 Date modificationDate;
@@ -862,7 +897,7 @@ public class MbCorrectionsFileConverter {
                     modificationDate = MbParsingConstants.CHARGES_MODIFICATIONS_START_DATE_FORMAT.parseDateTime(fields[5]).toDate();
                     setModificationDate(modificationDate);
                 } catch (Exception e) {
-                    throw new MbParseException("Failed parse modification start date", e);
+                    throw new MbConverterException("Failed parse modification start date", e);
                 }
             }
 

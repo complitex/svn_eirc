@@ -1,5 +1,7 @@
 package ru.flexpay.eirc.registry.util;
 
+import java.nio.charset.Charset;
+
 public class FPRegistryConstants {
 
 	public static final String BANK_PAYMENT_CONTAINER_CODE = "52";
@@ -20,7 +22,7 @@ public class FPRegistryConstants {
 	public static final String REGISTRY_DATE_TILL_FORMAT = "ddMMyyyyHHmmss";
 	public static final String EXPORT_FILE_NAME_DATE_FORMAT = "yyMMddHHmmss";
 
-	public static final String EXPORT_FILE_ENCODING = "Cp1251";
+	public static final Charset EXPORT_FILE_CHARSET = Charset.forName("Cp1251");
 
 	public static final String EXPORT_FILE_EXTENSION = "ree_";
 

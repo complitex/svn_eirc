@@ -6,12 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.util.FPRegistryConstants;
+import ru.flexpay.eirc.registry.util.FileUtil;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.text.SimpleDateFormat;
@@ -61,19 +61,6 @@ public class RegistryFPFileService {
         }
 
         write(buffer, buildFooter(dataSource.getRegistry(), privateSignature));
-        write(buffer, "\n");
-    }
-
-    private void writeLine(ByteBuffer buffer, String line, Signature privateSignature) throws IOException {
-        if (privateSignature != null) {
-            try {
-                privateSignature.update(line.getBytes());
-                privateSignature.update("\n".getBytes());
-            } catch (SignatureException e) {
-                throw new IOException("Can not update signature", e);
-            }
-        }
-        write(buffer, line);
         write(buffer, "\n");
     }
 
@@ -202,7 +189,7 @@ public class RegistryFPFileService {
 
 	}
 
-    protected void writeRecord(ByteBuffer buffer, Registry registry, RegistryRecordData record) {
+    protected void writeRecord(ByteBuffer buffer, Registry registry, RegistryRecordData record) throws IOException {
 
         log.debug("Building string for record = {}", record);
 
@@ -257,7 +244,7 @@ public class RegistryFPFileService {
 					append(StringUtil.valueOf(registry.getRegistryNumber())).
 					append(FPRegistryConstants.FIELD_SEPARATOR);
 			if (privateSignature != null) {
-				footer.append(new String(privateSignature.sign(), FPRegistryConstants.EXPORT_FILE_ENCODING));
+				footer.append(new String(privateSignature.sign(), FPRegistryConstants.EXPORT_FILE_CHARSET));
 			}
 		} catch (SignatureException e) {
 			throw new IOException("Can not create digital signature", e);
@@ -268,19 +255,11 @@ public class RegistryFPFileService {
 		return footer.toString();
 	}
 
-    private void write(ByteBuffer buffer, String s) {
-        buffer.put(getEncodingBytes(s));
+    public void writeLine(ByteBuffer buffer, String line, Signature privateSignature) throws IOException {
+        FileUtil.writeLine(buffer, line, privateSignature, FPRegistryConstants.EXPORT_FILE_CHARSET);
     }
 
-    private void write(ByteBuffer buffer, long value) {
-        buffer.put(getEncodingBytes(value));
-    }
-
-    private byte[] getEncodingBytes(long value) {
-        return getEncodingBytes(Long.toString(value));
-    }
-
-    private byte[] getEncodingBytes(String s) {
-        return s.getBytes(Charset.forName(FPRegistryConstants.EXPORT_FILE_ENCODING));
+    public void write(ByteBuffer buffer, String s) throws IOException {
+        FileUtil.write(buffer, s, null, FPRegistryConstants.EXPORT_FILE_CHARSET);
     }
 }

@@ -4,16 +4,17 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import org.complitex.dictionary.entity.FilterWrapper;
-import ru.flexpay.eirc.mb_transformer.service.MbParseException;
+import ru.flexpay.eirc.mb_transformer.service.MbConverterException;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.util.FPRegistryConstants;
+import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.entity.ServiceCorrection;
+import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -23,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class Context {
     private IMessenger imessenger;
     private ServiceCorrectionBean serviceCorrectionBean;
+    private ServiceBean serviceBean;
     private List<RegistryRecordData> registryRecords = Lists.newLinkedList();
 
     private Long mbOrganizationId;
@@ -36,13 +38,14 @@ public abstract class Context {
             expireAfterWrite(10, TimeUnit.MINUTES).
             build();
 
-    public Context(IMessenger imessenger, ServiceCorrectionBean serviceCorrectionBean,
+    public Context(IMessenger imessenger, ServiceCorrectionBean serviceCorrectionBean, ServiceBean serviceBean,
                    Long mbOrganizationId, Long eircOrganizationId, boolean skipHeader, Registry registry) {
         this.imessenger = imessenger;
         this.mbOrganizationId = mbOrganizationId;
         this.eircOrganizationId = eircOrganizationId;
         this.skipHeader = skipHeader;
         this.serviceCorrectionBean = serviceCorrectionBean;
+        this.serviceBean = serviceBean;
         this.registry = registry;
     }
 
@@ -66,7 +69,7 @@ public abstract class Context {
         return registry;
     }
 
-    public RegistryRecordData getRegistryRecord(String[] fields, String serviceCode) throws MbParseException {
+    public RegistryRecordData getRegistryRecord(String[] fields, String serviceCode) throws MbConverterException {
         for (RegistryRecordData registryRecord : registryRecords) {
             if (!((RegistryRecordMapped)registryRecord).isUsing()) {
                 ((RegistryRecordMapped) registryRecord).initData(fields, getInnerServiceCode(serviceCode));
@@ -83,7 +86,7 @@ public abstract class Context {
 
     public abstract String getServiceCodes(String[] fields);
 
-    public String getInnerServiceCode(String outServiceCode) throws MbParseException {
+    public String getInnerServiceCode(String outServiceCode) throws MbConverterException {
         String serviceCode = serviceCache.getIfPresent(outServiceCode);
         if (serviceCode == null) {
             List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(
@@ -91,19 +94,20 @@ public abstract class Context {
                             eircOrganizationId, null))
             );
             if (serviceCorrections.size() <= 0) {
-                throw new MbParseException(
+                throw new MbConverterException(
                         "No found service correction with code {0}", outServiceCode);
             }
             if (serviceCorrections.size() > 1) {
-                throw new MbParseException("Found several correction for service with code {0}", outServiceCode);
+                throw new MbConverterException("Found several correction for service with code {0}", outServiceCode);
             }
-            serviceCode = String.valueOf(serviceCorrections.get(0).getObjectId());
+            Service service = serviceBean.getService(serviceCorrections.get(0).getObjectId());
+            serviceCode = service.getCode();
             serviceCache.put(outServiceCode, serviceCode);
         }
         return serviceCode;
     }
 
-    protected abstract RegistryRecordMapped getRegistryRecordInstance(String[] fields, String serviceCode) throws MbParseException, MbParseException;
+    protected abstract RegistryRecordMapped getRegistryRecordInstance(String[] fields, String serviceCode) throws MbConverterException, MbConverterException;
 
     protected void write(ByteBuffer buffer, String s) {
         buffer.put(getEncodingBytes(s));
@@ -114,7 +118,7 @@ public abstract class Context {
     }
 
     private byte[] getEncodingBytes(String s) {
-        return s.getBytes(Charset.forName(FPRegistryConstants.EXPORT_FILE_ENCODING));
+        return s.getBytes(FPRegistryConstants.EXPORT_FILE_CHARSET);
     }
 
     private byte[] getEncodingBytes(long value) {
