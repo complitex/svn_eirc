@@ -18,6 +18,7 @@ import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.*;
+import ru.flexpay.eirc.registry.util.ParseUtil;
 import ru.flexpay.eirc.registry.util.StringUtil;
 import ru.flexpay.eirc.service.service.ServiceBean;
 
@@ -330,41 +331,18 @@ public class RegistryParser implements Serializable {
             registryWorkflowManager.setInitialStatus(newRegistry);
             // TODO attach file
             //newRegistry.getFiles().put(registryFPFileTypeService.findByCode(RegistryFPFileType.MB_FORMAT), spFile);
-            int n = 0;
-            newRegistry.setRegistryNumber(Long.valueOf(messageFieldList.get(++n)));
-            String value = messageFieldList.get(++n);
-
-            Long registryTypeId = Long.valueOf(value);
-            RegistryType registryType = null;
-            for (RegistryType item : RegistryType.values()) {
-                if (item.getId().equals(registryTypeId)) {
-                    registryType = item;
-                    break;
-                }
-            }
-            if (registryType == null) {
-                iMessenger.addMessageError("unknown_registry_type", fileName, value);
-                processLog.error("Unknown registry type field: {}", value);
+            String registryTypeValue;
+            if ((registryTypeValue = ParseUtil.fillUpRegistry(messageFieldList, dateFormat, newRegistry)) == null) {
                 return null;
-            }
-            newRegistry.setType(registryType);
-            newRegistry.setRecordsCount(Integer.valueOf(messageFieldList.get(++n)));
-            newRegistry.setCreationDate(dateFormat.parseDateTime(messageFieldList.get(++n)).toDate());
-            newRegistry.setFromDate(dateFormat.parseDateTime(messageFieldList.get(++n)).toDate());
-            newRegistry.setTillDate(dateFormat.parseDateTime(messageFieldList.get(++n)).toDate());
-            newRegistry.setSenderOrganizationId(Long.valueOf(messageFieldList.get(++n)));
-            newRegistry.setRecipientOrganizationId(Long.valueOf(messageFieldList.get(++n)));
-            String amountStr = messageFieldList.get(++n);
-            if (StringUtils.isNotEmpty(amountStr)) {
-                newRegistry.setAmount(new BigDecimal(amountStr));
-            }
-            if (messageFieldList.size() > n + 1) {
-                if (!parseContainers(newRegistry.getContainers(), messageFieldList.get(++n), processLog)) {
-                    return null;
-                }
             }
 
             processLog.info("Creating new registry: {}", newRegistry);
+
+            if (newRegistry.getType() == null) {
+                iMessenger.addMessageError("unknown_registry_type", fileName, registryTypeValue);
+                processLog.error("Unknown registry type field: {}", registryTypeValue);
+                return null;
+            }
 
             Organization recipient = getRecipient(newRegistry, iMessenger, processLog);
             if (recipient == null) {
@@ -529,32 +507,6 @@ public class RegistryParser implements Serializable {
         return null;
     }
 
-    private boolean parseContainers(List<Container> distContainers, String containersData, Logger processLog) {
-
-        List<String> containers = StringUtil.splitEscapable(
-                containersData, ParseRegistryConstants.CONTAINER_DELIMITER, ParseRegistryConstants.ESCAPE_SYMBOL);
-        for (String data : containers) {
-            if (StringUtils.isBlank(data)) {
-                continue;
-            }
-            if (data.length() > ParseRegistryConstants.MAX_CONTAINER_SIZE) {
-                processLog.error("Too long container found: {}", data);
-                return false;
-            }
-            List<String> containerData = StringUtil.splitEscapable(
-                    data, ParseRegistryConstants.CONTAINER_DATA_DELIMITER, ParseRegistryConstants.ESCAPE_SYMBOL);
-            if (containerData.size() < 1) {
-                processLog.error("Failed container format: {}", containerData);
-                return false;
-            }
-
-            ContainerType containerType = ContainerType.valueOf(Long.parseLong(containerData.get(0)));
-
-            distContainers.add(new Container(data, containerType));
-        }
-        return true;
-    }
-
     @Transactional(isolationLevel = TransactionIsolationLevel.READ_UNCOMMITTED)
     public boolean validateRegistry(Registry registry, IMessenger iMessenger, Logger processLog) {
         Registry filterObject = new Registry();
@@ -578,54 +530,8 @@ public class RegistryParser implements Serializable {
         RegistryRecord record = new RegistryRecord();
         record.setRegistryId(registry.getId());
         try {
-            int n = 1;
-            record.setServiceCode(messageFieldList.get(++n));
-            record.setPersonalAccountExt(messageFieldList.get(++n));
-
-            //TODO find by external id, if service code started by # (maybe using correction)
-            /*
-            FilterWrapper<Service> filter = FilterWrapper.of(new Service(record.getServiceCode()));
-            filter.setSortProperty(null);
-            List<Service> services = serviceBean.getServices(filter);
-            if (services.size() == 0) {
-                processLog.warn("Not found service by code {}", record.getServiceCode());
-            }
-            */
-
-            // setup consumer address
-            String addressStr = messageFieldList.get(++n);
-            if (StringUtils.isNotEmpty(addressStr)) {
-                List<String> addressFieldList = StringUtil.splitEscapable(
-                        addressStr, ParseRegistryConstants.ADDRESS_DELIMITER, ParseRegistryConstants.ESCAPE_SYMBOL);
-
-                if (addressFieldList.size() != 6) {
-                    throw new RegistryFormatException(
-                            String.format("Address group '%s' has invalid number of fields %d",
-                                    addressStr, addressFieldList.size()));
-                }
-                record.setCity(addressFieldList.get(0));
-                record.setStreetType(addressFieldList.get(1));
-                record.setStreet(addressFieldList.get(2));
-                record.setBuildingNumber(addressFieldList.get(3));
-                record.setBuildingCorp(addressFieldList.get(4));
-                record.setApartment(addressFieldList.get(5));
-            }
-
-            // setup person first, middle, last names
-            String fioStr = messageFieldList.get(++n);
-            if (StringUtils.isNotEmpty(fioStr)) {
-                List<String> fields = RegistryUtil.parseFIO(fioStr);
-                record.setLastName(fields.get(0));
-                record.setFirstName(fields.get(1));
-                record.setMiddleName(fields.get(2));
-            }
-
-            // setup ParseRegistryConstants.date
-            String operationDate = messageFieldList.get(++n);
-            try {
-                record.setOperationDate(ParseRegistryConstants.RECORD_DATE_FORMAT.parseDateTime(operationDate).toDate());
-            } catch (Exception e) {
-                throw e;
+            if (ParseUtil.fillUpRecord(messageFieldList, record)) {
+                return null;
             }
 
             // validate operation date
@@ -636,24 +542,6 @@ public class RegistryParser implements Serializable {
                         new Object[]{record.getOperationDate(), record.getUniqueOperationNumber(),
                                 record.getPersonalAccountExt()});
                 failed = true;
-            }
-
-            // setup unique operation number
-            String uniqueOperationNumberStr = messageFieldList.get(++n);
-            if (StringUtils.isNotEmpty(uniqueOperationNumberStr)) {
-                record.setUniqueOperationNumber(Long.valueOf(uniqueOperationNumberStr));
-            }
-
-            // setup amount
-            String amountStr = messageFieldList.get(++n);
-            if (StringUtils.isNotEmpty(amountStr)) {
-                record.setAmount(new BigDecimal(amountStr));
-            }
-
-            // setup containers
-            String containersStr = messageFieldList.get(++n);
-            if (StringUtils.isNotEmpty(containersStr) && !parseContainers(record.getContainers(), containersStr, log)) {
-                return null;
             }
 
             // validate containers

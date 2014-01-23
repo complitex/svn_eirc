@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.flexpay.eirc.service.service.ServiceProviderAccountCorrectionBean">
+    <resultMap id="serviceProviderAccountCorrectionResultMap" type="ru.flexpay.eirc.service.entity.ServiceProviderAccountCorrection"
+               extends="org.complitex.dictionary.entity.Correction.correction">
+    </resultMap>
+
+    <select id="selectServiceProviderAccountCorrection" resultMap="serviceProviderAccountCorrectionResultMap" parameterType="long">
+        select * from `service_provider_account_correction` where `object_id` = #{id}
+    </select>
+
+    <select id="selectServiceProviderAccountCorrections" resultMap="serviceProviderAccountCorrectionResultMap"
+            parameterType="org.complitex.dictionary.entity.FilterWrapper">
+        select * from `service_provider_account_correction` c
+        <include refid="org.complitex.dictionary.entity.Correction.selectCorrectionWhere"/>
+    </select>
+
+    <select id="selectServiceProviderAccountCorrectionsCount" resultType="int"
+            parameterType="org.complitex.dictionary.entity.FilterWrapper">
+        select count(*) from `service_provider_account_correction` c
+        <where>
+            <include refid="org.complitex.dictionary.entity.Correction.selectCorrectionWhereIf"/>
+        </where>
+    </select>
+</mapper>

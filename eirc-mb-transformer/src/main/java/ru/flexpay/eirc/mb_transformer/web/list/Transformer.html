@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns:wicket>
+<head>
+    <wicket:head>
+        <title wicket:id="title"></title>
+    </wicket:head>
+</head>
+<body>
+<wicket:extend>
+    <h2 wicket:id="label"></h2>
+
+    <div wicket:id="container">
+
+        <div wicket:id="messages"></div>
+
+    </div>
+
+    <form action="#" wicket:id="form">
+        <table class="tbForm">
+            <tr>
+                <th>
+                    <wicket:message key="corrections"/> <b class="blue">*</b>
+                    :
+                </th>
+                <td>
+                    <select wicket:id="corrections"></select>
+                </td>
+            </tr>
+            <tr>
+                <th>
+                    <wicket:message key="charges"/> <b class="blue">*</b>
+                    :
+                </th>
+                <td>
+                    <select wicket:id="charges"></select>
+                </td>
+            </tr>
+            <tr>
+                <th>
+                    <wicket:message key="result"/> <b class="blue">*</b>
+                    :
+                </th>
+                <td>
+                    <input type="text" wicket:id="result"></input>
+                </td>
+            </tr>
+
+        </table>
+        <div>
+            <input type="submit" wicket:message="value:transform" wicket:id="transform" class="btnMiddle"/>
+        </div>
+    </form>
+
+</wicket:extend>
+</body>
+</html>
