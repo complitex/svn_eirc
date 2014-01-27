@@ -29,6 +29,28 @@ public abstract class IMessenger {
 
     private Map<Long, Queue<IMessage>> imessages = Maps.newConcurrentMap();
 
+    public IMessenger getInstance() {
+        return new IMessenger() {
+
+            Queue<IMessage> userIMessages = getUserIMessages();
+
+            @Override
+            public IMessenger getInstance() {
+                return this;
+            }
+
+            @Override
+            public Queue<IMessage> getIMessages() {
+                return userIMessages;
+            }
+
+            @Override
+            protected String getResourceBundle() {
+                return IMessenger.this.getResourceBundle();
+            }
+        };
+    }
+
     public void addMessageInfo(String message, Object... parameters) {
         addMessage(new IMessage(IMessageType.INFO, message, parameters));
 
@@ -62,6 +84,10 @@ public abstract class IMessenger {
             imessages.put(userId, userIMessages);
         }
         return userIMessages;
+    }
+
+    private String getInnerResourceBundle() {
+        return getResourceBundle();
     }
 
     protected abstract String getResourceBundle();

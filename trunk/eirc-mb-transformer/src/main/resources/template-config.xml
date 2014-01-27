@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <template xmlns="http://www.complitex.org/web/template">
     <sidebar>
+        <menu class="ru.flexpay.eirc.mb_transformer.web.admin.AdminMenu"/>
         <menu class="ru.flexpay.eirc.mb_transformer.web.MbTransformerTemplateMenu"/>
     </sidebar>
 </template>

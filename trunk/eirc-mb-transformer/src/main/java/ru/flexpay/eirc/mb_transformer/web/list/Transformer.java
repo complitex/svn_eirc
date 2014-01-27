@@ -1,6 +1,5 @@
 package ru.flexpay.eirc.mb_transformer.web.list;
 
-import org.apache.ibatis.io.Resources;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.AjaxSelfUpdatingTimerBehavior;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
@@ -17,17 +16,21 @@ import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
 import ru.flexpay.eirc.mb_transformer.entity.MbFile;
+import ru.flexpay.eirc.mb_transformer.entity.MbTransformerConfig;
 import ru.flexpay.eirc.mb_transformer.service.MbCorrectionsFileConverter;
+import ru.flexpay.eirc.mb_transformer.service.MbTransformerConfigBean;
+import ru.flexpay.eirc.registry.service.FinishCallback;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.service.entity.Service;
 
 import javax.ejb.EJB;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -37,6 +40,7 @@ import java.util.concurrent.ExecutionException;
  * @author Pavel Sknar
  */
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
+@TransactionAttribute(TransactionAttributeType.NEVER)
 public class Transformer extends TemplatePage {
 
     private static final String IMAGE_AJAX_LOADER = "images/ajax-loader2.gif";
@@ -45,37 +49,31 @@ public class Transformer extends TemplatePage {
     private WebMarkupContainer container;
 
     @EJB
-    private RegistryMessenger imessenger;
+    private RegistryMessenger imessengerService;
+
+    private IMessenger imessenger;
 
     @EJB
-    private RegistryFinishCallback finishCallback;
+    private RegistryFinishCallback finishCallbackService;
+
+    private FinishCallback finishCallback;
 
     @EJB
     private MbCorrectionsFileConverter mbCorrectionsFileConverter;
 
+    @EJB(name = "MbTransformerConfigBean")
+    private MbTransformerConfigBean configBean;
+
     private AjaxSelfUpdatingTimerBehavior timerBehavior;
-
-    private static final String PROPERTIES_FILE = "config.properties";
-
-    private static final String MB_ORGANIZATION_ID = "mbOrganizationId";
-    private static final String EIRC_ORGANIZATION_ID = "eircOrganizationId";
-    private static final String TMP_DIR = "tmpDir";
-    private static final String WORK_DIR = "workDir";
-
-    private Properties transformerProperties;
 
     private String correctionsFileName;
     private String chargesFileName;
     private String resultFileName;
 
     public Transformer() throws ExecutionException, InterruptedException {
-        transformerProperties = new Properties();
-        try {
-            transformerProperties.load(Resources.getResourceAsStream(PROPERTIES_FILE));
-        } catch (IOException e) {
-            log().error("Can not read properties", e);
-            return;
-        }
+
+        imessenger = imessengerService.getInstance();
+        finishCallback = finishCallbackService.getInstance();
 
         init();
     }
@@ -164,17 +162,11 @@ public class Transformer extends TemplatePage {
                 Transformer.this.initTimerBehavior();
 
                 try {
-                    Long mbOrganizationId = getLong(transformerProperties, MB_ORGANIZATION_ID);
-                    if (mbOrganizationId == null) {
-                        return;
-                    }
-                    Long eircOrganizationId = getLong(transformerProperties, EIRC_ORGANIZATION_ID);
-                    if (eircOrganizationId == null) {
-                        return;
-                    }
-                    String tmpDir = transformerProperties.getProperty(TMP_DIR);
+                    Long mbOrganizationId = configBean.getInteger(MbTransformerConfig.MB_ORGANIZATION_ID, true).longValue();
+                    Long eircOrganizationId = configBean.getInteger(MbTransformerConfig.EIRC_ORGANIZATION_ID, true).longValue();
+                    String tmpDir = configBean.getString(MbTransformerConfig.TMP_DIR);
                     if (!isDirectory(tmpDir)) {
-                        log().error("Failed properties {}={}", TMP_DIR, tmpDir);
+                        log().error("Is not directory {}={}", MbTransformerConfig.TMP_DIR.name(), tmpDir);
                         return;
                     }
 
@@ -255,9 +247,9 @@ public class Transformer extends TemplatePage {
     }
 
     public String getWorkDir() {
-        String workDir = transformerProperties.getProperty(WORK_DIR);
+        String workDir = configBean.getString(MbTransformerConfig.WORK_DIR);
         if (!isDirectory(workDir)) {
-            log().error("Failed properties {}={}", WORK_DIR, workDir);
+            log().error("Is not directory {}={}", MbTransformerConfig.TMP_DIR.name(), workDir);
             return null;
         }
         return workDir;

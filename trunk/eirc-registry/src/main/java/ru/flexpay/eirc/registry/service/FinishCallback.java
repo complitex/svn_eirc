@@ -17,6 +17,23 @@ public class FinishCallback {
     @EJB
     private SessionBean sessionBean;
 
+    public FinishCallback getInstance() {
+        return new FinishCallback() {
+
+            AtomicInteger value = FinishCallback.this.getUserCounter();
+
+            @Override
+            public FinishCallback getInstance() {
+                return this;
+            }
+
+            @Override
+            protected AtomicInteger getUserCounter() {
+                return value;
+            }
+        };
+    }
+
     public void init() {
         getUserCounter().incrementAndGet();
     }
@@ -29,7 +46,7 @@ public class FinishCallback {
         return getUserCounter().get() <= 0;
     }
 
-    private AtomicInteger getUserCounter() {
+    protected AtomicInteger getUserCounter() {
         Long userId = sessionBean.getCurrentUserId();
         AtomicInteger userCounter = counters.get(userId);
         if (userCounter == null) {
