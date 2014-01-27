@@ -7,7 +7,7 @@ echo Local database and Realm
 echo ---------------------------------------------------
 echo
 echo Register the JDBC connection pool
-$GLASSFISH_ASADMIN create-jdbc-connection-pool --datasourceclassname="com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource" --restype="javax.sql.ConnectionPoolDataSource" --property="url=jdbc\:mysql\://localhost\:3306/eirc:user=eirc:password=eirc:characterResultSets=utf8:characterEncoding=utf8:useUnicode=true" eircPool
+$GLASSFISH_ASADMIN create-jdbc-connection-pool --datasourceclassname="com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource" --restype="javax.sql.ConnectionPoolDataSource" --property="url=jdbc\:mysql\://localhost\:3306/eirc:user=eirc:password=eirc:characterResultSets=utf8:characterEncoding=utf8:useUnicode=true:connectionCollation=utf8_unicode_ci:autoReconnect=true" eircPool
 
 echo
 echo Create a JDBC resource with the specified JNDI name
