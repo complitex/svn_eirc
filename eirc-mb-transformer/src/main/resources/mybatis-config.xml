@@ -15,7 +15,13 @@
         <environment id="local">
             <transactionManager type="MANAGED"/>
             <dataSource type="JNDI">
-                <property name="data_source" value="jdbc/eircResource"/>
+                <property name="data_source" value="jdbc/transformerResource"/>
+            </dataSource>
+        </environment>
+        <environment id="remote">
+            <transactionManager type="MANAGED"/>
+            <dataSource type="JNDI">
+                <property name="data_source" value="${remoteDataSource}"/>
             </dataSource>
         </environment>
     </environments>

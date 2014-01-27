@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="transformer database" default="create" basedir=".">
+    <property file="database.properties"/>
+
+    <target name="create">
+        <sql driver="com.mysql.jdbc.Driver" encoding="UTF-8" url="${url}" userid="${username}" password="${password}">
+            <classpath>
+                <pathelement location="${jdbc}"/>
+            </classpath>
+
+            <transaction src="../../../complitex/complitex-db/complitex-dictionary-create.sql"/>
+            <transaction src="../../../complitex/complitex-db/complitex-create.sql"/>
+
+        </sql>
+
+        <sql driver="com.mysql.jdbc.Driver" encoding="UTF-8" url="${url}" userid="${username}" password="${password}">
+            <classpath>
+                <pathelement location="${jdbc}"/>
+            </classpath>
+
+            <transaction src="../../../complitex/complitex-db/complitex-insert.sql"/>
+            <transaction src="../../../complitex/complitex-db/complitex-sequence.sql"/>
+        </sql>
+    </target>
+
+</project>

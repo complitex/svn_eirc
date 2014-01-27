@@ -9,6 +9,7 @@ import com.google.common.io.PatternFilenameFilter;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
+import org.apache.ibatis.session.SqlSessionManager;
 import org.apache.wicket.util.io.IOUtils;
 import org.complitex.correction.entity.LinkStatus;
 import org.complitex.correction.entity.OrganizationCorrection;
@@ -16,7 +17,6 @@ import org.complitex.correction.service.OrganizationCorrectionBean;
 import org.complitex.dictionary.entity.DictionaryConfig;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
-import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.exception.AbstractException;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.util.DateUtil;
@@ -27,6 +27,7 @@ import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.mb_transformer.entity.Context;
 import ru.flexpay.eirc.mb_transformer.entity.MbFile;
+import ru.flexpay.eirc.mb_transformer.entity.MbTransformerConfig;
 import ru.flexpay.eirc.mb_transformer.entity.RegistryRecordMapped;
 import ru.flexpay.eirc.mb_transformer.util.MbParsingConstants;
 import ru.flexpay.eirc.registry.entity.*;
@@ -41,8 +42,11 @@ import ru.flexpay.eirc.registry.util.StringUtil;
 import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 
+import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
-import javax.ejb.Singleton;
+import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import java.io.*;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -52,7 +56,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Singleton
+@Stateless
+@TransactionAttribute(TransactionAttributeType.NEVER)
 public class MbCorrectionsFileConverter {
 
     private static final Logger log = LoggerFactory.getLogger(MbCorrectionsFileConverter.class);
@@ -66,8 +71,8 @@ public class MbCorrectionsFileConverter {
     @EJB
     private ServiceBean serviceBean;
 
-    @EJB
-    private ConfigBean configBean;
+    @EJB(name = "MbTransformerConfigBean")
+    private MbTransformerConfigBean configBean;
 
     @EJB
     private RegistryFPFileService registryFPFileService;
@@ -75,19 +80,35 @@ public class MbCorrectionsFileConverter {
     @EJB
     private MbConverterQueueProcessor mbConverterQueueProcessor;
 
-    public void init() {
-        SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
-
-        organizationCorrectionBean = new OrganizationCorrectionBean();
+    @PostConstruct
+    public void init2() {
+        SqlSessionFactoryBean sqlSessionFactoryBean = configBean == null ? new SqlSessionFactoryBean() :
+                new SqlSessionFactoryBean() {
+                    @Override
+                    public SqlSessionManager getSqlSessionManager() {
+                        return getSqlSessionManager(configBean.getString(MbTransformerConfig.EIRC_DATA_SOURCE), "remote");
+                    }
+                };
         organizationCorrectionBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
 
-        serviceCorrectionBean = new ServiceCorrectionBean();
         serviceCorrectionBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
 
-        serviceBean = new ServiceBean();
         serviceBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+    }
+
+    /**
+     * Using in console implementation
+     */
+    public void init() {
+        organizationCorrectionBean = new OrganizationCorrectionBean();
+
+        serviceCorrectionBean = new ServiceCorrectionBean();
+
+        serviceBean = new ServiceBean();
 
         registryFPFileService = new RegistryFPFileService();
+
+        init2();
     }
 
     /**
@@ -187,9 +208,8 @@ public class MbCorrectionsFileConverter {
                 @Override
                 public Void execute() throws ExecuteException {
                     try {
-                        EjbBeanLocator.getBean(MbCorrectionsFileConverter.class).
-                                convertFile(correctionsFile, chargesFile, dir, eircFileName, tmpDir, mbOrganizationId,
-                                        eircOrganizationId, imessenger);
+                        convertFile(correctionsFile, chargesFile, dir, eircFileName, tmpDir, mbOrganizationId,
+                                eircOrganizationId, imessenger);
                     } catch (Exception e) {
                         log.error("Can not convert files", e);
                         imessenger.addMessageError("mb_registries_fail_convert",
