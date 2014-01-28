@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
@@ -164,7 +165,7 @@ public class Transformer extends TemplatePage {
                 try {
                     Long mbOrganizationId = configBean.getInteger(MbTransformerConfig.MB_ORGANIZATION_ID, true).longValue();
                     Long eircOrganizationId = configBean.getInteger(MbTransformerConfig.EIRC_ORGANIZATION_ID, true).longValue();
-                    String tmpDir = configBean.getString(MbTransformerConfig.TMP_DIR);
+                    String tmpDir = configBean.getString(MbTransformerConfig.TMP_DIR, true);
                     if (!isDirectory(tmpDir)) {
                         log().error("Is not directory {}={}", MbTransformerConfig.TMP_DIR.name(), tmpDir);
                         return;
@@ -237,6 +238,9 @@ public class Transformer extends TemplatePage {
 
     public List<String> getFileList(){
         String dir = getWorkDir();
+        if (dir == null) {
+            return Collections.emptyList();
+        }
         String[] files = new File(dir).list(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
@@ -247,9 +251,9 @@ public class Transformer extends TemplatePage {
     }
 
     public String getWorkDir() {
-        String workDir = configBean.getString(MbTransformerConfig.WORK_DIR);
+        String workDir = configBean.getString(MbTransformerConfig.WORK_DIR, true);
         if (!isDirectory(workDir)) {
-            log().error("Is not directory {}={}", MbTransformerConfig.TMP_DIR.name(), workDir);
+            log().error("Is not directory {}={}", MbTransformerConfig.WORK_DIR.name(), workDir);
             return null;
         }
         return workDir;
