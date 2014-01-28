@@ -35,7 +35,7 @@ import java.util.Map;
  * @author Artem
  */
 @Stateless(name = IOrganizationStrategy.BEAN_NAME)
-public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
+public class EircOrganizationStrategy extends AbstractOrganizationStrategy<DomainObject> {
     public final static Long MODULE_ID = 0L;
 
     /**
@@ -144,7 +144,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
         }
 //        example.addAdditionalParam(ORGANIZATION_TYPE_PARAMETER, ImmutableList.of(OrganizationType.SERVICE_PROVIDER.getId()));
         configureExample(example, ImmutableMap.<String, Long>of(), null);
-        return (List<DomainObject>) find(example);
+        return find(example);
     }
 
     @Override
@@ -173,7 +173,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
 
         configureExample(example, ImmutableMap.<String, Long>of(), null);
 
-        return (List<DomainObject>) find(example);
+        return find(example);
     }
 
     /**
@@ -197,7 +197,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy {
 
         configureExample(example, ImmutableMap.<String, Long>of(), null);
 
-        return (List<DomainObject>) find(example);
+        return find(example);
     }
 
     @Override
