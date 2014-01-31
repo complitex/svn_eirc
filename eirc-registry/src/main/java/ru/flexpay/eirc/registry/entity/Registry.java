@@ -175,4 +175,13 @@ public class Registry extends DictionaryObject {
     public void addContainer(Container container) {
         containers.add(container);
     }
+
+    public Container getContainer(ContainerType containerType) {
+        for (Container container : containers) {
+            if (container.getType().equals(containerType)) {
+                return container;
+            }
+        }
+        return null;
+    }
 }

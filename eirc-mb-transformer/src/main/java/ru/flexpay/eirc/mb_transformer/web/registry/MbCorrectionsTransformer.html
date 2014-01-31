@@ -8,13 +8,14 @@
 </head>
 <body>
 <wicket:extend>
+    <div wicket:id="chargesDialog"></div>
+    <div wicket:id="correctionsDialog"></div>
+
     <h2 wicket:id="label"></h2>
 
     <div wicket:id="container">
 
-        <div wicket:id="messages"></div>
-
-    </div>
+    <div wicket:id="messages"></div>
 
     <form action="#" wicket:id="form">
         <table class="tbForm">
@@ -24,7 +25,8 @@
                     :
                 </th>
                 <td>
-                    <select wicket:id="corrections"></select>
+                    <input type="text" wicket:id="correctionsFile"/>
+                    <input type="button" wicket:message="value:select" wicket:id="correctionsButton" class="btnSmall"/>
                 </td>
             </tr>
             <tr>
@@ -33,7 +35,8 @@
                     :
                 </th>
                 <td>
-                    <select wicket:id="charges"></select>
+                    <input type="text" wicket:id="chargesFile"/>
+                    <input type="button" wicket:message="value:select" wicket:id="chargesButton" class="btnSmall"/>
                 </td>
             </tr>
             <tr>
@@ -51,6 +54,7 @@
             <input type="submit" wicket:message="value:transform" wicket:id="transform" class="btnMiddle"/>
         </div>
     </form>
+    </div>
 
 </wicket:extend>
 </body>

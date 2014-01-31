@@ -51,6 +51,7 @@
         <mapper resource="org/complitex/dictionary/entity/Correction.xml"/>
         <mapper resource="org/complitex/correction/service/OrganizationCorrectionBean.xml"/>
         <mapper resource="ru/flexpay/eirc/service/service/ServiceCorrectionBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service_provider_account/service/ServiceProviderAccountCorrectionBean.xml"/>
 
         <mapper resource="ru/flexpay/eirc/service/service/ServiceBean.xml"/>
     </mappers>

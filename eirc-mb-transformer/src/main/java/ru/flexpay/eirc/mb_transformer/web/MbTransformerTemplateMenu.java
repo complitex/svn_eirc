@@ -7,7 +7,7 @@ import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.ITemplateLink;
 import org.complitex.template.web.template.ResourceTemplateMenu;
-import ru.flexpay.eirc.mb_transformer.web.list.Transformer;
+import ru.flexpay.eirc.mb_transformer.web.registry.MbCorrectionsTransformer;
 
 import java.util.List;
 import java.util.Locale;
@@ -18,11 +18,9 @@ import java.util.Locale;
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
 public class MbTransformerTemplateMenu extends ResourceTemplateMenu {
 
-    public static final String MB_TRANSFORMER_ITEM = "mb_transformer_item";
-
     @Override
     public String getTitle(Locale locale) {
-        return getString(MbTransformerTemplateMenu.class, locale, "mb_transformer_menu");
+        return getString(MbTransformerTemplateMenu.class, locale, "title");
     }
 
     @Override
@@ -31,12 +29,12 @@ public class MbTransformerTemplateMenu extends ResourceTemplateMenu {
 
             @Override
             public String getLabel(Locale locale) {
-                return getString(MbTransformerTemplateMenu.class, locale, "mb_transformer_menu");
+                return getString(MbTransformerTemplateMenu.class, locale, "simple_saldo");
             }
 
             @Override
             public Class<? extends Page> getPage() {
-                return Transformer.class;
+                return MbCorrectionsTransformer.class;
             }
 
             @Override
@@ -46,7 +44,7 @@ public class MbTransformerTemplateMenu extends ResourceTemplateMenu {
 
             @Override
             public String getTagId() {
-                return MB_TRANSFORMER_ITEM;
+                return "simple_saldo_item";
             }
         });
         return links;
@@ -54,6 +52,6 @@ public class MbTransformerTemplateMenu extends ResourceTemplateMenu {
 
     @Override
     public String getTagId() {
-        return "mb_transformer_menu";
+        return "registry_menu";
     }
 }
