@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="ru.flexpay.eirc.service.service.ServiceProviderAccountCorrectionBean">
-    <resultMap id="serviceProviderAccountCorrectionResultMap" type="ru.flexpay.eirc.service.entity.ServiceProviderAccountCorrection"
+<mapper namespace="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountCorrectionBean">
+    <resultMap id="serviceProviderAccountCorrectionResultMap" type="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccountCorrection"
                extends="org.complitex.dictionary.entity.Correction.correction">
     </resultMap>
 

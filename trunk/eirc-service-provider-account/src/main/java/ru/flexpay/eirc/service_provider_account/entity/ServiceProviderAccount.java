@@ -29,6 +29,12 @@ public class ServiceProviderAccount extends DictionaryTemporalObject {
         this.eircAccount = eircAccount;
     }
 
+    public ServiceProviderAccount(String accountNumber, Long organizationId, Service service) {
+        this.accountNumber = accountNumber;
+        this.organizationId = organizationId;
+        this.service = service;
+    }
+
     public String getAccountNumber() {
         return accountNumber;
     }

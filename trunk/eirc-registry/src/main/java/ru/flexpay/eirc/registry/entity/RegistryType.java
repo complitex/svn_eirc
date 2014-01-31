@@ -16,7 +16,7 @@ public enum RegistryType implements IFixedIdType {
     CLOSED_ACCOUNTS(4L), 
     INFO(5L), 
     CORRECTIONS(6L),
-    CASH_PAYMENTS(7L), 
+    PAYMENTS(7L),
     CASHLESS_PAYMENTS(8L), 
     REPAYMENT(9L), 
     ERRORS(10L), 
@@ -37,11 +37,11 @@ public enum RegistryType implements IFixedIdType {
     }
 
     public boolean isPayments() {
-        return this == CASH_PAYMENTS || this == CASHLESS_PAYMENTS;
+        return this == PAYMENTS || this == CASHLESS_PAYMENTS;
     }
 
     public boolean isCashPayments() {
-        return this == CASH_PAYMENTS;
+        return this == PAYMENTS;
     }
 
     public boolean isCashlessPayments() {

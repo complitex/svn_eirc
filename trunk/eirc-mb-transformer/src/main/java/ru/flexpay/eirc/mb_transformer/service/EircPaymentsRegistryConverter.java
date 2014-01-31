@@ -10,13 +10,19 @@ import org.complitex.correction.service.OrganizationCorrectionBean;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.exception.AbstractException;
 import org.complitex.dictionary.service.executor.ExecuteException;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.mb_transformer.util.MbParsingConstants;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.*;
+import ru.flexpay.eirc.registry.service.AbstractJob;
+import ru.flexpay.eirc.registry.service.FinishCallback;
+import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.file.RSASignatureService;
+import ru.flexpay.eirc.registry.service.handle.MbConverterQueueProcessor;
 import ru.flexpay.eirc.registry.service.parse.FileReader;
 import ru.flexpay.eirc.registry.service.parse.ParseRegistryConstants;
 import ru.flexpay.eirc.registry.service.parse.RegistryFormatException;
@@ -27,6 +33,10 @@ import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
+import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
+import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccountCorrection;
+import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
+import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountCorrectionBean;
 
 import javax.ejb.EJB;
 import javax.ejb.Singleton;
@@ -36,7 +46,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.Signature;
 import java.security.SignatureException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -54,9 +63,9 @@ public class EircPaymentsRegistryConverter {
 
     private static final int NUMBER_READ_CHARS = 10000;
 
-	private static final SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
-	private static final SimpleDateFormat paymentDateFormat = new SimpleDateFormat("yyyyMMdd");
-	private static final SimpleDateFormat paymentPeriodDateFormat = new SimpleDateFormat("yyyyMM");
+	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("dd.MM.yyyy");
+	private static final DateTimeFormatter PAYMENT_DATE_FORMATTER = DateTimeFormat.forPattern("yyyyMMdd");
+	private static final DateTimeFormatter PAYMENT_PERIOD_DATE_FORMATTER = DateTimeFormat.forPattern("yyyyMM");
 
 	private static final String[] TABLE_HEADERS = {
 			"код квит",
@@ -121,13 +130,54 @@ public class EircPaymentsRegistryConverter {
     @EJB
     private RSASignatureService signatureService;
 
-    private Cache<String, String> serviceCache = CacheBuilder.newBuilder().
+    @EJB
+    private ServiceProviderAccountCorrectionBean serviceProviderAccountCorrection;
+
+    @EJB
+    private ServiceProviderAccountBean serviceProviderAccountBean;
+
+    @EJB
+    private MbConverterQueueProcessor mbConverterQueueProcessor;
+
+    private Cache<String, String> serviceCorrectionCache = CacheBuilder.newBuilder().
             maximumSize(1000).
             expireAfterWrite(10, TimeUnit.MINUTES).
             build();
 
+    private Cache<String, Service> serviceCache = CacheBuilder.newBuilder().
+            maximumSize(1000).
+            expireAfterWrite(10, TimeUnit.MINUTES).
+            build();
+
+    public void convertFile(final File eircFile, final String dir, final String mbFileName, final Long mbOrganizationId,
+                            final Long eircOrganizationId, final String privateKey, final String tmpDir,
+                            final IMessenger imessenger, final FinishCallback finishConvert) throws AbstractException {
+        imessenger.addMessageInfo("mb_registry_convert_starting");
+        finishConvert.init();
+
+        mbConverterQueueProcessor.execute(
+                new AbstractJob<Void>() {
+                    @Override
+                    public Void execute() throws ExecuteException {
+                        try {
+                            exportToMegaBank(eircFile, dir, mbFileName, mbOrganizationId, eircOrganizationId,
+                                    privateKey, tmpDir, imessenger);
+                        } catch (Exception e) {
+                            log.error("Can not convert files", e);
+                            imessenger.addMessageError("mb_registries_fail_convert",
+                                    e.getMessage() != null ? e.getMessage() : e.getCause().getMessage());
+                        } finally {
+                            imessenger.addMessageInfo("mb_registry_convert_finish");
+                            finishConvert.complete();
+                        }
+                        return null;
+                    }
+                }
+        );
+    }
+
     public void exportToMegaBank(File eircFile, String dir, String mbFileName, Long mbOrganizationId, Long eircOrganizationId,
-                                 String privateKey, String tmpDir) throws IOException,
+                                 String privateKey, String tmpDir, IMessenger imessenger) throws IOException,
             RegistryFormatException, ExecuteException {
         final FileReader reader = new FileReader(new FileInputStream(eircFile));
         try {
@@ -258,11 +308,18 @@ public class EircPaymentsRegistryConverter {
             rwChannel = new RandomAccessFile(tmpFile, "rw").getChannel();
             ByteBuffer buffer = rwChannel.map(FileChannel.MapMode.READ_WRITE, 0, mbFileLength);
 
+            Container detailsPaymentsDocument = registry.getContainer(ContainerType.DETAILS_PAYMENTS_DOCUMENT);
+            if (detailsPaymentsDocument == null) {
+                log.error("Did not find details of payments");
+                return;
+            }
+
+            String[] detailsData = detailsPaymentsDocument.getData().split(":");
 
 			// заголовочные строки
-			writeLine(buffer, "\tРеестр поступивших платежей. Мемориальный ордер №" + registry.getId());
+			writeLine(buffer, "\tРеестр поступивших платежей. Мемориальный ордер №" + detailsData[1]);
 			writeLine(buffer, "\tДля \"" + eircOrganizationStrategy.displayDomainObject(serviceProviderOrganization, getLocation()) + "\". День распределения платежей " +
-						 dateFormat.format(new Date()) + ".");
+						 DATE_FORMATTER.print(PAYMENT_DATE_FORMATTER.parseDateTime(detailsData[2]).toDate().getTime()) + ".");
 			writeCharToLine(buffer, ' ', 128);
 			writeCharToLine(buffer, ' ', 128);
 			BigDecimal amount = registry.getAmount();
@@ -291,7 +348,7 @@ public class EircPaymentsRegistryConverter {
 
             RegistryRecordData registryRecord;
             while ((registryRecord = dataSource.getNextRecord()) != null){
-                writeInfoLine(buffer, "|", registryRecord, serviceProviderOrganization.getId(), eircOrganizationId);
+                writeInfoLine(buffer, "|", registryRecord, serviceProviderOrganization.getId(), eircOrganizationId, mbOrganizationId);
 			}
 
             buffer.flip();
@@ -348,21 +405,14 @@ public class EircPaymentsRegistryConverter {
 	}
 
     public String getOutServiceCode(String innerServiceCode, Long serviceProviderId, Long eircOrganizationId) throws MbConverterException {
-        String serviceCode = serviceCache.getIfPresent(innerServiceCode);
+        String serviceCode = serviceCorrectionCache.getIfPresent(innerServiceCode);
         if (serviceCode != null) {
             return serviceCode;
         }
 
-        List<Service> services = serviceBean.getServices(FilterWrapper.of(new Service(innerServiceCode)));
-        if (services.size() == 0) {
-            throw new MbConverterException(
-                    "No found service with code {0}", innerServiceCode);
-        }
-        if (services.size() > 1) {
-            throw new MbConverterException("Found several services with code {0}", innerServiceCode);
-        }
+        Service service = getService(innerServiceCode);
         List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(
-                FilterWrapper.of(new ServiceCorrection(null, services.get(0).getId(), null, serviceProviderId,
+                FilterWrapper.of(new ServiceCorrection(null, service.getId(), null, serviceProviderId,
                         eircOrganizationId, null))
         );
         if (serviceCorrections.size() <= 0) {
@@ -373,33 +423,49 @@ public class EircPaymentsRegistryConverter {
             throw new MbConverterException("Found several correction for service with code {0}", innerServiceCode);
         }
         serviceCode = String.valueOf(serviceCorrections.get(0).getObjectId());
-        serviceCache.put(innerServiceCode, serviceCode);
+        serviceCorrectionCache.put(innerServiceCode, serviceCode);
 
         return serviceCode;
     }
 
-	private void writeInfoLine(ByteBuffer buffer, String delimeter, RegistryRecordData record,
-                               Long serviceProviderId, Long eircOrganizationId)
+    public Service getService(String innerServiceCode) throws MbConverterException {
+        Service service = serviceCache.getIfPresent(innerServiceCode);
+        if (service != null) {
+            return service;
+        }
+        List<Service> services = serviceBean.getServices(FilterWrapper.of(new Service(innerServiceCode)));
+        if (services.size() == 0) {
+            throw new MbConverterException(
+                    "No found service with code {0}", innerServiceCode);
+        }
+        if (services.size() > 1) {
+            throw new MbConverterException("Found several services with code {0}", innerServiceCode);
+        }
+        service = services.get(0);
+        serviceCache.put(innerServiceCode, service);
+        return service;
+    }
+
+    private void writeInfoLine(ByteBuffer buffer, String delimeter, RegistryRecordData record,
+                               Long serviceProviderId, Long eircOrganizationId, Long mbOrganizationId)
             throws ExecutionException, MbConverterException {
 
 		//граница таблицы
 		writeCellData(buffer, DELIMITER, "", 0, ' ');
 
-		// код квитанции
-		writeCellData(buffer, DELIMITER, String.valueOf(record.getUniqueOperationNumber()), TABLE_HEADERS[0].length(), ' ');
+		// номер квитанции
+        String numberQuittance = null;
+        for (Container container : record.getContainers()) {
+            if (container.getType().equals(ContainerType.CASH_PAYMENT) ||
+                    container.getType().equals(ContainerType.CASHLESS_PAYMENT)) {
+                String[] data = container.getData().split(":");
+                numberQuittance = data[2];
+            }
+        }
+		writeCellData(buffer, DELIMITER, numberQuittance, TABLE_HEADERS[0].length(), ' ');
 
 		// лиц. счёт ЕРЦ
-		String eircAccount = null;
-		//List<RegistryRecordContainer> containers = registryRecordService.getRecordContainers(record);
-		for (Container container : record.getContainers()) {
-			if (container.getData() != null && container.getData().startsWith("15:")) {
-				String[] containerFields = container.getData().split(":");
-				if (containerFields.length >= 4) {
-					eircAccount = containerFields[3];
-					break;
-				}
-			}
-		}
+		String eircAccount  = getEircAccount(record, serviceProviderId, eircOrganizationId, mbOrganizationId);
 		writeCellData(buffer, DELIMITER, eircAccount, TABLE_HEADERS[1].length(), ' ');
 
 		// лиц. счёт поставщика услуг
@@ -460,28 +526,53 @@ public class EircPaymentsRegistryConverter {
 
 		// дата платежа
 		Date operationDate = record.getOperationDate();
-		String paymentDate = operationDate != null ? paymentDateFormat.format(operationDate) : null;
+		String paymentDate = operationDate != null ? PAYMENT_DATE_FORMATTER.print(operationDate.getTime()) : null;
 		writeCellData(buffer, DELIMITER, paymentDate, TABLE_HEADERS[12].length(), ' ');
 
 		// с какого месяца оплачена услуга
-		String paymentMounth = null;
+		String paymentMonth = null;
 		if (operationDate != null) {
 			Calendar cal = (Calendar) Calendar.getInstance().clone();
 			cal.setTime(operationDate);
 			cal.set(Calendar.DAY_OF_MONTH, 1);
 			cal.roll(Calendar.MONTH, -1);
-			paymentMounth = paymentPeriodDateFormat.format(cal.getTime());
+			paymentMonth = PAYMENT_PERIOD_DATE_FORMATTER.print(cal.getTime().getTime());
 		}
-		writeCellData(buffer, DELIMITER, paymentMounth, TABLE_HEADERS[13].length(), ' ');
+		writeCellData(buffer, DELIMITER, paymentMonth, TABLE_HEADERS[13].length(), ' ');
 
 		// по какой месяц оплачена услуга
-		writeCellData(buffer, DELIMITER, paymentMounth, TABLE_HEADERS[14].length(), ' ');
+		writeCellData(buffer, DELIMITER, paymentMonth, TABLE_HEADERS[14].length(), ' ');
 
 		// сумма (значение суммы изначально передаётся в рублях, но должно быть записано в копейках)\
 		int sum = record.getAmount().multiply(new BigDecimal("100")).intValue();
 		writeCellData(buffer, DELIMITER, String.valueOf(sum), null, ' ');
 
 	}
+
+    private String getEircAccount(RegistryRecordData record, Long serviceProviderId, Long eircOrganizationId, Long mbOrganizationId) throws MbConverterException {
+
+        List<ServiceProviderAccount> serviceProviderAccounts = serviceProviderAccountBean.getServiceProviderAccounts(
+                FilterWrapper.of(new ServiceProviderAccount(record.getPersonalAccountExt(), serviceProviderId, getService(record.getServiceCode()))));
+        if (serviceProviderAccounts.size() == 0) {
+            throw new MbConverterException("No found service provider account by {0} {1} {2}",
+                    record.getPersonalAccountExt(), serviceProviderId, record.getServiceCode());
+        }
+        if (serviceProviderAccounts.size() > 1) {
+            throw new MbConverterException("Found several service provider accounts with {0} {1} {2}",
+                    record.getPersonalAccountExt(), serviceProviderId, record.getServiceCode());
+        }
+        List<ServiceProviderAccountCorrection> serviceProviderAccountCorrections = serviceProviderAccountCorrection.
+                getServiceProviderAccountCorrections(FilterWrapper.of(
+                        new ServiceProviderAccountCorrection(null, serviceProviderAccounts.get(0).getId(), null, mbOrganizationId, eircOrganizationId, null)));
+        if (serviceProviderAccountCorrections.size() <= 0) {
+            throw new MbConverterException(
+                    "No found correction for service provider account {0}", serviceProviderAccounts.get(0));
+        }
+        if (serviceProviderAccountCorrections.size() > 1) {
+            throw new MbConverterException("Found several correction for service provider account {0}", serviceProviderAccounts.get(0));
+        }
+        return serviceProviderAccountCorrections.get(0).getCorrection();
+    }
 
     private void writeCellData(ByteBuffer buffer, byte[] delimiter, String data, Integer length, char ch) {
         String cell = createCellData(data, length, ch);

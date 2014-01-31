@@ -1,4 +1,4 @@
-package ru.flexpay.eirc.mb_transformer.web.list;
+package ru.flexpay.eirc.mb_transformer.web.registry;
 
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.AjaxSelfUpdatingTimerBehavior;
@@ -15,9 +15,9 @@ import org.apache.wicket.util.time.Duration;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
-import ru.flexpay.eirc.mb_transformer.entity.MbFile;
 import ru.flexpay.eirc.mb_transformer.entity.MbTransformerConfig;
-import ru.flexpay.eirc.mb_transformer.service.MbCorrectionsFileConverter;
+import ru.flexpay.eirc.mb_transformer.service.EircPaymentsRegistryConverter;
+import ru.flexpay.eirc.mb_transformer.service.FileService;
 import ru.flexpay.eirc.mb_transformer.service.MbTransformerConfigBean;
 import ru.flexpay.eirc.registry.service.FinishCallback;
 import ru.flexpay.eirc.registry.service.IMessenger;
@@ -26,26 +26,14 @@ import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.service.entity.Service;
 
 import javax.ejb.EJB;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionAttributeType;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
 /**
  * @author Pavel Sknar
  */
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
-@TransactionAttribute(TransactionAttributeType.NEVER)
-public class Transformer extends TemplatePage {
-
-    private static final String IMAGE_AJAX_LOADER = "images/ajax-loader2.gif";
-
+public class EircPaymentsTransformer extends TemplatePage {
 
     private WebMarkupContainer container;
 
@@ -60,18 +48,20 @@ public class Transformer extends TemplatePage {
     private FinishCallback finishCallback;
 
     @EJB
-    private MbCorrectionsFileConverter mbCorrectionsFileConverter;
+    private EircPaymentsRegistryConverter eircPaymentsRegistryConverter;
 
     @EJB(name = "MbTransformerConfigBean")
     private MbTransformerConfigBean configBean;
 
+    @EJB
+    private FileService fileService;
+
     private AjaxSelfUpdatingTimerBehavior timerBehavior;
 
-    private String correctionsFileName;
-    private String chargesFileName;
+    private String paymentsFileName;
     private String resultFileName;
 
-    public Transformer() throws ExecutionException, InterruptedException {
+    public EircPaymentsTransformer() throws ExecutionException, InterruptedException {
 
         imessenger = imessengerService.getInstance();
         finishCallback = finishCallbackService.getInstance();
@@ -104,38 +94,20 @@ public class Transformer extends TemplatePage {
         DropDownChoice<String> chargesFiles = new DropDownChoice<>("charges", new IModel<String>() {
             @Override
             public String getObject() {
-                return chargesFileName;
+                return paymentsFileName;
             }
 
             @Override
             public void setObject(String object) {
-                chargesFileName = object;
+                paymentsFileName = object;
             }
 
             @Override
             public void detach() {
 
             }
-        }, getFileList());
+        }, fileService.getFileList());
         form.add(chargesFiles);
-
-        DropDownChoice<String> correctionsFiles = new DropDownChoice<>("corrections", new IModel<String>() {
-            @Override
-            public String getObject() {
-                return correctionsFileName;
-            }
-
-            @Override
-            public void setObject(String object) {
-                correctionsFileName = object;
-            }
-
-            @Override
-            public void detach() {
-
-            }
-        }, getFileList());
-        form.add(correctionsFiles);
 
         TextField<String> resultFile = new TextField<>("result", new IModel<String>() {
             @Override
@@ -160,27 +132,24 @@ public class Transformer extends TemplatePage {
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
 
-                Transformer.this.initTimerBehavior();
+                EircPaymentsTransformer.this.initTimerBehavior();
 
                 try {
                     Long mbOrganizationId = configBean.getInteger(MbTransformerConfig.MB_ORGANIZATION_ID, true).longValue();
                     Long eircOrganizationId = configBean.getInteger(MbTransformerConfig.EIRC_ORGANIZATION_ID, true).longValue();
-                    String tmpDir = configBean.getString(MbTransformerConfig.TMP_DIR, true);
-                    if (!isDirectory(tmpDir)) {
-                        log().error("Is not directory {}={}", MbTransformerConfig.TMP_DIR.name(), tmpDir);
+                    String tmpDir = fileService.getTmpDir();
+                    if (tmpDir == null) {
                         return;
                     }
-
-                    MbFile correctionsFile = getMbFile(correctionsFileName);
-                    MbFile chargesFile = getMbFile(chargesFileName);
-                    if (correctionsFile == null || chargesFile == null) {
+                    String workDir = fileService.getWorkDir();
+                    if (workDir == null) {
                         return;
                     }
+                    File eircFile = new File(workDir, paymentsFileName);
 
-                    //mbCorrectionsFileConverter.convert(imessenger, finishCallback);
-                    mbCorrectionsFileConverter.convertFile(correctionsFile, chargesFile, getWorkDir(),
-                            resultFileName, tmpDir, mbOrganizationId, eircOrganizationId,
-                            imessenger, finishCallback);
+                    //eircPaymentsRegistryConverter.exportToMegaBank(eircFile, workDir, resultFileName,
+                    //        mbOrganizationId, eircOrganizationId, null, tmpDir,
+                    //        imessenger, finishCallback);
                 } catch (Exception e) {
                     log().error("Failed convert", e);
                 } finally {
@@ -235,57 +204,4 @@ public class Transformer extends TemplatePage {
             }
         }
     }
-
-    public List<String> getFileList(){
-        String dir = getWorkDir();
-        if (dir == null) {
-            return Collections.emptyList();
-        }
-        String[] files = new File(dir).list(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return true;//name.toLowerCase().contains("." + extension);
-            }
-        });
-        return Arrays.asList(files);
-    }
-
-    public String getWorkDir() {
-        String workDir = configBean.getString(MbTransformerConfig.WORK_DIR, true);
-        if (!isDirectory(workDir)) {
-            log().error("Is not directory {}={}", MbTransformerConfig.WORK_DIR.name(), workDir);
-            return null;
-        }
-        return workDir;
-    }
-
-    public Long getLong(Properties transformerProperties, String propertyName) {
-        String value = transformerProperties.getProperty(propertyName);
-        if (value == null) {
-            log().error("Config did not content {}", propertyName);
-            return null;
-        }
-        try {
-            return Long.parseLong(value);
-        } catch (NumberFormatException e) {
-            log().error("{} have failed number format", value);
-        }
-        return null;
-    }
-
-    private MbFile getMbFile(String filename) throws FileNotFoundException {
-        String workDir = getWorkDir();
-        File file = new File(workDir, filename);
-        if (!file.isFile()) {
-            log().error("{} is not file", file.getPath());
-            return null;
-        }
-        return new MbFile(workDir, filename);
-    }
-
-    public static boolean isDirectory(String tmpDirPath) {
-        File tmpDir = new File(tmpDirPath);
-        return tmpDir.exists() && tmpDir.isDirectory();
-    }
-
 }

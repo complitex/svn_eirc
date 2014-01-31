@@ -21,6 +21,11 @@
             <artifactId>commons-cli</artifactId>
             <version>1.0</version>
         </dependency>
+        <!--dependency>
+            <groupId>com.googlecode.wicket-jquery-ui</groupId>
+            <artifactId>wicket-kendo-ui</artifactId>
+            <version>6.13.0</version>
+        </dependency-->
         <dependency>
             <groupId>org.complitex</groupId>
             <artifactId>complitex-dictionary</artifactId>
@@ -97,7 +102,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>ru.flexpay.eirc.mb_transformer.service.Transformer</mainClass>
+                            <mainClass>ru.flexpay.eirc.mb_transformer.service.MbCorrectionsTransformer</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
