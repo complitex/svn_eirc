@@ -7,6 +7,7 @@ import org.complitex.correction.web.*;
 import org.complitex.template.web.template.ITemplateLink;
 import org.complitex.template.web.template.ResourceTemplateMenu;
 import ru.flexpay.eirc.service.web.list.ServiceCorrectionList;
+import ru.flexpay.eirc.service_provider_account.web.list.ServiceProviderAccountCorrectionList;
 
 import java.util.List;
 import java.util.Locale;
@@ -69,6 +70,29 @@ public class CorrectionMenu extends ResourceTemplateMenu {
             @Override
             public String getTagId() {
                 return "service_correction_item";
+            }
+        });
+
+        links.add(new ITemplateLink() {
+
+            @Override
+            public String getLabel(Locale locale) {
+                return getString(CorrectionMenu.class, locale, "service_provider_account_correction");
+            }
+
+            @Override
+            public Class<? extends Page> getPage() {
+                return ServiceProviderAccountCorrectionList.class;
+            }
+
+            @Override
+            public PageParameters getParameters() {
+                return new PageParameters();
+            }
+
+            @Override
+            public String getTagId() {
+                return "service_provider_account_correction_item";
             }
         });
 

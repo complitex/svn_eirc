@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.util.FPRegistryConstants;
 import ru.flexpay.eirc.registry.util.FileUtil;
+import ru.flexpay.eirc.registry.util.RSASignatureUtil;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -32,7 +33,7 @@ public class RegistryFPFileService {
     private static final String REGISTRY_RECORD_MESSAGE_TYPE = String.valueOf(FPRegistryConstants.REGISTRY_RECORD_MESSAGE_TYPE_CHAR);
 
     @EJB
-    private RSASignatureService signatureService;
+    private RSASignatureUtil signatureService;
 
     public void writeHeader(DataSource dataSource, ByteBuffer buffer) throws IOException {
         writeLine(buffer, buildHeader(dataSource.getRegistry()), null);

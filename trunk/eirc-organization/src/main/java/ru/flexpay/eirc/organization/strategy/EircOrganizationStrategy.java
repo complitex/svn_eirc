@@ -8,6 +8,7 @@ import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.StringCulture;
 import org.complitex.dictionary.entity.description.EntityAttributeType;
 import org.complitex.dictionary.entity.example.DomainObjectExample;
+import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.service.StringCultureBean;
@@ -304,5 +305,12 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
         return ALL_ATTRIBUTE_TYPES.contains(attributeTypeId)
                 ? stringBean.insertStrings(strings, getEntityTable(), false)
                 : super.insertStrings(attributeTypeId, strings);
+    }
+
+    @Override
+    public void setSqlSessionFactoryBean(SqlSessionFactoryBean sqlSessionFactoryBean) {
+        super.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+        localeBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+        stringBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
     }
 }

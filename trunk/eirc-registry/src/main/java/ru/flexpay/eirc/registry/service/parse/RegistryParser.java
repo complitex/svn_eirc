@@ -530,7 +530,7 @@ public class RegistryParser implements Serializable {
         RegistryRecord record = new RegistryRecord();
         record.setRegistryId(registry.getId());
         try {
-            if (ParseUtil.fillUpRecord(messageFieldList, record)) {
+            if (!ParseUtil.fillUpRecord(messageFieldList, record)) {
                 return null;
             }
 

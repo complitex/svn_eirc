@@ -105,7 +105,7 @@ public abstract class ParseUtil {
         // setup containers
         String containersStr = messageFieldList.get(++n);
 
-        return StringUtils.isNotEmpty(containersStr) && !parseContainers(record.getContainers(), containersStr);
+        return StringUtils.isNotEmpty(containersStr) && parseContainers(record.getContainers(), containersStr);
     }
 
     public static String fillUpRegistry(List<String> messageFieldList, DateTimeFormatter dateFormat, Registry newRegistry) throws RegistryFormatException {

@@ -6,7 +6,7 @@
     </resultMap>
 
     <select id="selectServiceProviderAccountCorrection" resultMap="serviceProviderAccountCorrectionResultMap" parameterType="long">
-        select * from `service_provider_account_correction` where `object_id` = #{id}
+        select * from `service_provider_account_correction` where `id` = #{id}
     </select>
 
     <select id="selectServiceProviderAccountCorrections" resultMap="serviceProviderAccountCorrectionResultMap"

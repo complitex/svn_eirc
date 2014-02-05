@@ -21,9 +21,10 @@ import ru.flexpay.eirc.mb_transformer.service.FileService;
 import ru.flexpay.eirc.mb_transformer.service.MbCorrectionsFileConverter;
 import ru.flexpay.eirc.mb_transformer.service.MbTransformerConfigBean;
 import ru.flexpay.eirc.mb_transformer.web.component.BrowserFilesDialog;
-import ru.flexpay.eirc.registry.service.FinishCallback;
+import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
+import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.service.entity.Service;
 
@@ -42,12 +43,12 @@ public class MbCorrectionsTransformer extends TemplatePage {
     @EJB
     private RegistryMessenger imessengerService;
 
-    private IMessenger imessenger;
+    private AbstractMessenger imessenger;
 
     @EJB
     private RegistryFinishCallback finishCallbackService;
 
-    private FinishCallback finishCallback;
+    private AbstractFinishCallback finishCallback;
 
     @EJB
     private MbCorrectionsFileConverter mbCorrectionsFileConverter;

@@ -1,0 +1,12 @@
+a.service_provider_account_picker_choose_link, a.service_provider_account_picker_choose_link:visited {
+    color: #007AAE;
+    text-decoration: none;
+}
+
+.service_provider_account_picker_form table th {
+    text-align: center;
+}
+
+.ui-widget .btnSmall {
+    font-size: 10px;
+}

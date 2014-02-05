@@ -1,9 +1,13 @@
 package ru.flexpay.eirc.service_provider_account.service;
 
+import com.google.common.collect.Maps;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.complitex.dictionary.entity.FilterWrapper;
+import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
+import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.service.SequenceBean;
 import org.complitex.dictionary.util.DateUtil;
 import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
@@ -13,6 +17,7 @@ import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Pavel Sknar
@@ -27,6 +32,9 @@ public class ServiceProviderAccountBean extends AbstractBean {
 
     @EJB
     private SequenceBean sequenceBean;
+
+    @EJB
+    private LocaleBean localeBean;
 
     @Transactional
     public void archive(ServiceProviderAccount object) {
@@ -43,6 +51,9 @@ public class ServiceProviderAccountBean extends AbstractBean {
 
     public List<ServiceProviderAccount> getServiceProviderAccounts(FilterWrapper<ServiceProviderAccount> filter) {
         addFilterMappingObject(filter);
+        if (filter != null && StringUtils.equals(filter.getSortProperty(), "id")) {
+            filter.setSortProperty("spa_object_id");
+        }
         return sqlSession().selectList(NS + ".selectServiceProviderAccounts", filter);
     }
 
@@ -76,6 +87,9 @@ public class ServiceProviderAccountBean extends AbstractBean {
     }
 
     public ServiceProviderAccount getServiceProviderAccountByPkId(long pkId) {
+        Map<String, Object> params = Maps.newHashMap();
+        params.put("pkId", pkId);
+        params.put("locale", localeBean.convert(localeBean.getSystemLocale()).getId());
         return sqlSession().selectOne(NS + ".selectServiceProviderAccountByPkId", pkId);
     }
 
@@ -96,4 +110,10 @@ public class ServiceProviderAccountBean extends AbstractBean {
         }
     }
 
+    @Override
+    public void setSqlSessionFactoryBean(SqlSessionFactoryBean sqlSessionFactoryBean) {
+        super.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+        sequenceBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+        localeBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+    }
 }
