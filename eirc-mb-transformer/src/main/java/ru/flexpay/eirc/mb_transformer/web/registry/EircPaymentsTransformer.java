@@ -6,10 +6,10 @@ import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.model.IModel;
+import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.util.time.Duration;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
@@ -19,9 +19,11 @@ import ru.flexpay.eirc.mb_transformer.entity.MbTransformerConfig;
 import ru.flexpay.eirc.mb_transformer.service.EircPaymentsRegistryConverter;
 import ru.flexpay.eirc.mb_transformer.service.FileService;
 import ru.flexpay.eirc.mb_transformer.service.MbTransformerConfigBean;
-import ru.flexpay.eirc.registry.service.FinishCallback;
+import ru.flexpay.eirc.mb_transformer.web.component.BrowserFilesDialog;
+import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
+import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.service.entity.Service;
 
@@ -40,12 +42,12 @@ public class EircPaymentsTransformer extends TemplatePage {
     @EJB
     private RegistryMessenger imessengerService;
 
-    private IMessenger imessenger;
+    private AbstractMessenger imessenger;
 
     @EJB
     private RegistryFinishCallback finishCallbackService;
 
-    private FinishCallback finishCallback;
+    private AbstractFinishCallback finishCallback;
 
     @EJB
     private EircPaymentsRegistryConverter eircPaymentsRegistryConverter;
@@ -58,7 +60,7 @@ public class EircPaymentsTransformer extends TemplatePage {
 
     private AjaxSelfUpdatingTimerBehavior timerBehavior;
 
-    private String paymentsFileName;
+    private Model<File> paymentsFileName = new Model<>();
     private String resultFileName;
 
     public EircPaymentsTransformer() throws ExecutionException, InterruptedException {
@@ -75,9 +77,6 @@ public class EircPaymentsTransformer extends TemplatePage {
         add(new Label("title", labelModel));
         add(new Label("label", labelModel));
 
-        Form<Service> form = new Form<>("form");
-        add(form);
-
         final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
         messages.setOutputMarkupId(true);
 
@@ -91,23 +90,38 @@ public class EircPaymentsTransformer extends TemplatePage {
             initTimerBehavior();
         }
 
-        DropDownChoice<String> chargesFiles = new DropDownChoice<>("charges", new IModel<String>() {
+        final BrowserFilesDialog paymentsDialog = new BrowserFilesDialog("paymentsDialog", container, paymentsFileName);
+        add(paymentsDialog);
+
+        Form<Service> form = new Form<>("form");
+        container.add(form);
+
+        AjaxButton paymentsButton = new AjaxButton("paymentsButton") {
+            @Override
+            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
+                paymentsDialog.open(target);
+            }
+        };
+        form.add(paymentsButton);
+
+        TextField<String> paymentsFile = new TextField<>("paymentsFile", new IModel<String>() {
             @Override
             public String getObject() {
-                return paymentsFileName;
+                File paymentsFile = EircPaymentsTransformer.this.paymentsFileName.getObject();
+                return paymentsFile == null? "" : paymentsFile.getName();
             }
 
             @Override
             public void setObject(String object) {
-                paymentsFileName = object;
             }
 
             @Override
             public void detach() {
 
             }
-        }, fileService.getFileList());
-        form.add(chargesFiles);
+        });
+        paymentsFile.setEnabled(false);
+        form.add(paymentsFile);
 
         TextField<String> resultFile = new TextField<>("result", new IModel<String>() {
             @Override
@@ -139,17 +153,23 @@ public class EircPaymentsTransformer extends TemplatePage {
                     Long eircOrganizationId = configBean.getInteger(MbTransformerConfig.EIRC_ORGANIZATION_ID, true).longValue();
                     String tmpDir = fileService.getTmpDir();
                     if (tmpDir == null) {
+                        container.error("undefined_tmp_dir");
                         return;
                     }
                     String workDir = fileService.getWorkDir();
                     if (workDir == null) {
+                        container.error("undefined_work_dir");
                         return;
                     }
-                    File eircFile = new File(workDir, paymentsFileName);
+                    String privateKey = configBean.getString(MbTransformerConfig.PRIVATE_KEY, true);
+                    if (privateKey == null) {
+                        container.error("undefined_private_key");
+                        return;
+                    }
 
-                    //eircPaymentsRegistryConverter.exportToMegaBank(eircFile, workDir, resultFileName,
-                    //        mbOrganizationId, eircOrganizationId, null, tmpDir,
-                    //        imessenger, finishCallback);
+                    eircPaymentsRegistryConverter.exportToMegaBank(paymentsFileName.getObject(), workDir, resultFileName,
+                            mbOrganizationId, eircOrganizationId, privateKey, tmpDir,
+                            imessenger, finishCallback);
                 } catch (Exception e) {
                     log().error("Failed convert", e);
                 } finally {

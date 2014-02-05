@@ -1,7 +1,7 @@
-package ru.flexpay.eirc.registry.service.file;
+package ru.flexpay.eirc.registry.util;
 
-import javax.ejb.Stateless;
 import java.io.DataInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
@@ -11,14 +11,13 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 
-@Stateless
-public class RSASignatureService {
+public class RSASignatureUtil {
 
 	private static final int BUFFER_SIZE = 1024;
 	private static final String RSA_KEY_ALGORITHM = "RSA";
 	private static final String SHA1_WITH_RSA_SIGNATURE_ALGORITHM = "SHA1withRSA";
 
-	public Signature readPrivateSignature(String key) throws Exception {
+	public static Signature readPrivateSignature(String key) throws Exception {
 
 		byte[] privKeyBytes = getDataFromFile(key);
 
@@ -34,7 +33,7 @@ public class RSASignatureService {
 		return instance;
 	}
 
-	public Signature readPublicSignature(String key) throws Exception {
+	public static Signature readPublicSignature(String key) throws Exception {
 
 		byte[] pubKeyBytes = getDataFromFile(key);
 
@@ -50,10 +49,10 @@ public class RSASignatureService {
 		return instance;
 	}
 
-	private byte[] getDataFromFile(String file) throws IOException {
+	private static byte[] getDataFromFile(String file) throws IOException {
 		DataInputStream dis = null;
 		try {
-			dis = new DataInputStream(getClass().getClassLoader().getResourceAsStream(file));
+			dis = new DataInputStream(new FileInputStream(file));
 
 			byte[] data = new byte[BUFFER_SIZE];
 			int off = 0;

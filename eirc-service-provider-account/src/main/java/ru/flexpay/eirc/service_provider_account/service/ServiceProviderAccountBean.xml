@@ -129,7 +129,7 @@
         <include refid="serviceProviderAccountCondition"/>
     </select>
 
-    <select id="selectServiceProviderAccount" parameterType="long" resultMap="ServiceProviderAccount">
+    <select id="selectServiceProviderAccount" parameterType="map" resultMap="ServiceProviderAccount">
         select
         <include refid="serviceProviderAccountColumns"/>,
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
@@ -137,7 +137,7 @@
 
         from `service_provider_account` spa
         left join `organization_attribute` oa on oa.`object_id` = spa.`organization_id` and oa.`value_type_id` = 900
-        left join `organization_string_culture` oc on oc.`id` = oa.`value_id` and oc.`locale_id` = #{locale.id}
+        left join `organization_string_culture` oc on oc.`id` = oa.`value_id` and oc.`locale_id` = #{locale}
         left join `service` s on s.`id` = spa.`service_id`
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
         left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
@@ -145,16 +145,19 @@
         where spa.`object_id` = #{id} order by `spa_begin_date` desc
     </select>
 
-    <select id="selectServiceProviderAccountByPkId" parameterType="long" resultMap="ServiceProviderAccount">
+    <select id="selectServiceProviderAccountByPkId" parameterType="map" resultMap="ServiceProviderAccount">
         select
         <include refid="serviceProviderAccountColumns"/>,
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>
 
         from `service_provider_account` spa
+        left join `organization_attribute` oa on oa.`object_id` = spa.`organization_id` and oa.`value_type_id` = 900
+        left join `organization_string_culture` oc on oc.`id` = oa.`value_id` and oc.`locale_id` = #{locale}
         left join `service` s on s.`id` = spa.`service_id`
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
         left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
+
         where spa.`pk_id` = #{pkId}
     </select>
 
@@ -165,9 +168,12 @@
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>
 
         from `service_provider_account` spa
+        left join `organization_attribute` oa on oa.`object_id` = spa.`organization_id` and oa.`value_type_id` = 900
+        left join `organization_string_culture` oc on oc.`id` = oa.`value_id` and oc.`locale_id` = #{locale}
         left join `service` s on s.`id` = spa.`service_id`
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceJoin"/>
         left join `eirc_account` e on e.`object_id` = spa.`eirc_account_id`
+
         where spa.`pk_id` in #{pkIds}
     </select>
 

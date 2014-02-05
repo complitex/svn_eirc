@@ -7,6 +7,7 @@ import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.ITemplateLink;
 import org.complitex.template.web.template.ResourceTemplateMenu;
+import ru.flexpay.eirc.mb_transformer.web.registry.EircPaymentsTransformer;
 import ru.flexpay.eirc.mb_transformer.web.registry.MbCorrectionsTransformer;
 
 import java.util.List;
@@ -25,29 +26,50 @@ public class MbTransformerTemplateMenu extends ResourceTemplateMenu {
 
     @Override
     public List<ITemplateLink> getTemplateLinks(final Locale locale) {
-        List<ITemplateLink> links = ImmutableList.<ITemplateLink>of(new ITemplateLink() {
+        return ImmutableList.of(new ITemplateLink() {
 
-            @Override
-            public String getLabel(Locale locale) {
-                return getString(MbTransformerTemplateMenu.class, locale, "simple_saldo");
-            }
+                                    @Override
+                                    public String getLabel(Locale locale) {
+                                        return getString(MbTransformerTemplateMenu.class, locale, "simple_saldo");
+                                    }
 
-            @Override
-            public Class<? extends Page> getPage() {
-                return MbCorrectionsTransformer.class;
-            }
+                                    @Override
+                                    public Class<? extends Page> getPage() {
+                                        return MbCorrectionsTransformer.class;
+                                    }
 
-            @Override
-            public PageParameters getParameters() {
-                return new PageParameters();
-            }
+                                    @Override
+                                    public PageParameters getParameters() {
+                                        return new PageParameters();
+                                    }
 
-            @Override
-            public String getTagId() {
-                return "simple_saldo_item";
-            }
-        });
-        return links;
+                                    @Override
+                                    public String getTagId() {
+                                        return "simple_saldo_item";
+                                    }
+                                }, new ITemplateLink() {
+
+                                    @Override
+                                    public String getLabel(Locale locale) {
+                                        return getString(MbTransformerTemplateMenu.class, locale, "payments");
+                                    }
+
+                                    @Override
+                                    public Class<? extends Page> getPage() {
+                                        return EircPaymentsTransformer.class;
+                                    }
+
+                                    @Override
+                                    public PageParameters getParameters() {
+                                        return new PageParameters();
+                                    }
+
+                                    @Override
+                                    public String getTagId() {
+                                        return "payments_item";
+                                    }
+                                }
+        );
     }
 
     @Override

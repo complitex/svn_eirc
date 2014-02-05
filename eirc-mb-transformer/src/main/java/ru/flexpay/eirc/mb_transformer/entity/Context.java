@@ -7,7 +7,7 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import ru.flexpay.eirc.mb_transformer.service.MbConverterException;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
-import ru.flexpay.eirc.registry.service.IMessenger;
+import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.util.FPRegistryConstants;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.entity.ServiceCorrection;
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * @author Pavel Sknar
  */
 public abstract class Context {
-    private IMessenger imessenger;
+    private AbstractMessenger imessenger;
     private ServiceCorrectionBean serviceCorrectionBean;
     private ServiceBean serviceBean;
     private List<RegistryRecordData> registryRecords = Lists.newLinkedList();
@@ -38,7 +38,7 @@ public abstract class Context {
             expireAfterWrite(10, TimeUnit.MINUTES).
             build();
 
-    public Context(IMessenger imessenger, ServiceCorrectionBean serviceCorrectionBean, ServiceBean serviceBean,
+    public Context(AbstractMessenger imessenger, ServiceCorrectionBean serviceCorrectionBean, ServiceBean serviceBean,
                    Long mbOrganizationId, Long eircOrganizationId, boolean skipHeader, Registry registry) {
         this.imessenger = imessenger;
         this.mbOrganizationId = mbOrganizationId;
@@ -49,7 +49,7 @@ public abstract class Context {
         this.registry = registry;
     }
 
-    public IMessenger getIMessenger() {
+    public AbstractMessenger getIMessenger() {
         return imessenger;
     }
 

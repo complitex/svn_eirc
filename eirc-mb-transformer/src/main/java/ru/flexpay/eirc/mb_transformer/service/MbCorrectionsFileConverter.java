@@ -31,10 +31,12 @@ import ru.flexpay.eirc.mb_transformer.entity.MbTransformerConfig;
 import ru.flexpay.eirc.mb_transformer.entity.RegistryRecordMapped;
 import ru.flexpay.eirc.mb_transformer.util.MbParsingConstants;
 import ru.flexpay.eirc.registry.entity.*;
+import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
 import ru.flexpay.eirc.registry.service.AbstractJob;
 import ru.flexpay.eirc.registry.service.FinishCallback;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.file.RegistryFPFileService;
+import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.handle.MbConverterQueueProcessor;
 import ru.flexpay.eirc.registry.service.parse.ParseRegistryConstants;
 import ru.flexpay.eirc.registry.util.FPRegistryConstants;
@@ -199,7 +201,7 @@ public class MbCorrectionsFileConverter {
 
     public void convertFile(final MbFile correctionsFile, final MbFile chargesFile, final String dir, final String eircFileName,
                             final String tmpDir, final Long mbOrganizationId, final Long eircOrganizationId,
-                            final IMessenger imessenger, final FinishCallback finishConvert) throws AbstractException {
+                            final AbstractMessenger imessenger, final AbstractFinishCallback finishConvert) throws AbstractException {
         imessenger.addMessageInfo("mb_registry_convert_starting");
         finishConvert.init();
 
@@ -240,7 +242,7 @@ public class MbCorrectionsFileConverter {
     @SuppressWarnings ({"unchecked"})
 	public void convertFile(final MbFile correctionsFile, final MbFile chargesFile, String dir, String eircFileName,
                             final String tmpDir, Long mbOrganizationId, Long eircOrganizationId,
-                            final IMessenger imessenger) throws AbstractException {
+                            final AbstractMessenger imessenger) throws AbstractException {
 
         final Registry registry = new Registry();
         initRegistry(registry);
@@ -517,7 +519,7 @@ public class MbCorrectionsFileConverter {
                 expireAfterWrite(10, TimeUnit.MINUTES).
                 build();
 
-        public CorrectionsContext(IMessenger imessenger, Long mbOrganizationId, Long eircOrganizationId, String city,
+        public CorrectionsContext(AbstractMessenger imessenger, Long mbOrganizationId, Long eircOrganizationId, String city,
                                   boolean skipHeader, Registry registry,
                                   Map<String, int[]> charges, ByteBuffer chargesBuffer) {
             super(imessenger, serviceCorrectionBean, serviceBean, mbOrganizationId,eircOrganizationId, skipHeader, registry);
@@ -878,7 +880,7 @@ public class MbCorrectionsFileConverter {
 
     private class ChargesContext extends Context {
 
-        public ChargesContext(IMessenger imessenger, Long mbOrganizationId, Long eircOrganizationId, boolean skipHeader,
+        public ChargesContext(AbstractMessenger imessenger, Long mbOrganizationId, Long eircOrganizationId, boolean skipHeader,
                               Registry registry) {
             super(imessenger, serviceCorrectionBean, serviceBean, mbOrganizationId, eircOrganizationId, skipHeader, registry);
         }

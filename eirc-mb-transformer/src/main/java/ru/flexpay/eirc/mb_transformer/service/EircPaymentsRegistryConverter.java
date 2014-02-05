@@ -4,30 +4,33 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
+import org.apache.ibatis.session.SqlSessionManager;
 import org.apache.wicket.util.io.IOUtils;
 import org.complitex.correction.entity.OrganizationCorrection;
 import org.complitex.correction.service.OrganizationCorrectionBean;
 import org.complitex.dictionary.entity.FilterWrapper;
+import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
 import org.complitex.dictionary.service.exception.AbstractException;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.flexpay.eirc.mb_transformer.entity.MbTransformerConfig;
 import ru.flexpay.eirc.mb_transformer.util.MbParsingConstants;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.*;
+import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
 import ru.flexpay.eirc.registry.service.AbstractJob;
-import ru.flexpay.eirc.registry.service.FinishCallback;
-import ru.flexpay.eirc.registry.service.IMessenger;
-import ru.flexpay.eirc.registry.service.file.RSASignatureService;
+import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.handle.MbConverterQueueProcessor;
 import ru.flexpay.eirc.registry.service.parse.FileReader;
 import ru.flexpay.eirc.registry.service.parse.ParseRegistryConstants;
 import ru.flexpay.eirc.registry.service.parse.RegistryFormatException;
 import ru.flexpay.eirc.registry.util.FileUtil;
 import ru.flexpay.eirc.registry.util.ParseUtil;
+import ru.flexpay.eirc.registry.util.RSASignatureUtil;
 import ru.flexpay.eirc.registry.util.StringUtil;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.entity.ServiceCorrection;
@@ -38,8 +41,11 @@ import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccountCor
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountCorrectionBean;
 
+import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
 import javax.ejb.Singleton;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import java.io.*;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -57,6 +63,7 @@ import static ru.flexpay.eirc.registry.service.parse.ParseRegistryConstants.*;
  * Generate the payments registry in MB format.
  */
 @Singleton
+@TransactionAttribute(TransactionAttributeType.NEVER)
 public class EircPaymentsRegistryConverter {
 
 	private static final Logger log = LoggerFactory.getLogger(EircPaymentsRegistryConverter.class.getClass());
@@ -64,7 +71,7 @@ public class EircPaymentsRegistryConverter {
     private static final int NUMBER_READ_CHARS = 10000;
 
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("dd.MM.yyyy");
-	private static final DateTimeFormatter PAYMENT_DATE_FORMATTER = DateTimeFormat.forPattern("yyyyMMdd");
+	private static final DateTimeFormatter PAYMENT_DATE_FORMATTER = DateTimeFormat.forPattern("ddMMyyyy");
 	private static final DateTimeFormatter PAYMENT_PERIOD_DATE_FORMATTER = DateTimeFormat.forPattern("yyyyMM");
 
 	private static final String[] TABLE_HEADERS = {
@@ -113,7 +120,7 @@ public class EircPaymentsRegistryConverter {
 		SERVICE_NAMES.put("25", "РЕМ СЧЁТ");
 	}
 
-    private static byte[] DELIMITER = "|".getBytes(MbParsingConstants.REGISTRY_FILE_CHARSET);
+    private final static byte[] DELIMITER = "|".getBytes(MbParsingConstants.REGISTRY_FILE_CHARSET);
 
     @EJB
     private EircOrganizationStrategy eircOrganizationStrategy;
@@ -128,9 +135,6 @@ public class EircPaymentsRegistryConverter {
     private ServiceBean serviceBean;
 
     @EJB
-    private RSASignatureService signatureService;
-
-    @EJB
     private ServiceProviderAccountCorrectionBean serviceProviderAccountCorrection;
 
     @EJB
@@ -138,6 +142,9 @@ public class EircPaymentsRegistryConverter {
 
     @EJB
     private MbConverterQueueProcessor mbConverterQueueProcessor;
+
+    @EJB(name = "MbTransformerConfigBean")
+    private MbTransformerConfigBean configBean;
 
     private Cache<String, String> serviceCorrectionCache = CacheBuilder.newBuilder().
             maximumSize(1000).
@@ -149,10 +156,32 @@ public class EircPaymentsRegistryConverter {
             expireAfterWrite(10, TimeUnit.MINUTES).
             build();
 
-    public void convertFile(final File eircFile, final String dir, final String mbFileName, final Long mbOrganizationId,
+    @PostConstruct
+    public void init2() {
+        SqlSessionFactoryBean sqlSessionFactoryBean = configBean == null ? new SqlSessionFactoryBean() :
+                new SqlSessionFactoryBean() {
+                    @Override
+                    public SqlSessionManager getSqlSessionManager() {
+                        return getSqlSessionManager(configBean.getString(MbTransformerConfig.EIRC_DATA_SOURCE), "remote");
+                    }
+                };
+        eircOrganizationStrategy.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+
+        organizationCorrectionBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+
+        serviceCorrectionBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+
+        serviceBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+
+        serviceProviderAccountCorrection.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+
+        serviceProviderAccountBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+    }
+
+    public void exportToMegaBank(final File eircFile, final String dir, final String mbFileName, final Long mbOrganizationId,
                             final Long eircOrganizationId, final String privateKey, final String tmpDir,
-                            final IMessenger imessenger, final FinishCallback finishConvert) throws AbstractException {
-        imessenger.addMessageInfo("mb_registry_convert_starting");
+                            final AbstractMessenger imessenger, final AbstractFinishCallback finishConvert) throws AbstractException {
+        imessenger.addMessageInfo("eirc_payments_convert_starting", eircFile.getName());
         finishConvert.init();
 
         mbConverterQueueProcessor.execute(
@@ -164,10 +193,9 @@ public class EircPaymentsRegistryConverter {
                                     privateKey, tmpDir, imessenger);
                         } catch (Exception e) {
                             log.error("Can not convert files", e);
-                            imessenger.addMessageError("mb_registries_fail_convert",
-                                    e.getMessage() != null ? e.getMessage() : e.getCause().getMessage());
+                            imessenger.addMessageError("eirc_payments_fail_convert", eircFile.getName(), e.toString());
                         } finally {
-                            imessenger.addMessageInfo("mb_registry_convert_finish");
+                            imessenger.addMessageInfo("eirc_payments_convert_finish", eircFile.getName());
                             finishConvert.complete();
                         }
                         return null;
@@ -176,14 +204,16 @@ public class EircPaymentsRegistryConverter {
         );
     }
 
-    public void exportToMegaBank(File eircFile, String dir, String mbFileName, Long mbOrganizationId, Long eircOrganizationId,
-                                 String privateKey, String tmpDir, IMessenger imessenger) throws IOException,
+    public void exportToMegaBank(final File eircFile, String dir, String mbFileName,
+                                 Long mbOrganizationId, Long eircOrganizationId,
+                                 String privateKey, String tmpDir, final AbstractMessenger imessenger) throws IOException,
             RegistryFormatException, ExecuteException {
         final FileReader reader = new FileReader(new FileInputStream(eircFile));
         try {
             DataSource dataSource = new DataSource() {
                 List<FileReader.Message> listMessage = Lists.newArrayList();
                 int idx = 0;
+                int totalCount = 0;
 
                 Registry registry = null;
 
@@ -197,12 +227,14 @@ public class EircPaymentsRegistryConverter {
                     try {
                         message = getNextMessage();
                     } catch (RegistryFormatException | ExecuteException e ) {
-                        log.error("{}", e.toString());
+                        imessenger.addMessageError("eirc_payments_fail_convert", eircFile.getName(), e.toString());
+                        log.error("Failed message", e);
                     }
                     if (message == null) {
                         return null;
                     }
                     if (message.getType() != MESSAGE_TYPE_HEADER) {
+                        imessenger.addMessageError("eirc_registry_wanted_header", eircFile.getName());
                         log.error("Failed registry format: wanted header");
                         return null;
                     }
@@ -212,7 +244,8 @@ public class EircPaymentsRegistryConverter {
                         ParseUtil.fillUpRegistry(listMessage, ParseRegistryConstants.HEADER_DATE_FORMAT, registry);
                         return registry;
                     } catch (RegistryFormatException e) {
-                        log.error("{}", e.toString());
+                        imessenger.addMessageError("eirc_payments_fail_convert", eircFile.getName(), e.toString());
+                        log.error("Failed fill up registry", e.toString());
                     }
                     return null;
                 }
@@ -227,10 +260,12 @@ public class EircPaymentsRegistryConverter {
                         return null;
                     }
                     if (message.getType() == MESSAGE_TYPE_FOOTER) {
+                        imessenger.addMessageInfo("eirc_registry_success_header", eircFile.getName(), totalCount);
                         log.info("Find footer. End of file");
                         return null;
                     }
                     if (message.getType() != MESSAGE_TYPE_RECORD) {
+                        imessenger.addMessageError("eirc_registry_wanted_record", eircFile.getName());
                         log.error("Failed registry format: wanted record");
                         return null;
                     }
@@ -247,7 +282,12 @@ public class EircPaymentsRegistryConverter {
                             return null;
                         }
                     }
-                    return listMessage.get(idx++);
+                    totalCount++;
+                    FileReader.Message message = listMessage.get(idx++);
+                    if (message != null && totalCount%10000 == 0) {
+                        imessenger.addMessageInfo("processed_lines", totalCount, eircFile.getName());
+                    }
+                    return message;
                 }
 
                 private List<String> parseMessage(String message) {
@@ -264,6 +304,7 @@ public class EircPaymentsRegistryConverter {
             Organization serviceProvider = eircOrganizationStrategy.findById(registry.getRecipientOrganizationId(), true);
 
             if (serviceProvider == null) {
+                imessenger.addMessageError("eirc_payments_service_provider_not_found", eircFile.getName(), registry.getRecipientOrganizationId());
                 log.error("Service provider {} not found", registry.getRecipientOrganizationId());
                 return;
             }
@@ -271,9 +312,41 @@ public class EircPaymentsRegistryConverter {
             try {
                 Signature signature = getPrivateSignature(privateKey);
                 exportToMegaBank(dataSource, serviceProvider, mbOrganizationId, eircOrganizationId, signature, dir,
-                        tmpDir, mbFileName, eircFile.length());
+                        tmpDir, mbFileName, 2*eircFile.length() + 1024, new AbstractMessenger() {
+
+                    @Override
+                    public void addMessageInfo(String message, Object... parameters) {
+                        imessenger.addMessageInfo(message, eircFile.getName(), parameters);
+                    }
+
+                    @Override
+                    public void addMessageError(String message, Object... parameters) {
+                        imessenger.addMessageError(message, eircFile.getName(), parameters);
+                    }
+
+                    @Override
+                    public Queue<IMessage> getIMessages() {
+                        return imessenger.getIMessages();
+                    }
+
+                    @Override
+                    public int countIMessages() {
+                        return imessenger.countIMessages();
+                    }
+
+                    @Override
+                    public IMessage getNextIMessage() {
+                        return imessenger.getNextIMessage();
+                    }
+
+                    @Override
+                    protected String getResourceBundle() {
+                        return null;
+                    }
+                });
             } catch (Exception e) {
-                log.error("{}", e.toString());
+                imessenger.addMessageError("eirc_payments_fail_convert", eircFile.getName(), e.toString());
+                log.error("Failed export EIRC payments to MB payments", e);
             }
 
 
@@ -290,7 +363,8 @@ public class EircPaymentsRegistryConverter {
 	 */
 	public void exportToMegaBank(DataSource dataSource, Organization serviceProviderOrganization,
                                      Long mbOrganizationId, Long eircOrganizationId,
-                                     Signature signature, String dir, String tmpDir, String mbFileName, long mbFileLength)
+                                     Signature signature, String dir, String tmpDir, String mbFileName, long mbFileLength,
+                                     AbstractMessenger imessenger)
             throws ExecutionException, AbstractException {
 
         Registry registry = dataSource.getRegistry();
@@ -310,6 +384,7 @@ public class EircPaymentsRegistryConverter {
 
             Container detailsPaymentsDocument = registry.getContainer(ContainerType.DETAILS_PAYMENTS_DOCUMENT);
             if (detailsPaymentsDocument == null) {
+                imessenger.addMessageError("eirc_payments_not_found_details");
                 log.error("Did not find details of payments");
                 return;
             }
@@ -343,7 +418,7 @@ public class EircPaymentsRegistryConverter {
 			writeLine(buffer, builder.toString());
 
 			// информационные строки
-			log.debug("Write info lines");
+            log.debug("Write info lines");
 			log.debug("Total info lines: {}", registry.getRecordsCount());
 
             RegistryRecordData registryRecord;
@@ -354,8 +429,7 @@ public class EircPaymentsRegistryConverter {
             buffer.flip();
 
             signature.update(buffer);
-
-            buffer.flip();
+            buffer.position(0);
 
             byte[] sign = signature.sign();
 
@@ -374,7 +448,6 @@ public class EircPaymentsRegistryConverter {
             outChannel.write(buff);
             buff.clear();
 
-            buffer.flip();
             outChannel.write(buffer);
             buffer.clear();
 
@@ -448,10 +521,10 @@ public class EircPaymentsRegistryConverter {
 
     private void writeInfoLine(ByteBuffer buffer, String delimeter, RegistryRecordData record,
                                Long serviceProviderId, Long eircOrganizationId, Long mbOrganizationId)
-            throws ExecutionException, MbConverterException {
+            throws ExecutionException, MbConverterException, IOException {
 
 		//граница таблицы
-		writeCellData(buffer, DELIMITER, "", 0, ' ');
+		//writeCellData(buffer, DELIMITER, "", 0, ' ');
 
 		// номер квитанции
         String numberQuittance = null;
@@ -547,6 +620,8 @@ public class EircPaymentsRegistryConverter {
 		int sum = record.getAmount().multiply(new BigDecimal("100")).intValue();
 		writeCellData(buffer, DELIMITER, String.valueOf(sum), null, ' ');
 
+        writeLine(buffer, null);
+
 	}
 
     private String getEircAccount(RegistryRecordData record, Long serviceProviderId, Long eircOrganizationId, Long mbOrganizationId) throws MbConverterException {
@@ -636,7 +711,7 @@ public class EircPaymentsRegistryConverter {
     private Signature getPrivateSignature(String privateKey) throws AbstractException {
         if (privateKey != null) {
             try {
-                return signatureService.readPrivateSignature(privateKey);
+                return RSASignatureUtil.readPrivateSignature(privateKey);
             } catch (Exception e) {
                 throw new AbstractException("Error read private signature: " + privateKey, e) {};
             }

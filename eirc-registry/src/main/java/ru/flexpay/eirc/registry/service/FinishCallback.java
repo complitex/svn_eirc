@@ -10,43 +10,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author Pavel Sknar
  */
-public class FinishCallback {
+public abstract class FinishCallback extends AbstractFinishCallback {
 
     private Map<Long, AtomicInteger> counters = Maps.newConcurrentMap();
 
     @EJB
     private SessionBean sessionBean;
 
-    public FinishCallback getInstance() {
-        return new FinishCallback() {
+    public AbstractFinishCallback getInstance() {
+        AtomicInteger counter = getUserCounter();
 
-            AtomicInteger value = FinishCallback.this.getUserCounter();
-
-            @Override
-            public FinishCallback getInstance() {
-                return this;
-            }
-
-            @Override
-            protected AtomicInteger getUserCounter() {
-                return value;
-            }
-        };
+        return new SimpleFinishCallback(counter);
     }
 
-    public void init() {
-        getUserCounter().incrementAndGet();
+    @Override
+    protected AtomicInteger getCounter() {
+        return getUserCounter();
     }
 
-    public void complete() {
-        getUserCounter().decrementAndGet();
-    }
-
-    public boolean isCompleted() {
-        return getUserCounter().get() <= 0;
-    }
-
-    protected AtomicInteger getUserCounter() {
+    private AtomicInteger getUserCounter() {
         Long userId = sessionBean.getCurrentUserId();
         AtomicInteger userCounter = counters.get(userId);
         if (userCounter == null) {
@@ -54,6 +36,19 @@ public class FinishCallback {
             counters.put(userId, userCounter);
         }
         return userCounter;
+    }
+
+    private static class SimpleFinishCallback extends AbstractFinishCallback {
+        private AtomicInteger counter;
+
+        private SimpleFinishCallback(AtomicInteger counter) {
+            this.counter = counter;
+        }
+
+        @Override
+        protected AtomicInteger getCounter() {
+            return counter;
+        }
     }
 
 }
