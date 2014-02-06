@@ -12,6 +12,7 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
 import org.complitex.dictionary.service.exception.AbstractException;
 import org.complitex.dictionary.service.executor.ExecuteException;
+import org.complitex.dictionary.util.DateUtil;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -46,12 +47,14 @@ import javax.ejb.EJB;
 import javax.ejb.Singleton;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.Signature;
-import java.security.SignatureException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -73,6 +76,8 @@ public class EircPaymentsRegistryConverter {
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("dd.MM.yyyy");
 	private static final DateTimeFormatter PAYMENT_DATE_FORMATTER = DateTimeFormat.forPattern("ddMMyyyy");
 	private static final DateTimeFormatter PAYMENT_PERIOD_DATE_FORMATTER = DateTimeFormat.forPattern("yyyyMM");
+
+    private static final String FORMAT_FILE_NAME = "00001001.YMD";
 
 	private static final String[] TABLE_HEADERS = {
 			"код квит",
@@ -312,16 +317,32 @@ public class EircPaymentsRegistryConverter {
             try {
                 Signature signature = getPrivateSignature(privateKey);
                 exportToMegaBank(dataSource, serviceProvider, mbOrganizationId, eircOrganizationId, signature, dir,
-                        tmpDir, mbFileName, 2*eircFile.length() + 1024, new AbstractMessenger() {
+                        tmpDir, mbFileName, 2*eircFile.length() + 2048, new AbstractMessenger() {
 
                     @Override
                     public void addMessageInfo(String message, Object... parameters) {
-                        imessenger.addMessageInfo(message, eircFile.getName(), parameters);
+                        if (parameters == null || parameters.length == 0) {
+                            imessenger.addMessageInfo(message, eircFile.getName());
+                        } else if (parameters.length == 1) {
+                            imessenger.addMessageInfo(message, eircFile.getName(), parameters[0]);
+                        } else if (parameters.length == 2) {
+                            imessenger.addMessageInfo(message, eircFile.getName(), parameters[0], parameters[1]);
+                        } else if (parameters.length == 3) {
+                            imessenger.addMessageInfo(message, eircFile.getName(), parameters[0], parameters[1], parameters[2]);
+                        }
                     }
 
                     @Override
                     public void addMessageError(String message, Object... parameters) {
-                        imessenger.addMessageError(message, eircFile.getName(), parameters);
+                        if (parameters == null || parameters.length == 0) {
+                            imessenger.addMessageError(message, eircFile.getName());
+                        } else if (parameters.length == 1) {
+                            imessenger.addMessageError(message, eircFile.getName(), parameters[0]);
+                        } else if (parameters.length == 2) {
+                            imessenger.addMessageError(message, eircFile.getName(), parameters[0], parameters[1]);
+                        } else if (parameters.length == 3) {
+                            imessenger.addMessageError(message, eircFile.getName(), parameters[0], parameters[1], parameters[2]);
+                        }
                     }
 
                     @Override
@@ -369,18 +390,11 @@ public class EircPaymentsRegistryConverter {
 
         Registry registry = dataSource.getRegistry();
 
-        FileChannel rwChannel = null;
         FileChannel outChannel = null;
 
-        File tmpFile = new File(tmpDir, mbFileName + "_tmp_" + new Date().getTime());
+        File outFile = null;
         
 		try {
-
-			String externalServiceProviderId = getExternalServiceProviderId(registry, serviceProviderOrganization,
-                    mbOrganizationId, eircOrganizationId);
-
-            rwChannel = new RandomAccessFile(tmpFile, "rw").getChannel();
-            ByteBuffer buffer = rwChannel.map(FileChannel.MapMode.READ_WRITE, 0, mbFileLength);
 
             Container detailsPaymentsDocument = registry.getContainer(ContainerType.DETAILS_PAYMENTS_DOCUMENT);
             if (detailsPaymentsDocument == null) {
@@ -388,13 +402,43 @@ public class EircPaymentsRegistryConverter {
                 log.error("Did not find details of payments");
                 return;
             }
-
             String[] detailsData = detailsPaymentsDocument.getData().split(":");
+
+            Date paymentDate = PAYMENT_DATE_FORMATTER.parseDateTime(detailsData[2]).toDate();
+
+            if (StringUtils.isEmpty(mbFileName)) {
+
+                String externalServiceProviderId = getExternalServiceProviderId(registry, serviceProviderOrganization,
+                        mbOrganizationId, eircOrganizationId);
+
+                if (externalServiceProviderId.length() > 5) {
+                    throw new IllegalArgumentException("Service provider code '" + externalServiceProviderId + "' have length more 5");
+                }
+
+                StringBuilder builder = new StringBuilder(FORMAT_FILE_NAME);
+                builder.replace(5 - externalServiceProviderId.length(), 5, externalServiceProviderId);
+                builder.setCharAt(9, String.valueOf(DateUtil.getYear(paymentDate)).charAt(0));
+                builder.setCharAt(10, mod31(DateUtil.getMonth(paymentDate)));
+                builder.setCharAt(11, mod31(DateUtil.getDay(paymentDate)));
+
+                mbFileName = builder.toString();
+            }
+
+            outFile = new File(dir, mbFileName);
+
+            outChannel = new RandomAccessFile(outFile, "rw").getChannel();
+            ByteBuffer buffer = outChannel.map(FileChannel.MapMode.READ_WRITE, 0, mbFileLength);
+
+            log.info("Writing service lines");
+
+            writeCharToLine(buffer, '_', 128);
+            writeCharToLine(buffer, ' ', 306);
+            writeCharToLine(buffer, '_', 128);
 
 			// заголовочные строки
 			writeLine(buffer, "\tРеестр поступивших платежей. Мемориальный ордер №" + detailsData[1]);
 			writeLine(buffer, "\tДля \"" + eircOrganizationStrategy.displayDomainObject(serviceProviderOrganization, getLocation()) + "\". День распределения платежей " +
-						 DATE_FORMATTER.print(PAYMENT_DATE_FORMATTER.parseDateTime(detailsData[2]).toDate().getTime()) + ".");
+						 DATE_FORMATTER.print(paymentDate.getTime()) + ".");
 			writeCharToLine(buffer, ' ', 128);
 			writeCharToLine(buffer, ' ', 128);
 			BigDecimal amount = registry.getAmount();
@@ -426,39 +470,17 @@ public class EircPaymentsRegistryConverter {
                 writeInfoLine(buffer, "|", registryRecord, serviceProviderOrganization.getId(), eircOrganizationId, mbOrganizationId);
 			}
 
-            buffer.flip();
-
-            signature.update(buffer);
-            buffer.position(0);
-
-            byte[] sign = signature.sign();
-
-			// служебные строки
-
-			log.info("Writing service lines");
-
-            outChannel = new FileOutputStream(new File(dir, mbFileName)).getChannel();
-            ByteBuffer buff = ByteBuffer.allocateDirect(32 * 1024);
-
-            writeCharToLine(buff, '_', 128);
-            writeDigitalSignature(buff, sign);
-            writeCharToLine(buff, '_', 128);
-
-            buff.flip();
-            outChannel.write(buff);
-            buff.clear();
-
-            outChannel.write(buffer);
             buffer.clear();
 
-		} catch (IOException | SignatureException e) {
+            imessenger.addMessageInfo("mb_payments_created", mbFileName, registry.getRecordsCount());
+
+		} catch (Exception e) {
+            if (outFile != null && outFile.exists()) {
+                outFile.delete();
+            }
 			throw new ExecutionException(e);
 		} finally {
-            IOUtils.closeQuietly(rwChannel);
             IOUtils.closeQuietly(outChannel);
-            if (tmpFile.exists()) {
-                tmpFile.delete();
-            }
 		}
 	}
 
@@ -717,6 +739,14 @@ public class EircPaymentsRegistryConverter {
             }
         }
         return null;
+    }
+
+    private char mod31(int value) {
+        if (value <= 0 || value > 31) {
+            throw new IllegalArgumentException("The number must have range [1, 31]");
+        }
+
+        return value <= 9 ? String.valueOf(value).charAt(0) : (char)('A' + (value - 9));
     }
 
 }

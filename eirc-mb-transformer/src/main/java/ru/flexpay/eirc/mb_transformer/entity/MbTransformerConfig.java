@@ -13,9 +13,7 @@ public enum MbTransformerConfig implements IConfig {
     WORK_DIR("/var/tmp/data", "general"),
     TMP_DIR("/tmp", "general"),
 
-    EIRC_DATA_SOURCE("jdbc/eircResource", "general"),
-
-    PRIVATE_KEY("/var/tmp/keys/private_key.pem", "general");
+    EIRC_DATA_SOURCE("jdbc/eircResource", "general");
 
     private String defaultValue;
     private String groupKey;

@@ -61,7 +61,6 @@ public class EircPaymentsTransformer extends TemplatePage {
     private AjaxSelfUpdatingTimerBehavior timerBehavior;
 
     private Model<File> paymentsFileName = new Model<>();
-    private String resultFileName;
 
     public EircPaymentsTransformer() throws ExecutionException, InterruptedException {
 
@@ -123,24 +122,6 @@ public class EircPaymentsTransformer extends TemplatePage {
         paymentsFile.setEnabled(false);
         form.add(paymentsFile);
 
-        TextField<String> resultFile = new TextField<>("result", new IModel<String>() {
-            @Override
-            public String getObject() {
-                return resultFileName;
-            }
-
-            @Override
-            public void setObject(String object) {
-                resultFileName = object;
-            }
-
-            @Override
-            public void detach() {
-
-            }
-        });
-        form.add(resultFile);
-
         AjaxButton transform = new AjaxButton("transform") {
 
             @Override
@@ -161,14 +142,9 @@ public class EircPaymentsTransformer extends TemplatePage {
                         container.error("undefined_work_dir");
                         return;
                     }
-                    String privateKey = configBean.getString(MbTransformerConfig.PRIVATE_KEY, true);
-                    if (privateKey == null) {
-                        container.error("undefined_private_key");
-                        return;
-                    }
 
-                    eircPaymentsRegistryConverter.exportToMegaBank(paymentsFileName.getObject(), workDir, resultFileName,
-                            mbOrganizationId, eircOrganizationId, privateKey, tmpDir,
+                    eircPaymentsRegistryConverter.exportToMegaBank(paymentsFileName.getObject(), workDir, null,
+                            mbOrganizationId, eircOrganizationId, null, tmpDir,
                             imessenger, finishCallback);
                 } catch (Exception e) {
                     log().error("Failed convert", e);
