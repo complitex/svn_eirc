@@ -20,6 +20,8 @@ import org.apache.wicket.extensions.markup.html.repeater.util.SingleSortState;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
+import org.apache.wicket.markup.html.form.TextField;
+import org.apache.wicket.markup.html.internal.HtmlHeaderContainer;
 import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.IDataProvider;
@@ -27,12 +29,15 @@ import org.apache.wicket.markup.repeater.data.ListDataProvider;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
+import org.apache.wicket.request.resource.PackageResourceReference;
 import org.odlabs.wiquery.ui.dialog.Dialog;
 import ru.flexpay.eirc.mb_transformer.service.FileService;
 
 import javax.ejb.EJB;
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -57,26 +62,28 @@ public class BrowserFilesDialog extends Panel {
     private Component refreshComponent;
     private IModel<File> selectedModel;
 
+    private WebMarkupContainer container;
+
     private final List<IColumn<File>> COLUMNS = ImmutableList.<IColumn<File>>of(
-            new IFileColumn(new Model<>("Name"), new IFileModel() {
+            new IFileColumn(new ResourceModel("name"), new IFileModel() {
                 @Override
                 public String getObject() {
                     String name = getFile().getName();
                     return getFile().isDirectory() ? name + "/" : name;
                 }
-            }, "name"),
-            new IFileColumn(new Model<>("Size"), new IFileModel() {
+            }, "name", "nameColumn"),
+            new IFileColumn(new ResourceModel("size"), new IFileModel() {
                 @Override
                 public String getObject() {
                     return isUpControl(getFile()) ? "" : String.valueOf(getFile().length());
                 }
-            }, "size"),
-            new IFileColumn(new Model<>("Date"), new IFileModel() {
+            }, "size", "sizeColumn"),
+            new IFileColumn(new ResourceModel("date"), new IFileModel() {
                 @Override
                 public String getObject() {
                     return isUpControl(getFile()) ? "" : DATE_FORMAT.format(getFile().lastModified());
                 }
-            }, "date")
+            }, "date", "dateColumn")
     );
 
     public BrowserFilesDialog(String id, Component refreshComponent, IModel<File> selectedModel) {
@@ -88,6 +95,12 @@ public class BrowserFilesDialog extends Panel {
         init();
     }
 
+    @Override
+    public void renderHead(HtmlHeaderContainer container) {
+
+        container.getHeaderResponse().renderCSSReference(new PackageResourceReference(BrowserFilesDialog.class, "browser.css"));
+    }
+
     public File getSelectedFile() {
         return isFile() ? selected.getModelObject() : null;
     }
@@ -96,10 +109,11 @@ public class BrowserFilesDialog extends Panel {
         dialog = new Dialog("dialog");
         dialog.setTitle(new ResourceModel("title"));
         dialog.setWidth(500);
+        dialog.setHeight(500);
         add(dialog);
 
 
-        final WebMarkupContainer container = new WebMarkupContainer("container");
+        container = new WebMarkupContainer("container");
         container.setOutputMarkupId(true);
 
         dialog.add(container);
@@ -131,8 +145,28 @@ public class BrowserFilesDialog extends Panel {
 
         form.add(button);
 
-        final DataTable<File> table = new DataTable<File>("datatable", COLUMNS, provider, 15) {
-            private AttributeAppender style = new AttributeAppender("style", new Model<>("background-color:#E5E4E2"));
+        final TextField<String> selectedFile = new TextField<>("selected", new IModel<String>() {
+            @Override
+            public String getObject() {
+                return selected != null && selected.getModelObject() != null && isFile()? selected.getModelObject().getName() : "";
+            }
+
+            @Override
+            public void setObject(String object) {
+
+            }
+
+            @Override
+            public void detach() {
+
+            }
+        });
+        selectedFile.setEnabled(false);
+        selectedFile.setOutputMarkupId(true);
+        form.add(selectedFile);
+
+        final DataTable<File> table = new DataTable<File>("datatable", COLUMNS, provider, 1000) {
+            private AttributeAppender style = new AttributeAppender("class", new Model<>("selected"));
 
             @Override
             protected Item<File> newRowItem(String id, int index, final IModel<File> model) {
@@ -166,7 +200,7 @@ public class BrowserFilesDialog extends Panel {
                         selected = rowItem;
                         rowItem.add(style);
 
-                        target.add(rowItem);
+                        target.add(selectedFile);
                         updateButtonState(button, target);
                     }
                 });
@@ -194,7 +228,6 @@ public class BrowserFilesDialog extends Panel {
         } else {
             button.add(styleDisable);
         }
-        //button.add(new AttributeModifier("class", isFile() ? new Model<>("btnMiddle") : new Model<>("btnMiddleDisable")));
         if (target != null) {
             target.add(button);
         }
@@ -208,13 +241,30 @@ public class BrowserFilesDialog extends Panel {
             @Override
             protected List<File> getData() {
                 if (parent != null && StringUtils.equals(parent.getPath(), fileService.getWorkDir())) {
-                    return Lists.newArrayList(parent.listFiles());
+                    return Lists.newArrayList(getFiles(parent));
                 }
                 return parent != null?
-                        Lists.asList(new File(parent.getParentFile(), "..."), parent.listFiles()) :
+                        Lists.asList(new File(parent.getParentFile(), "..."), getFiles(parent)) :
                         Lists.newArrayList(new File("..."));
             }
         };
+    }
+
+    private File[] getFiles(File parent) {
+        File[] files = parent.listFiles();
+        Arrays.sort(files, new Comparator() {
+            public int compare(Object o1, Object o2) {
+
+                if (((File) o1).isDirectory() && ((File) o2).isFile()) {
+                    return -1;
+                } else if (((File) o1).isFile() && ((File) o2).isDirectory()) {
+                    return 1;
+                }
+                return ((File) o1).getName().compareTo(((File) o2).getName());
+            }
+
+        });
+        return files;
     }
 
     private boolean isUpControl(File file) {
@@ -222,23 +272,33 @@ public class BrowserFilesDialog extends Panel {
     }
 
     public void open(AjaxRequestTarget target) {
+        target.add(container);
         dialog.open(target);
     }
 
     private class IFileColumn extends AbstractColumn<File> {
         private IFileModel cellModel;
+        private String cssClass;
 
-        public IFileColumn(IModel<String> displayModel, IFileModel cellModel,  String sortProperty) {
+        public IFileColumn(IModel<String> displayModel, IFileModel cellModel,  String sortProperty, String cssClass) {
             super(displayModel, sortProperty);
             this.cellModel = cellModel;
+            this.cssClass = cssClass;
         }
 
         @Override
         public void populateItem(final Item<ICellPopulator<File>> cellItem, String componentId, final IModel<File> rowModel) {
             cellModel.setFile(rowModel.getObject());
             cellItem.add(new Label(componentId, cellModel.getObject()));
+            if (rowModel.getObject().isFile()) {
+                cellItem.add(new AttributeAppender("class", new Model<>(" file")));
+            }
         }
 
+        @Override
+        public String getCssClass() {
+            return cssClass;
+        }
     }
 
     private abstract class IFileModel implements IModel<String> {
