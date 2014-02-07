@@ -1,0 +1,36 @@
+.selected {
+    background-color:#87939D;
+    color: whitesmoke;
+}
+
+.tbColor > tbody {
+    width: auto;
+    height: 350px;
+    overflow-y: scroll;
+    display: block;
+    border-bottom: 1px groove #667584;
+    border-left: 1px dotted #667584;
+}
+
+.tbColor > thead {
+    width: 472px;
+    display: block;
+    border-left: 1px dotted #667584;
+    border-right: 1px dotted #667584;
+}
+
+.nameColumn {
+    width: 252px;
+}
+
+.sizeColumn {
+    width: 110px;
+}
+
+.dateColumn {
+    width: 110px;
+}
+
+.file {
+    color: #87939D;
+}
