@@ -9,7 +9,6 @@ import ru.flexpay.eirc.registry.util.FPRegistryConstants;
 import ru.flexpay.eirc.registry.util.FileUtil;
 import ru.flexpay.eirc.registry.util.RSASignatureUtil;
 
-import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,9 +30,6 @@ public class RegistryFPFileService {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(FPRegistryConstants.OPERATION_DATE_FORMAT);
 
     private static final String REGISTRY_RECORD_MESSAGE_TYPE = String.valueOf(FPRegistryConstants.REGISTRY_RECORD_MESSAGE_TYPE_CHAR);
-
-    @EJB
-    private RSASignatureUtil signatureService;
 
     public void writeHeader(DataSource dataSource, ByteBuffer buffer) throws IOException {
         writeLine(buffer, buildHeader(dataSource.getRegistry()), null);
@@ -72,7 +68,7 @@ public class RegistryFPFileService {
 	private Signature getPrivateSignature(String privateKey) throws AbstractException {
 		if (privateKey != null) {
 			try {
-				return signatureService.readPrivateSignature(privateKey);
+				return RSASignatureUtil.readPrivateSignature(privateKey);
 			} catch (Exception e) {
 				throw new AbstractException("Error read private signature: " + privateKey, e) {};
 			}
@@ -214,6 +210,8 @@ public class RegistryFPFileService {
         write(buffer, StringUtil.valueOf(record.getBuildingCorp()));
         write(buffer, FPRegistryConstants.ADDRESS_SEPARATOR);
         write(buffer, StringUtil.valueOf(record.getApartment()));
+        write(buffer, FPRegistryConstants.ADDRESS_SEPARATOR);
+        write(buffer, StringUtil.valueOf(record.getRoom()));
         write(buffer, FPRegistryConstants.FIELD_SEPARATOR);
         write(buffer, StringUtil.valueOf(record.getLastName()));
         write(buffer, FPRegistryConstants.FIO_SEPARATOR);

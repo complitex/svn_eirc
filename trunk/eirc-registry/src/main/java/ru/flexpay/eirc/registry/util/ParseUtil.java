@@ -60,7 +60,7 @@ public abstract class ParseUtil {
             List<String> addressFieldList = StringUtil.splitEscapable(
                     addressStr, ParseRegistryConstants.ADDRESS_DELIMITER, ParseRegistryConstants.ESCAPE_SYMBOL);
 
-            if (addressFieldList.size() != 6) {
+            if (addressFieldList.size() != 7) {
                 throw new RegistryFormatException(
                         String.format("Address group '%s' has invalid number of fields %d",
                                 addressStr, addressFieldList.size()));
@@ -71,6 +71,7 @@ public abstract class ParseUtil {
             record.setBuildingNumber(addressFieldList.get(3));
             record.setBuildingCorp(addressFieldList.get(4));
             record.setApartment(addressFieldList.get(5));
+            record.setRoom(addressFieldList.get(6));
         }
 
         // setup person first, middle, last names

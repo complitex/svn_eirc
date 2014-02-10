@@ -707,6 +707,11 @@ public class MbCorrectionsFileConverter {
             }
 
             @Override
+            public Long getRoomId() {
+                return null;
+            }
+
+            @Override
             public void addContainer(Container container) {
 
             }
@@ -850,6 +855,11 @@ public class MbCorrectionsFileConverter {
             @Override
             public String getApartment() {
                 return getField(9);
+            }
+
+            @Override
+            public String getRoom() {
+                return null;
             }
         }
     }
@@ -1019,6 +1029,11 @@ public class MbCorrectionsFileConverter {
             }
 
             @Override
+            public Long getRoomId() {
+                return null;
+            }
+
+            @Override
             public void addContainer(Container container) {
 
             }
@@ -1136,6 +1151,11 @@ public class MbCorrectionsFileConverter {
 
             @Override
             public String getApartment() {
+                return null;
+            }
+
+            @Override
+            public String getRoom() {
                 return null;
             }
         }

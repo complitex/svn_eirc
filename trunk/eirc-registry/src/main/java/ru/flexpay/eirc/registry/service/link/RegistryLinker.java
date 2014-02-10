@@ -1,7 +1,6 @@
 package ru.flexpay.eirc.registry.service.link;
 
 import org.apache.commons.lang.StringUtils;
-import org.complitex.address.entity.AddressEntity;
 import org.complitex.correction.service.AddressService;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
@@ -215,12 +214,7 @@ public class RegistryLinker {
             }
 
             // Search service provider account
-            Address address = null;
-            if (registryRecord.getApartmentId() != null) {
-                address = new Address(registryRecord.getApartmentId(), AddressEntity.APARTMENT);
-            } else if (registryRecord.getBuildingId() != null) {
-                address = new Address(registryRecord.getBuildingId(), AddressEntity.BUILDING);
-            }
+            Address address = registryRecord.getAddress();
 
             EircAccount eircAccount = new EircAccount();
             eircAccount.setAddress(address);
