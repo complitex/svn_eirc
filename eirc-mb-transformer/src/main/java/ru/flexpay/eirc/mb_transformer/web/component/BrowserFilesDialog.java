@@ -2,16 +2,21 @@ package ru.flexpay.eirc.mb_transformer.web.component;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.apache.commons.digester.RegexMatcher;
+import org.apache.commons.digester.SimpleRegexMatcher;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxEventBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
+import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.behavior.AttributeAppender;
+import org.apache.wicket.extensions.ajax.markup.html.repeater.data.sort.AjaxFallbackOrderByBorder;
 import org.apache.wicket.extensions.markup.html.repeater.data.grid.ICellPopulator;
 import org.apache.wicket.extensions.markup.html.repeater.data.sort.ISortState;
 import org.apache.wicket.extensions.markup.html.repeater.data.sort.ISortStateLocator;
+import org.apache.wicket.extensions.markup.html.repeater.data.sort.SortOrder;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.AbstractColumn;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.DataTable;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.HeadersToolbar;
@@ -35,6 +40,7 @@ import ru.flexpay.eirc.mb_transformer.service.FileService;
 
 import javax.ejb.EJB;
 import java.io.File;
+import java.io.FileFilter;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -44,6 +50,8 @@ import java.util.List;
  * @author Pavel Sknar
  */
 public class BrowserFilesDialog extends Panel {
+
+    private static final RegexMatcher MATCHER = new SimpleRegexMatcher();
 
     private Dialog dialog;
 
@@ -63,6 +71,10 @@ public class BrowserFilesDialog extends Panel {
     private IModel<File> selectedModel;
 
     private WebMarkupContainer container;
+
+    private SingleSortState state = new SingleSortState();
+    private String sortProperty = "name";
+    private Model<String> fileNameModel = new Model<>("*");
 
     private final List<IColumn<File>> COLUMNS = ImmutableList.<IColumn<File>>of(
             new IFileColumn(new ResourceModel("name"), new IFileModel() {
@@ -109,7 +121,7 @@ public class BrowserFilesDialog extends Panel {
         dialog = new Dialog("dialog");
         dialog.setTitle(new ResourceModel("title"));
         dialog.setWidth(500);
-        dialog.setHeight(500);
+        dialog.setHeight(550);
         add(dialog);
 
 
@@ -144,6 +156,20 @@ public class BrowserFilesDialog extends Panel {
         button.add(styleDisable);
 
         form.add(button);
+
+        TextField<String> fileNameFilter = new TextField<>("fileNameFilter", fileNameModel);
+        form.add(fileNameFilter);
+
+        AjaxButton filterButton = new AjaxButton("filterButton") {
+            @Override
+            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
+                if (StringUtils.isBlank(fileNameModel.getObject())) {
+                    fileNameModel.setObject("*");
+                }
+                target.add(container);
+            }
+        };
+        form.add(filterButton);
 
         final TextField<String> selectedFile = new TextField<>("selected", new IModel<String>() {
             @Override
@@ -200,6 +226,7 @@ public class BrowserFilesDialog extends Panel {
                         selected = rowItem;
                         rowItem.add(style);
 
+                        target.add(selected);
                         target.add(selectedFile);
                         updateButtonState(button, target);
                     }
@@ -208,12 +235,26 @@ public class BrowserFilesDialog extends Panel {
             }
         };
         table.addTopToolbar(new HeadersToolbar(table, new ISortStateLocator() {
-            private SingleSortState state = new SingleSortState();
             @Override
             public ISortState getSortState() {
                 return state;
             }
-        }));
+        }) {
+            @Override
+            protected WebMarkupContainer newSortableHeader(final String headerId, final String property,
+                                                           final ISortStateLocator locator)
+            {
+                return new AjaxFallbackOrderByBorder(headerId, property, locator) {
+                    private static final long serialVersionUID = 1L;
+
+                    @Override
+                    protected void onAjaxClick(AjaxRequestTarget target) {
+                        sortProperty = property;
+                        target.add(container);
+                    }
+                };
+            }
+        });
         form.add(table);
     }
 
@@ -251,19 +292,64 @@ public class BrowserFilesDialog extends Panel {
     }
 
     private File[] getFiles(File parent) {
-        File[] files = parent.listFiles();
-        Arrays.sort(files, new Comparator() {
-            public int compare(Object o1, Object o2) {
 
-                if (((File) o1).isDirectory() && ((File) o2).isFile()) {
-                    return -1;
-                } else if (((File) o1).isFile() && ((File) o2).isDirectory()) {
-                    return 1;
+        File[] files = parent.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File pathname) {
+                if (pathname.isDirectory()) {
+                    return true;
                 }
-                return ((File) o1).getName().compareTo(((File) o2).getName());
+                return MATCHER.match(pathname.getName(), fileNameModel.getObject());
             }
-
         });
+        final SortOrder order = state.getPropertySortOrder(sortProperty);
+        switch (sortProperty) {
+            case "name":
+                Arrays.sort(files, new Comparator() {
+                    public int compare(Object o1, Object o2) {
+
+                        if (((File) o1).isDirectory() && ((File) o2).isFile()) {
+                            return -1;
+                        } else if (((File) o1).isFile() && ((File) o2).isDirectory()) {
+                            return 1;
+                        }
+                        int comp = ((File) o1).getName().compareTo(((File) o2).getName());
+                        return SortOrder.ASCENDING.equals(order) ? comp : -1*comp;
+                    }
+
+                });
+                break;
+            case "size":
+                Arrays.sort(files, new Comparator() {
+                    public int compare(Object o1, Object o2) {
+
+                        if (((File) o1).isDirectory() && ((File) o2).isFile()) {
+                            return -1;
+                        } else if (((File) o1).isFile() && ((File) o2).isDirectory()) {
+                            return 1;
+                        }
+                        int comp = Long.compare(((File) o1).length(), ((File) o2).length());
+                        return SortOrder.ASCENDING.equals(order) ? comp : -1*comp;
+                    }
+
+                });
+                break;
+            case "date":
+                Arrays.sort(files, new Comparator() {
+                    public int compare(Object o1, Object o2) {
+
+                        if (((File) o1).isDirectory() && ((File) o2).isFile()) {
+                            return -1;
+                        } else if (((File) o1).isFile() && ((File) o2).isDirectory()) {
+                            return 1;
+                        }
+                        int comp = Long.compare(((File) o1).lastModified(), ((File) o2).lastModified());
+                        return SortOrder.ASCENDING.equals(order) ? comp : -1*comp;
+                    }
+
+                });
+                break;
+        }
         return files;
     }
 
@@ -290,8 +376,8 @@ public class BrowserFilesDialog extends Panel {
         public void populateItem(final Item<ICellPopulator<File>> cellItem, String componentId, final IModel<File> rowModel) {
             cellModel.setFile(rowModel.getObject());
             cellItem.add(new Label(componentId, cellModel.getObject()));
-            if (rowModel.getObject().isFile()) {
-                cellItem.add(new AttributeAppender("class", new Model<>(" file")));
+            if (!rowModel.getObject().isFile()) {
+                cellItem.add(new AttributeAppender("class", new Model<>(" folder")));
             }
         }
 

@@ -54,6 +54,8 @@ public interface RegistryRecordData extends AddressLinkData, Serializable {
 
     Long getApartmentId();
 
+    Long getRoomId();
+
     void addContainer(Container container);
 
     Address getAddress();

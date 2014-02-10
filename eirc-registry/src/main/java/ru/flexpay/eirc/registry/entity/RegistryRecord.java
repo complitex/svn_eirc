@@ -28,6 +28,7 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
     private String buildingNumber;
     private String buildingCorp;
     private String apartment;
+    private String room;
     private String firstName;
     private String middleName;
     private String lastName;
@@ -41,6 +42,7 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
     private Long streetId;
     private Long buildingId;
     private Long apartmentId;
+    private Long roomId;
 
     private RegistryRecordStatus status;
 
@@ -75,6 +77,7 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
         this.personalAccountExt = personalAccountExt;
     }
 
+    @Override
     public String getCityType() {
         return cityType;
     }
@@ -83,6 +86,7 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
         this.cityType = cityType;
     }
 
+    @Override
     public String getCity() {
         return city;
     }
@@ -91,6 +95,7 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
         this.city = city;
     }
 
+    @Override
     public String getStreetType() {
         return streetType;
     }
@@ -99,6 +104,7 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
         this.streetType = streetType;
     }
 
+    @Override
     public String getStreet() {
         return street;
     }
@@ -107,6 +113,7 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
         this.street = street;
     }
 
+    @Override
     public String getBuildingNumber() {
         return buildingNumber;
     }
@@ -115,6 +122,7 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
         this.buildingNumber = buildingNumber;
     }
 
+    @Override
     public String getBuildingCorp() {
         return buildingCorp;
     }
@@ -123,12 +131,22 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
         this.buildingCorp = buildingCorp;
     }
 
+    @Override
     public String getApartment() {
         return apartment;
     }
 
     public void setApartment(String apartment) {
         this.apartment = apartment;
+    }
+
+    @Override
+    public String getRoom() {
+        return room;
+    }
+
+    public void setRoom(String room) {
+        this.room = room;
     }
 
     @Override
@@ -271,6 +289,11 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
         return apartmentId;
     }
 
+    @Override
+    public Long getRoomId() {
+        return roomId;
+    }
+
     public void setApartmentId(Long apartmentId) {
         this.apartmentId = apartmentId;
     }
@@ -282,7 +305,9 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
 
     @Override
     public Address getAddress() {
-        if (apartmentId != null) {
+        if (roomId != null) {
+            return new Address(roomId, AddressEntity.ROOM);
+        } else if (apartmentId != null) {
             return new Address(apartmentId, AddressEntity.APARTMENT);
         } else if (buildingId != null && StringUtils.isEmpty(apartment)) {
             return new Address(buildingId, AddressEntity.BUILDING);

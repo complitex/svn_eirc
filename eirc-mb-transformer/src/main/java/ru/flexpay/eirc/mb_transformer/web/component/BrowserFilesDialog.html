@@ -2,9 +2,28 @@
     <div wicket:id="dialog" style="cursor: pointer">
         <div wicket:id="container">
         <form action="#" wicket:id="form">
-            <table class="tbColor bookContent" cellpadding="0" cellspacing="0" border="0" wicket:id="datatable"></table>
-            <wicket:message key="selected"/>:&nbsp<input type="text" wicket:id="selected"/><br/>
-            <input type="submit" class="btnMiddle" wicket:message="value:select" wicket:id="select"/>
+            <table class="tbForm">
+                <tr>
+                    <th>
+                        <wicket:message key="fileNameFilter"/>
+                        :
+                    </th>
+                    <td>
+                        <input type="text" wicket:id="fileNameFilter"/>
+                    </td>
+                    <td>
+                        <input type="button" class="btnSmall" wicket:message="value:filterButton" wicket:id="filterButton"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <table class="tbColor bookContent" cellpadding="0" cellspacing="0" border="0" wicket:id="datatable"></table>
+                        <wicket:message key="selected"/>:&nbsp<input type="text" wicket:id="selected"/><br/>
+                        <br/>
+                        <input type="submit" class="btnMiddle" wicket:message="value:select" wicket:id="select"/>
+                    </td>
+                </tr>
+            </table>
         </form>
         </div>
     </div>
