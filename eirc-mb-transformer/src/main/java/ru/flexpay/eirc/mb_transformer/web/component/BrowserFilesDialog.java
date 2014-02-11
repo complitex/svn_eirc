@@ -141,7 +141,7 @@ public class BrowserFilesDialog extends Panel {
         options.set("scrollable", "{ virtual: true }"); //infinite scroll
         */
 
-        final AjaxLink button = new AjaxLink("select") {
+        final AjaxLink selectButton = new AjaxLink("select") {
             @Override
             public void onClick(AjaxRequestTarget target) {
                 dialog.close(target);
@@ -151,11 +151,23 @@ public class BrowserFilesDialog extends Panel {
                 }
             }
         };
-        button.setOutputMarkupId(true);
-        button.setEnabled(isFile());
-        button.add(styleDisable);
+        selectButton.setOutputMarkupId(true);
+        selectButton.setEnabled(isFile());
+        selectButton.add(styleDisable);
 
-        form.add(button);
+        form.add(selectButton);
+
+        final AjaxLink cancelButton = new AjaxLink("cancel") {
+            @Override
+            public void onClick(AjaxRequestTarget target) {
+                dialog.close(target);
+                if (isFile()) {
+                    selectedModel.setObject(selected.getModelObject());
+                    target.add(refreshComponent);
+                }
+            }
+        };
+        form.add(cancelButton);
 
         TextField<String> fileNameFilter = new TextField<>("fileNameFilter", fileNameModel);
         form.add(fileNameFilter);
@@ -208,7 +220,7 @@ public class BrowserFilesDialog extends Panel {
                             parent = model.getObject();
                         }
                         selected = null;
-                        updateButtonState(button, target);
+                        updateButtonState(selectButton, target);
 
                         target.add(container);
                     }
@@ -228,7 +240,7 @@ public class BrowserFilesDialog extends Panel {
 
                         target.add(selected);
                         target.add(selectedFile);
-                        updateButtonState(button, target);
+                        updateButtonState(selectButton, target);
                     }
                 });
                 return rowItem;
