@@ -20,6 +20,7 @@ public enum ImportErrorType implements IFixedIdType {
     STREET_AND_BUILDING_UNRESOLVED(4L),
     BUILDING_UNRESOLVED(5L),
     APARTMENT_UNRESOLVED(6L),
+    ROOM_UNRESOLVED(19L),
 
     /* найдено больше одной записи адреса во внутреннем адресном справочнике */
     MORE_ONE_CITY(7L),
@@ -27,6 +28,7 @@ public enum ImportErrorType implements IFixedIdType {
     MORE_ONE_STREET(9L),
     MORE_ONE_BUILDING(10L),
     MORE_ONE_APARTMENT(11L),
+    MORE_ONE_ROOM(20L),
 
     /* Найдено более одной записи в коррекциях */
     MORE_ONE_CITY_CORRECTION(12L),
@@ -34,6 +36,7 @@ public enum ImportErrorType implements IFixedIdType {
     MORE_ONE_STREET_CORRECTION(14L),
     MORE_ONE_BUILDING_CORRECTION(15L),
     MORE_ONE_APARTMENT_CORRECTION(16L),
+    MORE_ONE_ROOM_CORRECTION(21L),
 
     ACCOUNT_UNRESOLVED(17L),
     MORE_ONE_ACCOUNT(18L);
@@ -48,16 +51,19 @@ public enum ImportErrorType implements IFixedIdType {
             put(AddressLinkStatus.STREET_AND_BUILDING_UNRESOLVED, STREET_AND_BUILDING_UNRESOLVED).
             put(AddressLinkStatus.BUILDING_UNRESOLVED, BUILDING_UNRESOLVED).
             put(AddressLinkStatus.APARTMENT_UNRESOLVED, APARTMENT_UNRESOLVED).
+            put(AddressLinkStatus.ROOM_UNRESOLVED, ROOM_UNRESOLVED).
             put(AddressLinkStatus.MORE_ONE_CITY, MORE_ONE_CITY).
             put(AddressLinkStatus.MORE_ONE_STREET_TYPE, MORE_ONE_STREET_TYPE).
             put(AddressLinkStatus.MORE_ONE_STREET, MORE_ONE_STREET).
             put(AddressLinkStatus.MORE_ONE_BUILDING, MORE_ONE_BUILDING).
             put(AddressLinkStatus.MORE_ONE_APARTMENT, MORE_ONE_APARTMENT).
+            put(AddressLinkStatus.MORE_ONE_ROOM, MORE_ONE_ROOM).
             put(AddressLinkStatus.MORE_ONE_CITY_CORRECTION, MORE_ONE_CITY_CORRECTION).
             put(AddressLinkStatus.MORE_ONE_STREET_TYPE_CORRECTION, MORE_ONE_STREET_TYPE_CORRECTION).
             put(AddressLinkStatus.MORE_ONE_STREET_CORRECTION, MORE_ONE_STREET_CORRECTION).
             put(AddressLinkStatus.MORE_ONE_BUILDING_CORRECTION, MORE_ONE_BUILDING_CORRECTION).
             put(AddressLinkStatus.MORE_ONE_APARTMENT_CORRECTION, MORE_ONE_APARTMENT_CORRECTION).
+            put(AddressLinkStatus.MORE_ONE_ROOM_CORRECTION, MORE_ONE_ROOM_CORRECTION).
             build();
 
     private ImportErrorType(Long id) {

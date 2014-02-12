@@ -42,6 +42,7 @@
         <mapper resource="org/complitex/address/strategy/city/City.xml"/>
         <mapper resource="org/complitex/address/strategy/district/District.xml"/>
         <mapper resource="org/complitex/address/strategy/apartment/Apartment.xml"/>
+        <mapper resource="org/complitex/address/strategy/room/Room.xml"/>
 
         <mapper resource="org/complitex/admin/service/UserBean.xml"/>
         <mapper resource="org/complitex/admin/service/UserProfileBean.xml"/>

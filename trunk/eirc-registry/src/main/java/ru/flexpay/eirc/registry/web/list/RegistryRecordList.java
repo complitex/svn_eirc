@@ -31,8 +31,8 @@ import org.complitex.correction.service.exception.MoreOneCorrectionException;
 import org.complitex.correction.service.exception.NotFoundCorrectionException;
 import org.complitex.correction.web.component.AddressCorrectionPanel;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.DatePicker;
+import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
 import org.complitex.template.web.template.FormTemplatePage;
@@ -142,7 +142,7 @@ public class RegistryRecordList extends TemplatePage {
 
             @Override
             protected void correctAddress(RegistryRecordData registryRecord, AddressEntity entity, Long cityId, Long streetTypeId, Long streetId,
-                                          Long buildingId, Long apartmentId, Long userOrganizationId)
+                                          Long buildingId, Long apartmentId, Long roomId, Long userOrganizationId)
                     throws DuplicateCorrectionException, MoreOneCorrectionException, NotFoundCorrectionException {
 
                 if (registryWorkflowManager.canLink(registry)) {
@@ -152,7 +152,7 @@ public class RegistryRecordList extends TemplatePage {
                         container.add(timerBehavior);
                     }
 
-                    addressService.correctAddress(registryRecord, entity, cityId, streetTypeId, streetId, buildingId, apartmentId,
+                    addressService.correctAddress(registryRecord, entity, cityId, streetTypeId, streetId, buildingId, apartmentId, roomId,
                             registry.getRecipientOrganizationId(), registry.getSenderOrganizationId());
 
                     registryLinker.linkAfterCorrection(registryRecord, imessenger, finishCallback);
@@ -209,6 +209,7 @@ public class RegistryRecordList extends TemplatePage {
                 item.add(new Label("buildingNumber"));
                 item.add(new Label("buildingCorp"));
                 item.add(new Label("apartment"));
+                item.add(new Label("room"));
                 item.add(new Label("lastName"));
                 item.add(new Label("firstName"));
                 item.add(new Label("middleName"));
@@ -273,14 +274,17 @@ public class RegistryRecordList extends TemplatePage {
                     public void onClick(AjaxRequestTarget target) {
                         addressCorrectionPanel.open(target, registryRecord, registryRecord.getFirstName(),
                                 registryRecord.getMiddleName(), registryRecord.getLastName(),
-                                registryRecord.getCity(), registryRecord.getStreet(),
+                                registryRecord.getCity(), registryRecord.getStreetType(), registryRecord.getStreet(),
                                 registryRecord.getBuildingNumber(), registryRecord.getBuildingCorp(),
-                                registryRecord.getApartment(), registryRecord.getCityId(),
-                                registryRecord.getStreetId(), registryRecord.getBuildingId(), registryRecord.getApartmentId());
+                                registryRecord.getApartment(), registryRecord.getRoom(),
+                                registryRecord.getCityId(), registryRecord.getStreetTypeId(), registryRecord.getStreetId(),
+                                registryRecord.getBuildingId(),
+                                registryRecord.getApartmentId(), registryRecord.getRoomId());
                     }
                 };
                 addressCorrectionLink.setVisible(registryRecord.getStatus() == RegistryRecordStatus.LINKED_WITH_ERROR &&
-                registryRecord.getImportErrorType() != null && registryRecord.getImportErrorType().getId() < 17);
+                registryRecord.getImportErrorType() != null &&
+                        (registryRecord.getImportErrorType().getId() < 17 || registryRecord.getImportErrorType().getId() > 18));
                 item.add(addressCorrectionLink);
             }
         };
@@ -292,7 +296,8 @@ public class RegistryRecordList extends TemplatePage {
                 "registryRecordCityType",    "registryRecordCity",
                 "registryRecordStreetType", "registryRecordStreet",
                 "registryRecordBuildingNumber", "registryRecordBulkNumber",
-                "registryRecordApartmentNumber", "registryRecordFio",
+                "registryRecordApartmentNumber", "registryRecordRoomNumber",
+                "registryRecordFio",
                 "registryRecordOperationDate", "registryRecordAmount",
                 "registryRecordImportErrorType", "registryRecordStatus"));
 
@@ -306,6 +311,7 @@ public class RegistryRecordList extends TemplatePage {
         filterForm.add(new TextField<>("buildingNumber"));
         filterForm.add(new TextField<>("buildingCorp"));
         filterForm.add(new TextField<>("apartment"));
+        filterForm.add(new TextField<>("room"));
 
         filterForm.add(new TextField<>("FIO", new Model<String>() {
 
