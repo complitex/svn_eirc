@@ -14,6 +14,7 @@
         <result column="registry_record_building_number"            property="buildingNumber"/>
         <result column="registry_record_bulk_number"                property="buildingCorp"/>
         <result column="registry_record_apartment_number"           property="apartment"/>
+        <result column="registry_record_room_number"                property="room"/>
         <result column="registry_record_first_name"                 property="firstName"/>
         <result column="registry_record_middle_name"                property="middleName"/>
         <result column="registry_record_last_name"                  property="lastName"/>
@@ -27,6 +28,7 @@
         <result column="registry_record_street_id"                  property="streetId"/>
         <result column="registry_record_building_id"                property="buildingId"/>
         <result column="registry_record_apartment_id"               property="apartmentId"/>
+        <result column="registry_record_room_id"                    property="roomId"/>
         <result column="registry_record_status"                     property="status" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
         <result column="registry_record_import_error_type"          property="importErrorType" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
 
@@ -47,6 +49,7 @@
         rr.`building_number`          as `registry_record_building_number`,
         rr.`bulk_number`              as `registry_record_bulk_number`,
         rr.`apartment_number`         as `registry_record_apartment_number`,
+        rr.`room_number`              as `registry_record_room_number`,
         rr.`first_name`               as `registry_record_first_name`,
         rr.`middle_name`              as `registry_record_middle_name`,
         rr.`last_name`                as `registry_record_last_name`,
@@ -61,7 +64,8 @@
         rr.`street_type_id`           as `registry_record_street_type_id`,
         rr.`street_id`                as `registry_record_street_id`,
         rr.`building_id`              as `registry_record_building_id`,
-        rr.`apartment_id`             as `registry_record_apartment_id`
+        rr.`apartment_id`             as `registry_record_apartment_id`,
+        rr.`room_id`                  as `registry_record_room_id`
     </sql>
 
     <sql id="registryRecordContainerColumns">
@@ -96,6 +100,9 @@
             </if>
             <if test="object.apartment != null">
                 and rr.`apartment_number` <choose><when test="like">like concat('%', #{object.apartment}, '%') </when><otherwise>= #{object.apartment}</otherwise></choose>
+            </if>
+            <if test="object.room != null">
+                and rr.`room_number` <choose><when test="like">like concat('%', #{object.room}, '%') </when><otherwise>= #{object.apartment}</otherwise></choose>
             </if>
 
             <if test="object.firstName != null">
@@ -216,8 +223,19 @@
         from `registry_record` rr
         where rr.`status` = 3 and
         <choose>
+            <when test="object.roomId != null">
+                <choose>
+                    <when test="object.apartmentId != null">
+                        rr.`apartment_id` = #{object.apartmentId} and
+                    </when>
+                    <otherwise>
+                        rr.`building_id` = #{object.buildingId} and
+                    </otherwise>
+                </choose>
+                rr.`room_number` = #{object.room} and
+            </when>
             <when test="object.apartmentId != null">
-                rr.`building_id` = #{object.buildingId} and rr.`apartment` = #{object.apartment} and
+                rr.`building_id` = #{object.buildingId} and rr.`apartment_number` = #{object.apartment} and
             </when>
             <when test="object.buildingId != null">
                 rr.`street_id` = #{object.streetId} and rr.`building_number` = #{object.buildingNumber} and
@@ -278,6 +296,7 @@
             building_number,
             bulk_number,
             apartment_number,
+            room_number,
             first_name,
             middle_name,
             last_name,
@@ -289,8 +308,8 @@
             registry_id
         ) values (
             #{serviceCode}, #{personalAccountExt}, #{cityType}, #{city}, #{streetType}, #{street}, #{buildingNumber},
-            #{buildingCorp}, #{apartment}, #{firstName}, #{middleName}, #{lastName}, #{operationDate}, #{uniqueOperationNumber},
-            #{amount}, #{status.id},
+            #{buildingCorp}, #{apartment}, #{room}, #{firstName}, #{middleName}, #{lastName}, #{operationDate},
+            #{uniqueOperationNumber}, #{amount}, #{status.id},
             <choose>
                 <when test="importErrorType != null">#{importErrorType.id}</when>
                 <otherwise>null</otherwise>
@@ -312,6 +331,7 @@
             building_number,
             bulk_number,
             apartment_number,
+            room_number,
             first_name,
             middle_name,
             last_name,
@@ -324,8 +344,9 @@
         ) values
         <foreach collection="registryRecords" separator="," item="rr" index="index">
             (
-                #{rr.serviceCode}, #{rr.personalAccountExt}, #{rr.cityType}, #{rr.city}, #{rr.streetType}, #{rr.street}, #{rr.buildingNumber},
-                #{rr.buildingCorp}, #{rr.apartment}, #{rr.firstName}, #{rr.middleName}, #{rr.lastName}, #{rr.operationDate}, #{rr.uniqueOperationNumber},
+                #{rr.serviceCode}, #{rr.personalAccountExt}, #{rr.cityType}, #{rr.city}, #{rr.streetType}, #{rr.street},
+                #{rr.buildingNumber}, #{rr.buildingCorp}, #{rr.apartment}, #{rr.room},
+                #{rr.firstName}, #{rr.middleName}, #{rr.lastName}, #{rr.operationDate}, #{rr.uniqueOperationNumber},
                 #{rr.amount}, #{rr.status.id},
                 <choose>
                     <when test="rr.importErrorType != null">#{rr.importErrorType.id}</when>
@@ -356,7 +377,7 @@
         update `registry_record`
         set `status` = #{status.id}, `city_type_id` = #{cityTypeId}, `city_id` = #{cityId},
             `street_type_id` = #{streetTypeId}, `street_id` = #{streetId},
-            `building_id` = #{buildingId}, `apartment_id` = #{apartmentId}
+            `building_id` = #{buildingId}, `apartment_id` = #{apartmentId}, `room_id` = #{roomId}
         <choose>
             <when test="importErrorType != null">, `import_error_type` = #{importErrorType.id}</when>
             <otherwise>, `import_error_type` = null</otherwise>

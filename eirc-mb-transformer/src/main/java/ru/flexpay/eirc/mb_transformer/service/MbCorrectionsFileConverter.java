@@ -813,6 +813,11 @@ public class MbCorrectionsFileConverter {
             }
 
             @Override
+            public void setRoomId(Long id) {
+
+            }
+
+            @Override
             public <T extends LinkStatus> void setStatus(T status) {
 
             }
@@ -1106,6 +1111,11 @@ public class MbCorrectionsFileConverter {
 
             @Override
             public void setApartmentId(Long id) {
+
+            }
+
+            @Override
+            public void setRoomId(Long id) {
 
             }
 

@@ -277,6 +277,7 @@ CREATE TABLE `registry_record` (
   `building_number` VARCHAR(255),
   `bulk_number` VARCHAR(255),
   `apartment_number` VARCHAR(255),
+  `room_number` VARCHAR(255),
   `first_name` VARCHAR(255),
   `middle_name` VARCHAR(255),
   `last_name` VARCHAR(255),
@@ -289,6 +290,7 @@ CREATE TABLE `registry_record` (
   `street_id` BIGINT(20),
   `building_id` BIGINT(20),
   `apartment_id` BIGINT(20),
+  `room_id` BIGINT(20),
   `status` BIGINT(20) NOT NULL comment 'Record status reference',
   `import_error_type` BIGINT(20) comment 'Import error type from import error',
   `registry_id` BIGINT(20) NOT NULL comment 'Registry reference',
@@ -517,6 +519,38 @@ CREATE TABLE `apartment_correction` (
   CONSTRAINT `fk_apartment_correction__organization` FOREIGN KEY (`organization_id`) REFERENCES `organization` (`object_id`),
   CONSTRAINT `fk_apartment_correction__user_organization` FOREIGN KEY (`user_organization_id`) REFERENCES `organization` (`object_id`)
 ) ENGINE=InnoDB DEFAULT  CHARSET=utf8 COMMENT 'Коррекция квартиры';
+
+DROP TABLE IF EXISTS `room_correction`;
+
+CREATE TABLE `room_correction` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT 'Идентификатор коррекции',
+  `building_object_id` BIGINT(20) COMMENT 'Идентификатор объекта дом',
+  `apartment_object_id` BIGINT(20) COMMENT 'Идентификатор объекта квартира',
+  `object_id` BIGINT(20) NOT NULL COMMENT 'Идентификатор объекта комната',
+  `external_id` VARCHAR(20) COMMENT 'Внешний идентификатор объекта',
+  `correction` VARCHAR(100) NOT NULL COMMENT 'Номер комнаты',
+  `begin_date` DATE NOT NULL DEFAULT '1970-01-01' COMMENT 'Дата начала актуальности соответствия',
+  `end_date` DATE NOT NULL DEFAULT '2054-12-31' COMMENT 'Дата окончания актуальности соответствия',
+  `organization_id` BIGINT(20) NOT NULL COMMENT 'Идентификатор организации',
+  `user_organization_id` BIGINT(20),
+  `module_id` BIGINT(20) NOT NULL COMMENT 'Идентификатор модуля',
+  `status` INTEGER COMMENT 'Статус',
+  PRIMARY KEY (`id`),
+  KEY `key_building_object_id` (`building_object_id`),
+  KEY `key_object_id` (`object_id`),
+  KEY `key_correction` (`correction`),
+  KEY `key_begin_date` (`begin_date`),
+  KEY `key_end_date` (`end_date`),
+  KEY `key_organization_id` (`organization_id`),
+  KEY `key_user_organization_id` (`user_organization_id`),
+  KEY `key_module_id` (`module_id`),
+  KEY `key_status` (`status`),
+  CONSTRAINT `fk_room_correction__building` FOREIGN KEY (`building_object_id`) REFERENCES `building` (`object_id`),
+  CONSTRAINT `fk_room_correction__apartment` FOREIGN KEY (`apartment_object_id`) REFERENCES `apartment` (`object_id`),
+  CONSTRAINT `fk_room_correction__room` FOREIGN KEY (`object_id`) REFERENCES `room` (`object_id`),
+  CONSTRAINT `fk_room_correction__organization` FOREIGN KEY (`organization_id`) REFERENCES `organization` (`object_id`),
+  CONSTRAINT `fk_room_correction__user_organization` FOREIGN KEY (`user_organization_id`) REFERENCES `organization` (`object_id`)
+) ENGINE=InnoDB DEFAULT  CHARSET=utf8 COMMENT 'Коррекция комнаты';
 
 -- ------------------------------
 -- Organization Correction

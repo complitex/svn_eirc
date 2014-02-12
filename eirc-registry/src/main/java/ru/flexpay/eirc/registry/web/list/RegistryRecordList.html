@@ -64,6 +64,11 @@
                         </span>
                     </th>
                     <th>
+                        <span wicket:id="header.registry_record_room_number">
+                            <wicket:message key="registry_record_room_number"/>
+                        </span>
+                    </th>
+                    <th>
                         <span wicket:id="header.registry_record_fio">
                             <wicket:message key="registry_record_fio"/>
                         </span>
@@ -126,6 +131,9 @@
                         <input type="text" wicket:id="apartment"/>
                     </td>
                     <td class="filter-td">
+                        <input type="text" wicket:id="room"/>
+                    </td>
+                    <td class="filter-td">
                         <input type="text" wicket:id="FIO"/>
                     </td>
                     <td class="filter-td">
@@ -178,6 +186,9 @@
                     </td>
                     <td>
                         <span wicket:id="apartment"></span>
+                    </td>
+                    <td>
+                        <span wicket:id="room"></span>
                     </td>
                     <td>
                         <span wicket:id="lastName"></span>&nbsp;

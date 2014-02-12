@@ -163,6 +163,10 @@ public class RegistryLinker {
                                             if (recordLinkingCounter.decrementAndGet() == 0 && finishReadRecords.get()) {
                                                 imessenger.addMessageInfo("registry_finish_link", registry.getRegistryNumber());
                                                 finishLink.complete();
+                                                if (afterCorrection &&
+                                                        registryRecordBean.getRecordsToLinking(FilterWrapper.of(filter.getObject(), 0, 1)).size() > 0) {
+                                                    setErrorStatus(registry);
+                                                }
                                                 setLinkedStatus(registry);
                                             }
                                         }
@@ -174,6 +178,10 @@ public class RegistryLinker {
                             } else if (recordLinkingCounter.get() == 0) {
                                 imessenger.addMessageInfo("registry_finish_link", registry.getRegistryNumber());
                                 finishLink.complete();
+                                if (afterCorrection &&
+                                        registryRecordBean.getRecordsToLinking(FilterWrapper.of(filter.getObject(), 0, 1)).size() > 0) {
+                                    setErrorStatus(registry);
+                                }
                                 setLinkedStatus(registry);
                             }
                             registryRecords = recordsToLinking;
@@ -205,7 +213,8 @@ public class RegistryLinker {
 
             // Search address
             if (registryRecord.getStatus() == RegistryRecordStatus.LOADED ||
-                    registryRecord.getImportErrorType() != null && registryRecord.getImportErrorType().getId() < 17) {
+                    registryRecord.getImportErrorType() != null &&
+                            (registryRecord.getImportErrorType().getId() < 17 || registryRecord.getImportErrorType().getId() > 18)) {
                 addressService.resolveAddress(registry.getRecipientOrganizationId(), registry.getSenderOrganizationId(), registryRecord);
                 if (registryRecord.getImportErrorType() != null) {
                     registryWorkflowManager.markLinkingHasError(registry);

@@ -290,12 +290,18 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
     }
 
     @Override
+    public void setApartmentId(Long apartmentId) {
+        this.apartmentId = apartmentId;
+    }
+
+    @Override
     public Long getRoomId() {
         return roomId;
     }
 
-    public void setApartmentId(Long apartmentId) {
-        this.apartmentId = apartmentId;
+    @Override
+    public void setRoomId(Long id) {
+        this.roomId = id;
     }
 
     @Override
