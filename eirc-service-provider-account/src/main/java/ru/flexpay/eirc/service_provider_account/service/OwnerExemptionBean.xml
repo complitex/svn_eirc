@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="ru.flexpay.eirc.owner_exemption.service.OwnerExemptionBean">
+<mapper namespace="ru.flexpay.eirc.service_provider_account.service.OwnerExemptionBean">
 
-    <resultMap id="OwnerExemption" type="ru.flexpay.eirc.owner_exemption.entity.OwnerExemption">
+    <resultMap id="OwnerExemption" type="ru.flexpay.eirc.service_provider_account.entity.OwnerExemption">
         <id column="owner_exemption_pk_id" property="pkId"/>
         <result column="owner_exemption_object_id" property="id"/>
         <result column="owner_exemption_begin_date" property="beginDate"/>
@@ -12,7 +12,7 @@
 
         <association property="person" columnPrefix="owner_exemption_" resultMap="ru.flexpay.eirc.dictionary.entity.PersonBean.Person"/>
 
-        <collection property="exemptions" resultMap="ru.flexpay.eirc.owner_exemption.entity.ExemptionBean.Exemption"/>
+        <collection property="exemptions" resultMap="ru.flexpay.eirc.service_provider_account.entity.ExemptionBean.Exemption"/>
     </resultMap>
 
     <sql id="ownerExemptionColumns">
@@ -185,7 +185,7 @@
     </select>
 
     <insert id="insertOwnerExemption"
-            parameterType="ru.flexpay.eirc.owner_exemption.entity.OwnerExemption" keyProperty="pkId" useGeneratedKeys="true">
+            parameterType="ru.flexpay.eirc.service_provider_account.entity.OwnerExemption" keyProperty="pkId" useGeneratedKeys="true">
         insert into `owner_exemption` (`object_id`, `inn`, `service_provider_account_id`,
                                     `first_name`, `last_name`, `middle_name`, `begin_date`, `end_date`)
                             values (#{id}, #{inn}, #{serviceProviderAccountId},
@@ -193,7 +193,7 @@
     </insert>
 
     <update id="updateOwnerExemptionEndDate"
-            parameterType="ru.flexpay.eirc.owner_exemption.entity.OwnerExemption">
+            parameterType="ru.flexpay.eirc.service_provider_account.entity.OwnerExemption">
         update `owner_exemption` set `end_date` = #{endDate} where `pk_id` = #{pkId}
     </update>
 

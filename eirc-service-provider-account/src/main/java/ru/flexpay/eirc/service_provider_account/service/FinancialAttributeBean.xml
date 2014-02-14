@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean">
+
+    <resultMap id="FinancialAttribute" type="ru.flexpay.eirc.service_provider_account.entity.FinancialAttribute">
+        <id     column="id"                             property="id"/>
+        <result column="service_provider_account_id"    property="serviceProviderAccountId"/>
+        <result column="amount"                         property="amount"/>
+        <result column="date_formation"                 property="dateFormation"/>
+    </resultMap>
+
+    <cache/>
+
+    <sql id="tableName">`template`</sql>
+
+    <sql id="financialAttributeWhere">
+        <where>
+            <if test="object != null">
+                <if test="object.id != null">
+                    and `id` = #{id}
+                </if>
+                <if test="object.serviceProviderAccountId != null">
+                    and `service_provider_account_id` = #{serviceProviderAccountId}
+                </if>
+            </if>
+        </where>
+    </sql>
+
+
+    <sql id="selectFinancialAttributes">
+        select *
+        from
+
+        <include refid="tableName"/>
+
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeWhere"/>
+
+        <if test="sortProperty != null">
+            order by ${sortProperty}
+
+            <if test="asc">
+                ${asc}
+            </if>
+        </if>
+        <if test="count > 0">
+            limit ${first},${count}
+        </if>
+    </sql>
+
+    <sql id="countFinancialAttributes">
+        select count(distinct `id`) from
+        <include refid="tableName"/>
+
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeWhere"/>
+
+    </sql>
+
+    <sql id="selectFinancialAttribute">
+        select *
+        from <include refid="tableName"/>
+        where `id` = #{id}
+    </sql>
+
+    <sql id="insertFinancialAttribute">
+        insert into <include refid="tableName"/> (`service_provider_account_id`, `amount`, `date_formation`)
+                            values (#{serviceProviderAccountId}, #{amount}, #{dateFormation})
+    </sql>
+
+    <sql id="updateFinancialAttribute">
+        update <include refid="tableName"/> set `service_provider_account_id` = #{serviceProviderAccountId},
+            `amount` = #{amount}, `date_formation` = #{dateFormation} where `id` = #{id}
+    </sql>
+
+</mapper>

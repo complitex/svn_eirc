@@ -155,6 +155,30 @@ CREATE TABLE `exemption` (
   CONSTRAINT `fk_exemption__owner_exemption` FOREIGN KEY (`owner_exemption_id`) REFERENCES `owner_exemption` (`object_id`)
 ) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Льготы';
 
+DROP TABLE IF EXISTS `saldo_out`;
+CREATE TABLE `saldo_out` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT,
+  `service_provider_account_id` BIGINT(20) NOT NULL,
+  `amount` decimal(19,2) NOT NULL,
+  `date_formation` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `saldo_out_unique_sp_account__date_formation` (`service_provider_account_id`,`date_formation`),
+  KEY `key_id` (id),
+  CONSTRAINT `fk_saldo_out__sp_account` FOREIGN KEY (`service_provider_account_id`) REFERENCES `service_provider_account` (`object_id`)
+) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Исходящее сальдо';
+
+DROP TABLE IF EXISTS `charge`;
+CREATE TABLE `charge` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT,
+  `service_provider_account_id` BIGINT(20) NOT NULL,
+  `amount` decimal(19,2) NOT NULL,
+  `date_formation` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `charge_unique_sp_account__date_formation` (`service_provider_account_id`,`date_formation`),
+  KEY `key_id` (id),
+  CONSTRAINT `fk_charge__sp_account` FOREIGN KEY (`service_provider_account_id`) REFERENCES `service_provider_account` (`object_id`)
+) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Начисление';
+
 -- Registry status --
 DROP TABLE IF EXISTS `registry_status`;
 CREATE TABLE `registry_status` (
