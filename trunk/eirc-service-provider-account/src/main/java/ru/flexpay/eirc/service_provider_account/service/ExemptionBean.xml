@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="ru.flexpay.eirc.exemption.service.ExemptionBean">
+<mapper namespace="ru.flexpay.eirc.service_provider_account.service.ExemptionBean">
 
-    <resultMap id="Exemption" type="ru.flexpay.eirc.exemption.entity.Exemption">
+    <resultMap id="Exemption" type="ru.flexpay.eirc.service_provider_account.entity.Exemption">
         <id column="exemption_pk_id" property="pkId"/>
         <result column="exemption_object_id" property="id"/>
         <result column="exemption_begin_date" property="beginDate"/>
@@ -116,7 +116,7 @@
     </select>
 
     <insert id="insertExemption"
-            parameterType="ru.flexpay.eirc.exemption.entity.Exemption" keyProperty="pkId" useGeneratedKeys="true">
+            parameterType="ru.flexpay.eirc.service_provider_account.entity.Exemption" keyProperty="pkId" useGeneratedKeys="true">
         insert into `exemption` (`object_id`, `inn`, `service_provider_account_id`,
                                     `first_name`, `last_name`, `middle_name`, `begin_date`, `end_date`)
                             values (#{id}, #{inn}, #{serviceProviderAccountId},
@@ -124,7 +124,7 @@
     </insert>
 
     <update id="updateExemptionEndDate"
-            parameterType="ru.flexpay.eirc.exemption.entity.Exemption">
+            parameterType="ru.flexpay.eirc.service_provider_account.entity.Exemption">
         update `exemption` set `end_date` = #{endDate} where `pk_id` = #{pkId}
     </update>
 

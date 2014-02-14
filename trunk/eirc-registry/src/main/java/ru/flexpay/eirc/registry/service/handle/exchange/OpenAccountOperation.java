@@ -27,7 +27,7 @@ import java.util.List;
  * @author Pavel Sknar
  */
 @Stateless
-public class OpenAccountOperation extends BaseAccountOperation {
+public class OpenAccountOperation extends GeneralAccountOperation {
 
     @EJB
     private EircAccountBean eircAccountBean;

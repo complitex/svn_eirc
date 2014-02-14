@@ -1,12 +1,15 @@
 package ru.flexpay.eirc.registry.service.handle.exchange;
 
-import org.apache.commons.lang.StringUtils;
-import org.complitex.dictionary.util.DateUtil;
-import ru.flexpay.eirc.registry.entity.Container;
+import org.complitex.dictionary.entity.FilterWrapper;
+import ru.flexpay.eirc.dictionary.entity.Address;
+import ru.flexpay.eirc.eirc_account.entity.EircAccount;
+import ru.flexpay.eirc.registry.entity.Registry;
+import ru.flexpay.eirc.registry.entity.RegistryRecordData;
+import ru.flexpay.eirc.service.entity.Service;
+import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
+import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import javax.ejb.EJB;
 import java.util.List;
 
 /**
@@ -14,71 +17,35 @@ import java.util.List;
  */
 public abstract class BaseAccountOperation extends Operation {
 
-    protected BaseAccountOperationData getContainerData(Container container) throws ContainerDataException {
-        List<String> containerData = splitEscapableData(container.getData());
-        if (containerData.size() < 2) {
-            throw new ContainerDataException("Failed container format: {0}", container);
-        }
-        BaseAccountOperationData data = new BaseAccountOperationData();
-        try {
-            Date changeApplyingDate;
-            String dateStr = containerData.get(1);
-            if (StringUtils.isBlank(dateStr)) {
-                changeApplyingDate = DateUtil.getCurrentDate();
-            } else if (dateStr.length() == "ddMMyyyy".length()) {
-                changeApplyingDate = new SimpleDateFormat("ddMMyyyy").parse(dateStr);
-            } else if (dateStr.length() == "ddMMyyyyHHmmss".length()) {
-                changeApplyingDate = new SimpleDateFormat("ddMMyyyyHHmmss").parse(dateStr);
-            } else {
-                changeApplyingDate = DateUtil.getCurrentDate();
-            }
-            if (DateUtil.getCurrentDate().before(changeApplyingDate)) {
-                throw new ContainerDataException("Someone invented time machine? Specified date is in a future: {0}" + containerData.get(1));
-            }
-            data.setChangeApplyingDate(changeApplyingDate);
-        } catch (ParseException e) {
-            throw new ContainerDataException("Cannot parse date: {0}" + containerData.get(1));
+    @EJB
+    private ServiceProviderAccountBean serviceProviderAccountBean;
+
+    public ServiceProviderAccount getServiceProviderAccount(Registry registry, RegistryRecordData registryRecord) throws DataNotFoundException {
+        Address address = registryRecord.getAddress();
+        String serviceProviderAccountNumber = registryRecord.getPersonalAccountExt();
+        Long organizationId = registry.getSenderOrganizationId();
+        String serviceCode = registryRecord.getServiceCode();
+
+        if (address == null) {
+            throw new DataNotFoundException("Address empty in registry record: {0}", registryRecord);
         }
 
-        if (containerData.size() >= 3) {
-            data.setOldValue(containerData.get(2));
+        EircAccount eircAccount = new EircAccount();
+        eircAccount.setAddress(address);
+        ServiceProviderAccount serviceProviderAccount = new ServiceProviderAccount(eircAccount);
+        serviceProviderAccount.setService(new Service(serviceCode));
+        serviceProviderAccount.setOrganizationId(organizationId);
+        serviceProviderAccount.setAccountNumber(serviceProviderAccountNumber);
+
+        FilterWrapper<ServiceProviderAccount> filter = FilterWrapper.of(serviceProviderAccount);
+        filter.setSortProperty(null);
+
+        List<ServiceProviderAccount> serviceProviderAccounts =
+                serviceProviderAccountBean.getServiceProviderAccounts(filter);
+        if (serviceProviderAccounts.size() == 0) {
+            throw new DataNotFoundException("Not found service provider account by filter: {0}", filter);
         }
-        if (containerData.size() >= 4) {
-            data.setNewValue(containerData.get(3));
-        }
-        return data;
+        return serviceProviderAccounts.get(0);
     }
-
-    protected class BaseAccountOperationData {
-
-        private String oldValue;
-        private String newValue;
-        private Date changeApplyingDate;
-
-        public String getOldValue() {
-            return oldValue;
-        }
-
-        private void setOldValue(String oldValue) {
-            this.oldValue = oldValue;
-        }
-
-        public String getNewValue() {
-            return newValue;
-        }
-
-        private void setNewValue(String newValue) {
-            this.newValue = newValue;
-        }
-
-        public Date getChangeApplyingDate() {
-            return changeApplyingDate;
-        }
-
-        private void setChangeApplyingDate(Date changeApplyingDate) {
-            this.changeApplyingDate = changeApplyingDate;
-        }
-    }
-
 
 }
