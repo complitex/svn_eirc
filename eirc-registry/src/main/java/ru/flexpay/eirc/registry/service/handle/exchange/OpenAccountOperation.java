@@ -1,5 +1,6 @@
 package ru.flexpay.eirc.registry.service.handle.exchange;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.checkdigit.CheckDigitException;
 import org.complitex.address.strategy.city.CityStrategy;
 import org.complitex.dictionary.entity.DomainObject;
@@ -15,7 +16,9 @@ import ru.flexpay.eirc.registry.entity.ContainerType;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 import ru.flexpay.eirc.service.entity.Service;
+import ru.flexpay.eirc.service.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.service.ServiceBean;
+import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 
@@ -40,6 +43,9 @@ public class OpenAccountOperation extends GeneralAccountOperation {
 
     @EJB
     private ServiceBean serviceBean;
+
+    @EJB
+    private ServiceCorrectionBean serviceCorrectionBean;
 
     @Override
     public Long getCode() {
@@ -84,19 +90,37 @@ public class OpenAccountOperation extends GeneralAccountOperation {
             results.add(new OperationResult<>(null, eircAccount, getCode()));
         }
 
-        //TODO find by external id, if service code started by # (maybe using correction)
-        FilterWrapper<Service> filter = FilterWrapper.of(new Service(serviceCode));
-        filter.setSortProperty(null);
-        List<Service> services = serviceBean.getServices(filter);
-        if (services.size() == 0) {
-            throw new DataNotFoundException("Not found service by code {0}", serviceCode);
+        Service service = null;
+        if (StringUtils.startsWith(serviceCode, "#")) {
+            String extServiceCode = StringUtils.remove(serviceCode, '#');
+            List<ServiceCorrection> corrections = serviceCorrectionBean.getServiceCorrections(
+                    new FilterWrapper<>(new ServiceCorrection(null, null, extServiceCode,
+                            registry.getSenderOrganizationId(), registry.getRecipientOrganizationId(), null)));
+            if (corrections.size() > 1) {
+                throw new ContainerDataException("Found several service corrections by code {0}", serviceCode);
+            }
+
+            if (corrections.size() == 1) {
+                service = serviceBean.getService(corrections.get(0).getObjectId());
+            }
+
+        }
+
+        if (service == null) {
+            FilterWrapper<Service> filter = FilterWrapper.of(new Service(serviceCode));
+            filter.setSortProperty(null);
+            List<Service> services = serviceBean.getServices(filter);
+            if (services.size() == 0) {
+                throw new DataNotFoundException("Not found service by code {0}", serviceCode);
+            }
+            service = services.get(0);
         }
 
         ServiceProviderAccount serviceProviderAccount = new ServiceProviderAccount();
         serviceProviderAccount.setAccountNumber(serviceProviderAccountNumber);
         serviceProviderAccount.setEircAccount(eircAccount);
         serviceProviderAccount.setOrganizationId(organizationId);
-        serviceProviderAccount.setService(services.get(0));
+        serviceProviderAccount.setService(service);
         serviceProviderAccount.setPerson(person);
         serviceProviderAccount.setBeginDate(getContainerData(container).getChangeApplyingDate());
 

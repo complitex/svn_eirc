@@ -39,6 +39,9 @@ public class OperationFactory {
     @EJB
     private ChargeOperation chargeOperation;
 
+    @EJB
+    private CloseAccountOperation closeAccountOperation;
+
     private Map<ContainerType, Operation> operations = null;
 
     public Operation getOperation(Container container) throws AbstractException {
@@ -62,6 +65,7 @@ public class OperationFactory {
                     put(ContainerType.SET_RESPONSIBLE_PERSON, setResponsiblePerson).
                     put(ContainerType.SALDO_OUT, saldoOutOperation).
                     put(ContainerType.CHARGE, chargeOperation).
+                    put(ContainerType.CLOSE_ACCOUNT, closeAccountOperation).
                     build();
         }
     }
