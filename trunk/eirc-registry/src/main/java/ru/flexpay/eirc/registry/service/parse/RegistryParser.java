@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.session.TransactionIsolationLevel;
+import org.complitex.correction.service.OrganizationCorrectionBean;
 import org.complitex.dictionary.entity.DictionaryConfig;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
@@ -68,7 +69,8 @@ public class RegistryParser implements Serializable {
     @EJB
     private ParserQueueProcessor parserQueueProcessor;
 
-    //private AtomicInteger inc = new AtomicInteger(0);
+    @EJB
+    private OrganizationCorrectionBean organizationCorrectionBean;
 
     public void parse(final IMessenger imessenger, final FinishCallback finishUpload) throws ExecuteException {
         imessenger.addMessageInfo("starting_upload_registries");
@@ -468,41 +470,8 @@ public class RegistryParser implements Serializable {
         return recipient;
     }
 
-    // TODO Find organization in corrections
+    // TODO Find organization in corrections (maybe it is impossible)
     private Organization findOrgByRegistryCorrections(Registry registry, Long code, Logger processLog) {
-        /*
-        for (Container container : registry.getContainers()) {
-            String data = container.getData();
-            processLog.debug("Candidate: {}", data);
-            if (data.startsWith("502"+ ParseRegistryConstants.CONTAINER_DATA_DELIMITER)) {
-                List<String> datum = StringUtil.splitEscapable(
-                        data, ParseRegistryConstants.CONTAINER_DATA_DELIMITER, ParseRegistryConstants.ESCAPE_SYMBOL);
-                // skip if correction is not for Organization type
-                if (Integer.parseInt(datum.get(1)) != typeRegistry.getType(Organization.class)) {
-                    continue;
-                }
-                // skip if correction is not for the object with requested code
-                if (Long.parseLong(datum.get(2)) != code) {
-                    continue;
-                }
-
-                if (StringUtils.isNotBlank(datum.get(4)) && "1".equals(datum.get(5))) {
-                    Stub<Organization> stub = correctionsService.findCorrection(
-                            datum.get(4), Organization.class, masterIndexService.getMasterSourceDescriptionStub());
-                    if (stub == null) {
-                        throw new IllegalStateException("Expected master correction for organization, " +
-                                "but not found: " + data);
-                    }
-                    processLog.debug("Found organization by master correction: {}", datum.get(4));
-                    Organization org = organizationStrategy.readFull(stub);
-                    if (org == null) {
-                        throw new IllegalStateException("Existing master correction for organization " +
-                                "references nowhere: " + data);
-                    }
-                    return org;
-                }
-            }
-        }*/
 
         return null;
     }

@@ -24,6 +24,7 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
     private String cityType;
     private String city;
     private String streetType;
+    private String streetCode;
     private String street;
     private String buildingNumber;
     private String buildingCorp;
@@ -101,7 +102,11 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
     }
 
     public void setStreetType(String streetType) {
-        this.streetType = streetType;
+        if (StringUtils.startsWith(streetType, "#")) {
+            this.streetCode = StringUtils.removeStart(streetType, "#");
+        } else {
+            this.streetType = streetType;
+        }
     }
 
     @Override
@@ -343,7 +348,7 @@ public class RegistryRecord extends DictionaryObject implements RegistryRecordDa
 
     @Override
     public String getStreetCode() {
-        return null;
+        return streetCode;
     }
 
     @Override

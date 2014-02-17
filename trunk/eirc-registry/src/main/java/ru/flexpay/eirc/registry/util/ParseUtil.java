@@ -44,15 +44,14 @@ public abstract class ParseUtil {
         record.setServiceCode(messageFieldList.get(++n));
         record.setPersonalAccountExt(messageFieldList.get(++n));
 
-        //TODO find by external id, if service code started by # (maybe using correction)
-            /*
-            FilterWrapper<Service> filter = FilterWrapper.of(new Service(record.getServiceCode()));
-            filter.setSortProperty(null);
-            List<Service> services = serviceBean.getServices(filter);
-            if (services.size() == 0) {
-                processLog.warn("Not found service by code {}", record.getServiceCode());
-            }
-            */
+        /*
+        FilterWrapper<Service> filter = FilterWrapper.of(new Service(record.getServiceCode()));
+        filter.setSortProperty(null);
+        List<Service> services = serviceBean.getServices(filter);
+        if (services.size() == 0) {
+            processLog.warn("Not found service by code {}", record.getServiceCode());
+        }
+        */
 
         // setup consumer address
         String addressStr = messageFieldList.get(++n);
