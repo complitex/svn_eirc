@@ -147,7 +147,7 @@ public class RegistryHandler {
 
                                             return JobResult.SUCCESSFUL;
                                         } catch (Throwable th) {
-                                            setErrorStatus(registry);
+                                            EjbBeanLocator.getBean(RegistryHandler.class).setErrorStatus(registry);
                                             String message = th.getLocalizedMessage();
                                             if (StringUtils.isEmpty(message) && th.getCause() != null) {
                                                 message = th.getCause().getLocalizedMessage();
@@ -161,7 +161,7 @@ public class RegistryHandler {
                                             if (recordHandlingCounter.decrementAndGet() == 0 && finishReadRecords.get()) {
                                                 imessenger.addMessageInfo("registry_finish_handle", registry.getRegistryNumber());
                                                 finishHandle.complete();
-                                                setHandledStatus(registry);
+                                                EjbBeanLocator.getBean(RegistryHandler.class).setHandledStatus(registry);
                                             }
                                         }
                                     }
