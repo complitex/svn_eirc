@@ -8,7 +8,7 @@
                 <pathelement location="${jdbc}"/>
             </classpath>
 
-            <transaction src="../../../complitex/complitex-db/complitex-dictionary-create.sql"/>
+            <transaction src="eirc-mb-transformer-create.sql"/>
             <transaction src="../../../complitex/complitex-db/complitex-create.sql"/>
 
         </sql>
@@ -18,8 +18,8 @@
                 <pathelement location="${jdbc}"/>
             </classpath>
 
-            <transaction src="../../../complitex/complitex-db/complitex-insert.sql"/>
-            <transaction src="../../../complitex/complitex-db/complitex-sequence.sql"/>
+            <transaction src="eirc-mb-transformer-insert.sql"/>
+            <transaction src="eirc-mb-transformer-sequence.sql"/>
         </sql>
     </target>
 
