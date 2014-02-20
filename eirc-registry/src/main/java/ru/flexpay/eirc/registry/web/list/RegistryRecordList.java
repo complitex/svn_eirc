@@ -31,6 +31,7 @@ import org.complitex.correction.service.exception.MoreOneCorrectionException;
 import org.complitex.correction.service.exception.NotFoundCorrectionException;
 import org.complitex.correction.web.component.AddressCorrectionPanel;
 import org.complitex.dictionary.entity.FilterWrapper;
+import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.web.component.DatePicker;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
@@ -86,6 +87,9 @@ public class RegistryRecordList extends TemplatePage {
     @EJB
     private RegistryFinishCallback finishCallback;
 
+    @EJB
+    private ConfigBean configBean;
+
     private IModel<RegistryRecordData> filterModel = new CompoundPropertyModel<RegistryRecordData>(new RegistryRecord());
 
     private Registry registry;
@@ -136,9 +140,17 @@ public class RegistryRecordList extends TemplatePage {
         final Form<RegistryRecordData> filterForm = new Form<>("filterForm", filterModel);
         container.add(filterForm);
 
+        Long userOrganizationId = null;
+
+        try {
+            userOrganizationId = configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true).longValue();
+        } catch (Exception e) {
+            log().error("Can not get {} from config: {}", RegistryConfig.SELF_ORGANIZATION_ID, e.toString());
+        }
+
         //Панель коррекции адреса
         final AddressCorrectionPanel<RegistryRecordData> addressCorrectionPanel = new AddressCorrectionPanel<RegistryRecordData>("addressCorrectionPanel",
-                registry.getRecipientOrganizationId(), container) {
+                userOrganizationId, container) {
 
             @Override
             protected void correctAddress(RegistryRecordData registryRecord, AddressEntity entity, Long cityId, Long streetTypeId, Long streetId,
@@ -147,13 +159,18 @@ public class RegistryRecordList extends TemplatePage {
 
                 if (registryWorkflowManager.canLink(registry)) {
 
+                    if (userOrganizationId == null) {
+                        RegistryRecordList.this.container.error("failed_user_organization");
+                        return;
+                    }
+
                     if (timerBehavior == null) {
                         timerBehavior = new MessageBehavior(Duration.seconds(5));
                         container.add(timerBehavior);
                     }
 
                     addressService.correctAddress(registryRecord, entity, cityId, streetTypeId, streetId, buildingId, apartmentId, roomId,
-                            registry.getRecipientOrganizationId(), registry.getSenderOrganizationId());
+                            userOrganizationId, registry.getSenderOrganizationId());
 
                     registryLinker.linkAfterCorrection(registryRecord, imessenger, finishCallback);
 
