@@ -5,6 +5,7 @@ import org.complitex.correction.service.AddressService;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.executor.ExecuteException;
+import org.complitex.dictionary.util.EjbBeanLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.dictionary.entity.Address;
@@ -25,6 +26,7 @@ import javax.ejb.TransactionAttributeType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -80,6 +82,16 @@ public class RegistryLinker {
         final Long registryId = filter.getObject().getRegistryId();
 
         final FilterWrapper<Registry> registryFilter = FilterWrapper.of(new Registry(registryId));
+
+        final AtomicLong userOrganizationId = new AtomicLong(0);
+
+        try {
+            userOrganizationId.set(configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true).longValue());
+        } catch (Exception e) {
+            imessenger.addMessageError("eirc_organization_id_not_defined");
+            log.error("Can not get {} from config: {}", RegistryConfig.SELF_ORGANIZATION_ID, e.toString());
+            return;
+        }
 
         imessenger.addMessageInfo("starting_link_registries", registryId);
         finishLink.init();
@@ -150,13 +162,13 @@ public class RegistryLinker {
                                     public JobResult execute() throws ExecuteException {
 
                                         try {
-                                            int successLinked = linkRegistryRecords(registry, recordsToLinking);
+                                            int successLinked = EjbBeanLocator.getBean(RegistryLinker.class).linkRegistryRecords(registry, recordsToLinking, userOrganizationId.get());
 
                                             statistics.add(recordsToLinking.size(), successLinked, recordsToLinking.size() - successLinked);
 
                                             return JobResult.SUCCESSFUL;
                                         } catch (Throwable th) {
-                                            setErrorStatus(registry);
+                                            EjbBeanLocator.getBean(RegistryLinker.class).setErrorStatus(registry);
                                             imessenger.addMessageError("registry_failed_linked", registry.getRegistryNumber());
                                             throw new ExecuteException(th, "Failed upload registry " + registryId);
                                         } finally {
@@ -165,9 +177,9 @@ public class RegistryLinker {
                                                 finishLink.complete();
                                                 if (afterCorrection &&
                                                         registryRecordBean.getRecordsToLinking(FilterWrapper.of(filter.getObject(), 0, 1)).size() > 0) {
-                                                    setErrorStatus(registry);
+                                                    EjbBeanLocator.getBean(RegistryLinker.class).setErrorStatus(registry);
                                                 }
-                                                setLinkedStatus(registry);
+                                                EjbBeanLocator.getBean(RegistryLinker.class).setLinkedStatus(registry);
                                             }
                                         }
                                     }
@@ -207,7 +219,7 @@ public class RegistryLinker {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public int linkRegistryRecords(Registry registry, List<RegistryRecordData> registryRecords) throws TransitionNotAllowed {
+    public int linkRegistryRecords(Registry registry, List<RegistryRecordData> registryRecords, Long userOrganizationId) throws TransitionNotAllowed {
         int successLinked = 0;
         for (RegistryRecordData registryRecord : registryRecords) {
 
@@ -215,7 +227,7 @@ public class RegistryLinker {
             if (registryRecord.getStatus() == RegistryRecordStatus.LOADED ||
                     registryRecord.getImportErrorType() != null &&
                             (registryRecord.getImportErrorType().getId() < 17 || registryRecord.getImportErrorType().getId() > 18)) {
-                addressService.resolveAddress(registry.getRecipientOrganizationId(), registry.getSenderOrganizationId(), registryRecord);
+                addressService.resolveAddress(userOrganizationId, registry.getSenderOrganizationId(), registryRecord);
                 if (registryRecord.getImportErrorType() != null) {
                     registryWorkflowManager.markLinkingHasError(registry);
                     continue;
