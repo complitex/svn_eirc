@@ -1,6 +1,11 @@
 package ru.flexpay.eirc.mb_transformer.entity;
 
+import org.apache.wicket.markup.html.WebMarkupContainer;
+import org.apache.wicket.model.IModel;
 import org.complitex.dictionary.entity.IConfig;
+import org.complitex.dictionary.web.component.type.InputPanel;
+import org.complitex.organization.web.component.OrganizationPicker;
+import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 
 /**
  * @author Pavel Sknar
@@ -32,4 +37,17 @@ public enum MbTransformerConfig implements IConfig {
     public String getGroupKey() {
         return groupKey;
     }
+
+    @Override
+    public WebMarkupContainer getContainer(String id, IModel<String> model) {
+        if (this.equals(EIRC_ORGANIZATION_ID)) {
+            return new OrganizationPicker(id, model, OrganizationType.USER_ORGANIZATION.getId());
+        } if (this.equals(MB_ORGANIZATION_ID)) {
+            return new OrganizationPicker(id, model, OrganizationType.PAYMENT_COLLECTOR.getId());
+        } else {
+            return new InputPanel<>("config", model, String.class, false, null, true, 40);
+        }
+    }
+
+
 }
