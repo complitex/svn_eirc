@@ -42,6 +42,12 @@ public class OperationFactory {
     @EJB
     private CloseAccountOperation closeAccountOperation;
 
+    @EJB
+    private CashPaymentOperation cashPaymentOperation;
+
+    @EJB
+    private CashlessPaymentOperation cashlessPaymentOperation;
+
     private Map<ContainerType, Operation> operations = null;
 
     public Operation getOperation(Container container) throws AbstractException {
@@ -66,6 +72,8 @@ public class OperationFactory {
                     put(ContainerType.SALDO_OUT, saldoOutOperation).
                     put(ContainerType.CHARGE, chargeOperation).
                     put(ContainerType.CLOSE_ACCOUNT, closeAccountOperation).
+                    put(ContainerType.CASH_PAYMENT, cashPaymentOperation).
+                    put(ContainerType.CASHLESS_PAYMENT, cashlessPaymentOperation).
                     build();
         }
     }

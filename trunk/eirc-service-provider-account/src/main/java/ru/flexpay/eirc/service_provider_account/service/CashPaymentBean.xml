@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ru.flexpay.eirc.service_provider_account.service.CashPaymentBean">
+    <resultMap id="FinancialAttribute" type="ru.flexpay.eirc.service_provider_account.entity.CashPayment"
+               extends="ru.flexpay.eirc.service_provider_account.service.PaymentAttributeBean.FinancialAttribute">
+    </resultMap>
+
+    <sql id="tableName">`cash_payment`</sql>
+
+    <select id="selectFinancialAttributes" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="FinancialAttribute">
+        <include refid="ru.flexpay.eirc.service_provider_account.service.PaymentAttributeBean.selectFinancialAttributes"/>
+    </select>
+
+    <select id="countFinancialAttributes" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+        <include refid="ru.flexpay.eirc.service_provider_account.service.PaymentAttributeBean.countFinancialAttributes"/>
+    </select>
+
+    <select id="selectFinancialAttribute" parameterType="long" resultMap="FinancialAttribute">
+        <include refid="ru.flexpay.eirc.service_provider_account.service.PaymentAttributeBean.selectFinancialAttribute"/>
+    </select>
+
+    <insert id="insertFinancialAttribute" parameterType="ru.flexpay.eirc.service_provider_account.entity.FinancialAttribute" keyProperty="id" useGeneratedKeys="true">
+        <include refid="ru.flexpay.eirc.service_provider_account.service.PaymentAttributeBean.insertFinancialAttribute"/>
+    </insert>
+
+    <update id="updateFinancialAttribute" parameterType="ru.flexpay.eirc.service_provider_account.entity.FinancialAttribute">
+        <include refid="ru.flexpay.eirc.service_provider_account.service.PaymentAttributeBean.updateFinancialAttribute"/>
+    </update>
+
+</mapper>
