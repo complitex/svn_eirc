@@ -163,7 +163,6 @@ CREATE TABLE `saldo_out` (
   `date_formation` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `saldo_out_unique_sp_account__date_formation` (`service_provider_account_id`,`date_formation`),
-  KEY `key_id` (id),
   CONSTRAINT `fk_saldo_out__sp_account` FOREIGN KEY (`service_provider_account_id`) REFERENCES `service_provider_account` (`object_id`)
 ) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Исходящее сальдо';
 
@@ -175,9 +174,36 @@ CREATE TABLE `charge` (
   `date_formation` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `charge_unique_sp_account__date_formation` (`service_provider_account_id`,`date_formation`),
-  KEY `key_id` (id),
   CONSTRAINT `fk_charge__sp_account` FOREIGN KEY (`service_provider_account_id`) REFERENCES `service_provider_account` (`object_id`)
 ) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Начисление';
+
+DROP TABLE IF EXISTS `cash_payment`;
+CREATE TABLE `cash_payment` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT,
+  `service_provider_account_id` BIGINT(20) NOT NULL,
+  `payment_collector_id` BIGINT(20) NOT NULL,
+  `amount` decimal(19,2) NOT NULL,
+  `number_quittance` VARCHAR(20),
+  `date_formation` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY  (`id`),
+  KEY `cash_payment_sp_account__date_formation` (`service_provider_account_id`, `date_formation`),
+  CONSTRAINT `fk_cash_payment__organization` FOREIGN KEY (`payment_collector_id`) REFERENCES `organization` (`object_id`),
+  CONSTRAINT `fk_cash_payment__sp_account` FOREIGN KEY (`service_provider_account_id`) REFERENCES `service_provider_account` (`object_id`)
+) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Наличные оплаты';
+
+DROP TABLE IF EXISTS `cashless_payment`;
+CREATE TABLE `cashless_payment` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT,
+  `service_provider_account_id` BIGINT(20) NOT NULL,
+  `payment_collector_id` BIGINT(20) NOT NULL,
+  `amount` decimal(19,2) NOT NULL,
+  `number_quittance` VARCHAR(20),
+  `date_formation` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY  (`id`),
+  KEY `cashless_payment_sp_account__date_formation_formation` (`service_provider_account_id`, `date_formation`),
+  CONSTRAINT `fk_cashless_payment__organization` FOREIGN KEY (`payment_collector_id`) REFERENCES `organization` (`object_id`),
+  CONSTRAINT `fk_cashless_payment__sp_account` FOREIGN KEY (`service_provider_account_id`) REFERENCES `service_provider_account` (`object_id`)
+) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Безналичные оплаты';
 
 -- Registry status --
 DROP TABLE IF EXISTS `registry_status`;

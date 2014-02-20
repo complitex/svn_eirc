@@ -31,7 +31,6 @@ import java.io.*;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -364,6 +363,10 @@ public class RegistryParser implements Serializable {
                 return null;
             }
 
+            if (!validatePaymentCollector(newRegistry, iMessenger, processLog)) {
+                return null;
+            }
+
             if (!validateRegistry(newRegistry, iMessenger, processLog)) {
                 return null;
             }
@@ -422,6 +425,16 @@ public class RegistryParser implements Serializable {
         return true;
     }
 
+    private boolean validatePaymentCollector(Registry registry, IMessenger iMessenger, Logger processLog) {
+        Organization paymentCollector = organizationStrategy.findById(registry.getSenderOrganizationId(), false);
+        if (registry.getType().isPayments() && !paymentCollector.isPaymentCollector()) {
+            iMessenger.addMessageError("organization_not_payment_collector", paymentCollector.getId(), registry.getRegistryNumber());
+            processLog.error("Organization found, but it is not payment collector: {}", paymentCollector);
+            return false;
+        }
+        return true;
+    }
+
     private Organization getProvider(Registry registry) {
         // for payments registry assume recipient is a service provider
 
@@ -456,7 +469,7 @@ public class RegistryParser implements Serializable {
             return organizationStrategy.findById(eircOrganizationId.longValue(), false);
         }
 
-        if (!registry.getRecipientOrganizationId().equals(eircOrganizationId.longValue())) {
+        if (!registry.getType().isPayments() && !registry.getRecipientOrganizationId().equals(eircOrganizationId.longValue())) {
             iMessenger.addMessageError("recipient_not_eirc_organization", registry.getRegistryNumber());
             processLog.error("Recipient is not EIRC organization");
             return null;
@@ -585,8 +598,8 @@ public class RegistryParser implements Serializable {
             return this.recordCounter.addAndGet(recordCounter);
         }
 
-        public BigDecimal getTotalAmount() {
-            return BigDecimal.valueOf(totalAmount.get());
+        public double getTotalAmount() {
+            return totalAmount.get();
         }
 
         public boolean checkTotalAmount() {
@@ -594,7 +607,7 @@ public class RegistryParser implements Serializable {
                 return false;
             }
 
-            return registry.getAmount() == null || registry.getAmount().equals(getTotalAmount());
+            return registry.getAmount() == null || registry.getAmount().doubleValue() == getTotalAmount();
         }
 
         public int getNumberFlushRegistryRecords() {

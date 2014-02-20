@@ -23,7 +23,7 @@ public abstract class BaseAccountOperation extends Operation {
     public ServiceProviderAccount getServiceProviderAccount(Registry registry, RegistryRecordData registryRecord) throws DataNotFoundException {
         Address address = registryRecord.getAddress();
         String serviceProviderAccountNumber = registryRecord.getPersonalAccountExt();
-        Long organizationId = registry.getSenderOrganizationId();
+        Long organizationId = registry.getType().isPayments()? registry.getRecipientOrganizationId() : registry.getSenderOrganizationId();
         String serviceCode = registryRecord.getServiceCode();
 
         if (address == null) {
