@@ -4,7 +4,7 @@ import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.model.IModel;
 import org.complitex.dictionary.entity.IConfig;
 import org.complitex.dictionary.web.component.type.InputPanel;
-import org.complitex.organization.web.component.OrganizationPicker;
+import ru.flexpay.eirc.mb_transformer.web.component.OrganizationPicker;
 import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 
 /**

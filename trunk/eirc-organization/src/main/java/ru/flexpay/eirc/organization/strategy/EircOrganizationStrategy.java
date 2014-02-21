@@ -27,6 +27,8 @@ import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -36,6 +38,7 @@ import java.util.Map;
  * @author Artem
  */
 @Stateless(name = IOrganizationStrategy.BEAN_NAME)
+@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class EircOrganizationStrategy extends AbstractOrganizationStrategy<DomainObject> {
     public final static Long MODULE_ID = 0L;
 
@@ -134,7 +137,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
     }
 
     @SuppressWarnings("unchecked")
-    @Transactional
     @Override
     public List<DomainObject> getAllOuterOrganizations(Locale locale) {
         DomainObjectExample example = new DomainObjectExample();
@@ -161,7 +163,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
      * @return All EIRC organizations.
      */
     @SuppressWarnings("unchecked")
-    @Transactional
     public List<DomainObject> getAllServiceProviders(Locale locale) {
         DomainObjectExample example = new DomainObjectExample();
 
@@ -185,7 +186,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
      * @return All EIRC organizations.
      */
     @SuppressWarnings("unchecked")
-    @Transactional
     public List<DomainObject> getAllPaymentCollectors(Locale locale) {
         DomainObjectExample example = new DomainObjectExample();
 
@@ -235,7 +235,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
         }
     }
 
-    @Transactional
     @Override
     public Organization findById(Long id, boolean runAsAdmin) {
         DomainObject object = super.findById(id, runAsAdmin);
@@ -269,6 +268,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
     }
 
     @Transactional
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void update(DomainObject oldObject, DomainObject newObject, Date updateDate) {
         //EircOrganization newOrganization = (EircOrganization) newObject;
@@ -278,6 +278,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
     }
 
     @Transactional
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     protected void deleteChecks(long objectId, Locale locale) throws DeleteException {
         if (MODULE_ID == objectId) {
@@ -287,6 +288,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
     }
 
     @Transactional
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void delete(long objectId, Locale locale) throws DeleteException {
         deleteChecks(objectId, locale);
@@ -297,6 +299,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
     }
 
     @Transactional
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     protected Long insertStrings(long attributeTypeId, List<StringCulture> strings) {
         /* if it's data source or one of load/save request file directory attributes 
@@ -305,6 +308,16 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
         return ALL_ATTRIBUTE_TYPES.contains(attributeTypeId)
                 ? stringBean.insertStrings(strings, getEntityTable(), false)
                 : super.insertStrings(attributeTypeId, strings);
+    }
+
+    @Override
+    public List<DomainObject> find(DomainObjectExample example) {
+        return super.find(example);
+    }
+
+    @Override
+    public int count(DomainObjectExample example) {
+        return super.count(example);
     }
 
     @Override
