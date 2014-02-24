@@ -2,7 +2,7 @@ package ru.flexpay.eirc.registry.entity;
 
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.model.IModel;
-import org.complitex.dictionary.entity.IConfig;
+import org.complitex.dictionary.entity.IComponentConfig;
 import org.complitex.dictionary.web.component.type.InputPanel;
 import org.complitex.organization.web.component.OrganizationPicker;
 import ru.flexpay.eirc.organization_type.entity.OrganizationType;
@@ -10,7 +10,7 @@ import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 /**
  * @author Pavel Sknar
  */
-public enum RegistryConfig implements IConfig {
+public enum RegistryConfig implements IComponentConfig {
 
     SELF_ORGANIZATION_ID("-1", "general"),
     MB_ORGANIZATION_ID("-1", "general"),
@@ -38,13 +38,11 @@ public enum RegistryConfig implements IConfig {
     }
 
     @Override
-    public WebMarkupContainer getContainer(String id, IModel<String> model) {
+    public WebMarkupContainer getComponent(String id, IModel<String> model) {
         if (this.equals(SELF_ORGANIZATION_ID) || this.equals(MB_ORGANIZATION_ID)) {
             return new OrganizationPicker(id, model, OrganizationType.USER_ORGANIZATION.getId());
         } else {
             return new InputPanel<>("config", model, String.class, false, null, true, 40);
         }
     }
-
-
 }
