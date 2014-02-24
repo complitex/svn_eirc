@@ -470,6 +470,8 @@ public class EircPaymentsRegistryConverter {
                 writeInfoLine(buffer, "|", registryRecord, serviceProviderOrganization.getId(), eircOrganizationId, mbOrganizationId);
 			}
 
+            outChannel.truncate(buffer.position());
+
             buffer.clear();
 
             imessenger.addMessageInfo("mb_payments_created", mbFileName, registry.getRecordsCount());
