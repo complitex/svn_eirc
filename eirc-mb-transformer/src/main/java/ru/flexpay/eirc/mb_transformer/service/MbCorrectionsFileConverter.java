@@ -14,7 +14,6 @@ import org.apache.wicket.util.io.IOUtils;
 import org.complitex.correction.entity.LinkStatus;
 import org.complitex.correction.entity.OrganizationCorrection;
 import org.complitex.correction.service.OrganizationCorrectionBean;
-import org.complitex.dictionary.entity.DictionaryConfig;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
 import org.complitex.dictionary.service.exception.AbstractException;
@@ -130,10 +129,10 @@ public class MbCorrectionsFileConverter {
                     public Void execute() throws ExecuteException {
                         try {
 
-                            final String dir = configBean.getString(DictionaryConfig.IMPORT_FILE_STORAGE_DIR, true);
-                            final String tmpDir = configBean.getString(RegistryConfig.TMP_DIR, true);
-                            final Long mbOrganizationId = configBean.getInteger(RegistryConfig.MB_ORGANIZATION_ID, true).longValue();
-                            final Long eircOrganizationId = configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true).longValue();
+                            final String dir = configBean.getString(MbTransformerConfig.WORK_DIR, true);
+                            final String tmpDir = configBean.getString(MbTransformerConfig.TMP_DIR, true);
+                            final Long mbOrganizationId = configBean.getInteger(MbTransformerConfig.MB_ORGANIZATION_ID, true).longValue();
+                            final Long eircOrganizationId = configBean.getInteger(MbTransformerConfig.EIRC_ORGANIZATION_ID, true).longValue();
 
                             String[] fileNames = new File(dir).list(new PatternFilenameFilter(".+\\.(kor|nac)"));
                             Arrays.sort(fileNames);
