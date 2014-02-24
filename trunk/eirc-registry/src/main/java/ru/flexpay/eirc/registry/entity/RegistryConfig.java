@@ -13,7 +13,6 @@ import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 public enum RegistryConfig implements IComponentConfig {
 
     SELF_ORGANIZATION_ID("-1", "general"),
-    MB_ORGANIZATION_ID("-1", "general"),
 
     TMP_DIR("/tmp", "import"),
     NUMBER_FLUSH_REGISTRY_RECORDS("10000", "import"),
@@ -39,7 +38,7 @@ public enum RegistryConfig implements IComponentConfig {
 
     @Override
     public WebMarkupContainer getComponent(String id, IModel<String> model) {
-        if (this.equals(SELF_ORGANIZATION_ID) || this.equals(MB_ORGANIZATION_ID)) {
+        if (this.equals(SELF_ORGANIZATION_ID)) {
             return new OrganizationPicker(id, model, OrganizationType.USER_ORGANIZATION.getId());
         } else {
             return new InputPanel<>("config", model, String.class, false, null, true, 40);
