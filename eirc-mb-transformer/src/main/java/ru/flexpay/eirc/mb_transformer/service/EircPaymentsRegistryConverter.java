@@ -37,8 +37,6 @@ import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
-import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
-import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccountCorrection;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountCorrectionBean;
 
@@ -309,7 +307,7 @@ public class EircPaymentsRegistryConverter {
             Organization serviceProvider = eircOrganizationStrategy.findById(registry.getRecipientOrganizationId(), true);
 
             if (serviceProvider == null) {
-                imessenger.addMessageError("eirc_payments_service_provider_not_found", eircFile.getName(), registry.getRecipientOrganizationId());
+                imessenger.addMessageError("eirc_payments_recipient_not_found", eircFile.getName(), registry.getRecipientOrganizationId());
                 log.error("Service provider {} not found", registry.getRecipientOrganizationId());
                 return;
             }
@@ -649,7 +647,8 @@ public class EircPaymentsRegistryConverter {
 	}
 
     private String getEircAccount(RegistryRecordData record, Long serviceProviderId, Long eircOrganizationId, Long mbOrganizationId) throws MbConverterException {
-
+        return "";
+        /*
         List<ServiceProviderAccount> serviceProviderAccounts = serviceProviderAccountBean.getServiceProviderAccounts(
                 FilterWrapper.of(new ServiceProviderAccount(record.getPersonalAccountExt(), serviceProviderId, getService(record.getServiceCode()))));
         if (serviceProviderAccounts.size() == 0) {
@@ -671,6 +670,7 @@ public class EircPaymentsRegistryConverter {
             throw new MbConverterException("Found several correction for service provider account {0}", serviceProviderAccounts.get(0));
         }
         return serviceProviderAccountCorrections.get(0).getCorrection();
+        */
     }
 
     private void writeCellData(ByteBuffer buffer, byte[] delimiter, String data, Integer length, char ch) {

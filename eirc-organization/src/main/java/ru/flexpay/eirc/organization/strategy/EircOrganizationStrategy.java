@@ -238,6 +238,16 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
     @Transactional
     @Override
     public Organization findById(Long id, boolean runAsAdmin) {
+        if (log.isDebugEnabled()) {
+            log.debug("Session manager: id={}",
+                    getSqlSessionManager().getConfiguration().getEnvironment().getId());
+            try {
+                log.debug("Session manager: URL={}",
+                        getSqlSessionManager().getConfiguration().getEnvironment().getDataSource().getConnection().getMetaData().getURL());
+            } catch (Exception e) {
+                //
+            }
+        }
         DomainObject object = super.findById(id, runAsAdmin);
         if (object == null) {
             return null;
