@@ -42,7 +42,7 @@ public class ServiceProviderAccountCorrectionList extends AbstractCorrectionList
     @EJB(name = IOrganizationStrategy.BEAN_NAME, beanInterface = IOrganizationStrategy.class)
     private EircOrganizationStrategy organizationStrategy;
 
-    private static final List<Long> ORGANIZATION_TYPES = ImmutableList.of(OrganizationType.SERVICE_PROVIDER.getId());
+    private static final List<Long> ORGANIZATION_TYPES = ImmutableList.of(OrganizationType.PAYMENT_COLLECTOR.getId());
 
     public ServiceProviderAccountCorrectionList() {
         super("organization");
