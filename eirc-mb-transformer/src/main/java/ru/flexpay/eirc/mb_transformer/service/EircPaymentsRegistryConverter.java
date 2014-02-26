@@ -499,7 +499,7 @@ public class EircPaymentsRegistryConverter {
         return organizationCorrections.get(0).getCorrection();
 	}
 
-    public String getOutServiceCode(String innerServiceCode, Long serviceProviderId, Long eircOrganizationId) throws MbConverterException {
+    public String getOutServiceCode(String innerServiceCode, Long mbOrganizationId, Long eircOrganizationId) throws MbConverterException {
         String serviceCode = serviceCorrectionCache.getIfPresent(innerServiceCode);
         if (serviceCode != null) {
             return serviceCode;
@@ -507,7 +507,7 @@ public class EircPaymentsRegistryConverter {
 
         Service service = getService(innerServiceCode);
         List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(
-                FilterWrapper.of(new ServiceCorrection(null, service.getId(), null, serviceProviderId,
+                FilterWrapper.of(new ServiceCorrection(null, service.getId(), null, mbOrganizationId,
                         eircOrganizationId, null))
         );
         if (serviceCorrections.size() <= 0) {
@@ -601,7 +601,7 @@ public class EircPaymentsRegistryConverter {
 		if (serviceCode == null) {
 			throw new MbConverterException("Registry record`s service code is null. Registry record Id: " + record.getId());
 		}
-		serviceCode = getOutServiceCode(serviceCode, serviceProviderId, eircOrganizationId);
+		serviceCode = getOutServiceCode(serviceCode, mbOrganizationId, eircOrganizationId);
 		if (serviceCode == null) {
 			return;
 		}

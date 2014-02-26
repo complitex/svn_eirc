@@ -90,7 +90,7 @@ public abstract class Context {
         String serviceCode = serviceCache.getIfPresent(outServiceCode);
         if (serviceCode == null) {
             List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(
-                    FilterWrapper.of(new ServiceCorrection(null, null, outServiceCode, registry.getSenderOrganizationId(),
+                    FilterWrapper.of(new ServiceCorrection(null, null, outServiceCode, mbOrganizationId,
                             eircOrganizationId, null))
             );
             if (serviceCorrections.size() <= 0) {

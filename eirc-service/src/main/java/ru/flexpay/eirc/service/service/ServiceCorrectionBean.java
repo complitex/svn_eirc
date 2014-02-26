@@ -13,7 +13,7 @@ import java.util.List;
  * @author Pavel Sknar
  */
 @Stateless
-public class ServiceCorrectionBean extends AbstractBean{
+public class ServiceCorrectionBean extends AbstractBean {
     public final static String NS = ServiceCorrectionBean.class.getName();
     private static final String NS_CORRECTION = Correction.class.getName();
 

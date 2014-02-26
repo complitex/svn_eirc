@@ -1,6 +1,5 @@
 package ru.flexpay.eirc.service.web.list;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.model.IModel;
@@ -13,7 +12,6 @@ import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.template.web.security.SecurityRole;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
-import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.service.ServiceBean;
@@ -42,7 +40,7 @@ public class ServiceCorrectionList extends AbstractCorrectionList<ServiceCorrect
     @EJB(name = IOrganizationStrategy.BEAN_NAME, beanInterface = IOrganizationStrategy.class)
     private EircOrganizationStrategy organizationStrategy;
 
-    private static final List<Long> ORGANIZATION_TYPES = ImmutableList.of(OrganizationType.SERVICE_PROVIDER.getId());
+    private static final List<Long> ORGANIZATION_TYPES = null;
 
     public ServiceCorrectionList() {
         super("organization");
