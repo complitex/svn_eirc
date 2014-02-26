@@ -314,7 +314,7 @@ public class BrowserFilesDialog extends Panel {
                     }
                 } catch (IOException e) {
                     parent = null;
-                    container.error("failed_system_path");
+                    container.error(getString("failed_system_path"));
                 }
 
                 return parent != null?
@@ -328,7 +328,7 @@ public class BrowserFilesDialog extends Panel {
         String workDir = fileService.getWorkDir();
         if (workDir == null || !Files.isDirectory(FileSystems.getDefault().getPath(workDir))) {
             parent = null;
-            container.error("failed_work_dir");
+            container.error(getString("failed_work_dir"));
             return null;
         }
         return workDir;
