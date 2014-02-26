@@ -41,8 +41,12 @@ import ru.flexpay.eirc.mb_transformer.service.FileService;
 import javax.ejb.EJB;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -287,20 +291,47 @@ public class BrowserFilesDialog extends Panel {
     }
 
     private IDataProvider<File> newDataProvider() {
+        String workDir = getWorkDir();
+        if (workDir == null) {
+            return new ListDataProvider<>(Collections.<File>emptyList());
+        }
         if (parent == null) {
-            parent = new File(fileService.getWorkDir());
+            parent = new File(workDir);
         }
         return new ListDataProvider<File>() {
             @Override
             protected List<File> getData() {
-                if (parent != null && StringUtils.equals(parent.getPath(), fileService.getWorkDir())) {
-                    return Lists.newArrayList(getFiles(parent));
+                String workDir = getWorkDir();
+                if (workDir == null) {
+                    return Collections.emptyList();
                 }
+
+                try {
+                    if (parent != null &&
+                            Files.isSameFile(FileSystems.getDefault().getPath(parent.getPath()),
+                                    FileSystems.getDefault().getPath(workDir))) {
+                        return Lists.newArrayList(getFiles(parent));
+                    }
+                } catch (IOException e) {
+                    parent = null;
+                    container.error("failed_system_path");
+                }
+
                 return parent != null?
                         Lists.asList(new File(parent.getParentFile(), "..."), getFiles(parent)) :
-                        Lists.newArrayList(new File("..."));
+                        Collections.<File>emptyList();
             }
         };
+    }
+    
+    private String getWorkDir() {
+        String workDir = fileService.getWorkDir();
+        if (workDir == null || !Files.isDirectory(FileSystems.getDefault().getPath(workDir))) {
+            parent = null;
+            container.error("failed_work_dir");
+            return null;
+        }
+        return workDir;
     }
 
     private File[] getFiles(File parent) {
