@@ -3,6 +3,9 @@
 
 <mapper namespace="ru.flexpay.eirc.service.service.ServiceBean">
 
+    <cache type="org.mybatis.caches.ehcache.EhcacheCache"/>
+    <cache-ref namespace="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean"/>
+
     <resultMap id="Service" type="ru.flexpay.eirc.service.entity.Service">
         <result column="service_id"        property="id"/>
         <result column="service_code"      property="code"/>
@@ -60,7 +63,7 @@
         left join `locales` sl on sn.`locale_id` = sl.`id`
     </sql>
 
-    <select id="selectServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="Service">
+    <select id="selectServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="Service" flushCache="false" useCache="true">
         select
         <include refid="serviceColumns"/>
         from `service` s
@@ -80,13 +83,13 @@
         </if>
     </select>
 
-    <select id="countServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+    <select id="countServices" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer" flushCache="false" useCache="true">
         select count(distinct s.`id`) from `service` s
           left join `service_string_culture` sn on s.`id` = sn.`service_id`
         <include refid="serviceWhere"/>
     </select>
 
-    <select id="selectService" parameterType="long" resultMap="Service">
+    <select id="selectService" parameterType="long" resultMap="Service" flushCache="false" useCache="false">
         select
         <include refid="serviceColumns"/>
         from `service` s
@@ -94,24 +97,24 @@
         where s.`id` = #{id}
     </select>
 
-    <insert id="insertService" parameterType="ru.flexpay.eirc.service.entity.Service" keyProperty="id" useGeneratedKeys="true">
+    <insert id="insertService" parameterType="ru.flexpay.eirc.service.entity.Service" keyProperty="id" useGeneratedKeys="true" flushCache="true">
         insert into `service` (`code`, `parent_id`)
                             values (#{code}, #{parentId})
     </insert>
 
-    <update id="updateService" parameterType="ru.flexpay.eirc.service.entity.Service">
+    <update id="updateService" parameterType="ru.flexpay.eirc.service.entity.Service" flushCache="true">
         update `service` set `code` = #{code}, `parent_id` = #{parentId} where `id` = #{id}
     </update>
 
-    <insert id="insertServiceName" parameterType="map">
+    <insert id="insertServiceName" parameterType="map" flushCache="true">
         insert into `service_string_culture` (`service_id`, `locale_id`, `value`) values (#{serviceId}, #{localeId}, #{value})
     </insert>
 
-    <update id="updateServiceName" parameterType="map">
+    <update id="updateServiceName" parameterType="map" flushCache="true">
         update `service_string_culture` set `value` = #{value} where `service_id` = #{serviceId} and `locale_id` = #{localeId}
     </update>
 
-    <delete id="deleteServiceName" parameterType="map">
+    <delete id="deleteServiceName" parameterType="map" flushCache="true">
         delete from `service_string_culture` where `service_id` = #{serviceId} and `locale_id` = #{localeId}
     </delete>
 
