@@ -3,6 +3,8 @@
 
 <mapper namespace="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean">
 
+    <cache type="org.mybatis.caches.ehcache.EhcacheCache"/>
+
     <resultMap id="ServiceProviderAccount" type="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount">
         <id column="spa_pk_id" property="pkId"/>
         <result column="spa_object_id" property="id"/>
@@ -53,7 +55,7 @@
     </sql>
 
     <select id="selectServiceProviderAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" 
-            resultMap="ServiceProviderAccount">
+            resultMap="ServiceProviderAccount" flushCache="false" useCache="true">
         select
         <include refid="serviceProviderAccountColumns"/>,
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
@@ -111,7 +113,7 @@
         </if>
     </select>
 
-    <select id="countServiceProviderAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+    <select id="countServiceProviderAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer" flushCache="false" useCache="true">
         select count(distinct spa.`object_id`) from `service_provider_account` spa
         left join `organization_attribute` oa on oa.`object_id` = spa.`organization_id` and oa.`value_type_id` = 900
         left join `organization_string_culture` oc on oc.`id` = oa.`value_id` and oc.`locale_id` = #{locale.id}
@@ -129,7 +131,7 @@
         <include refid="serviceProviderAccountCondition"/>
     </select>
 
-    <select id="selectServiceProviderAccount" parameterType="map" resultMap="ServiceProviderAccount">
+    <select id="selectServiceProviderAccount" parameterType="map" resultMap="ServiceProviderAccount" flushCache="false" useCache="false">
         select
         <include refid="serviceProviderAccountColumns"/>,
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
@@ -145,7 +147,7 @@
         where spa.`object_id` = #{id} order by `spa_begin_date` desc
     </select>
 
-    <select id="selectServiceProviderAccountByPkId" parameterType="map" resultMap="ServiceProviderAccount">
+    <select id="selectServiceProviderAccountByPkId" parameterType="map" resultMap="ServiceProviderAccount" flushCache="false" useCache="false">
         select
         <include refid="serviceProviderAccountColumns"/>,
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
@@ -161,7 +163,7 @@
         where spa.`pk_id` = #{pkId}
     </select>
 
-    <select id="selectServiceProviderAccountsByPkId" parameterType="map" resultMap="ServiceProviderAccount">
+    <select id="selectServiceProviderAccountsByPkId" parameterType="map" resultMap="ServiceProviderAccount" flushCache="false" useCache="true">
         select
         <include refid="serviceProviderAccountColumns"/>,
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
@@ -178,7 +180,7 @@
     </select>
 
     <insert id="insertServiceProviderAccount"
-            parameterType="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount" keyProperty="pkId" useGeneratedKeys="true">
+            parameterType="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount" keyProperty="pkId" useGeneratedKeys="true" flushCache="true">
         insert into `service_provider_account` (`object_id`, `eirc_account_id`, `organization_id`, `account_number`, `service_id`,
                                     `first_name`, `last_name`, `middle_name`, `begin_date`, `end_date`)
                             values (#{id}, #{eircAccount.id}, #{organizationId}, #{accountNumber}, #{service.id},
@@ -186,7 +188,7 @@
     </insert>
 
     <update id="updateServiceProviderAccountEndDate"
-            parameterType="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount">
+            parameterType="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount" flushCache="true">
         update `service_provider_account` set `end_date` = #{endDate} where `pk_id` = #{pkId}
     </update>
 
