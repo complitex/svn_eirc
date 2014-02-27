@@ -413,10 +413,12 @@ public class EircPaymentsRegistryConverter {
                     throw new IllegalArgumentException("Service provider code '" + externalServiceProviderId + "' have length more 5");
                 }
 
+                String year = String.valueOf(DateUtil.getYear(paymentDate));
+
                 StringBuilder builder = new StringBuilder(FORMAT_FILE_NAME);
                 builder.replace(5 - externalServiceProviderId.length(), 5, externalServiceProviderId);
-                builder.setCharAt(9, String.valueOf(DateUtil.getYear(paymentDate)).charAt(0));
-                builder.setCharAt(10, mod31(DateUtil.getMonth(paymentDate)));
+                builder.setCharAt(9, year.charAt(year.length() - 1));
+                builder.setCharAt(10, mod31(DateUtil.getMonth(paymentDate) + 1));
                 builder.setCharAt(11, mod31(DateUtil.getDay(paymentDate)));
 
                 mbFileName = builder.toString();
@@ -748,7 +750,7 @@ public class EircPaymentsRegistryConverter {
             throw new IllegalArgumentException("The number must have range [1, 31]");
         }
 
-        return value <= 9 ? String.valueOf(value).charAt(0) : (char)('A' + (value - 9));
+        return value <= 9 ? String.valueOf(value).charAt(0) : (char)('A' + (value - 10));
     }
 
 }
