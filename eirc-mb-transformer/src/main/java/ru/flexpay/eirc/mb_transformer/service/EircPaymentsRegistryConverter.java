@@ -403,6 +403,7 @@ public class EircPaymentsRegistryConverter {
             String[] detailsData = detailsPaymentsDocument.getData().split(":");
 
             Date paymentDate = PAYMENT_DATE_FORMATTER.parseDateTime(detailsData[2]).toDate();
+            Date creationDate = registry.getCreationDate();
 
             if (StringUtils.isEmpty(mbFileName)) {
 
@@ -413,13 +414,13 @@ public class EircPaymentsRegistryConverter {
                     throw new IllegalArgumentException("Service provider code '" + externalServiceProviderId + "' have length more 5");
                 }
 
-                String year = String.valueOf(DateUtil.getYear(paymentDate));
+                String year = String.valueOf(DateUtil.getYear(creationDate));
 
                 StringBuilder builder = new StringBuilder(FORMAT_FILE_NAME);
                 builder.replace(5 - externalServiceProviderId.length(), 5, externalServiceProviderId);
                 builder.setCharAt(9, year.charAt(year.length() - 1));
-                builder.setCharAt(10, mod31(DateUtil.getMonth(paymentDate) + 1));
-                builder.setCharAt(11, mod31(DateUtil.getDay(paymentDate)));
+                builder.setCharAt(10, mod31(DateUtil.getMonth(creationDate) + 1));
+                builder.setCharAt(11, mod31(DateUtil.getDay(creationDate)));
 
                 mbFileName = builder.toString();
             }
