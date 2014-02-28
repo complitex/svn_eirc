@@ -9,10 +9,10 @@ import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.util.FPRegistryConstants;
+import ru.flexpay.eirc.service.correction.entity.ServiceCorrection;
+import ru.flexpay.eirc.service.correction.service.ServiceCorrectionBean;
 import ru.flexpay.eirc.service.entity.Service;
-import ru.flexpay.eirc.service.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.service.ServiceBean;
-import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 
 import java.nio.ByteBuffer;
 import java.util.List;

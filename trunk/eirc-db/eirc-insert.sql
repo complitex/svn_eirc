@@ -45,6 +45,10 @@ INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (919, 1, UPPER('
 INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (918, 900, 1, 919, 1);
 INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (918, 918, UPPER('string'));
 
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (921, 1, UPPER('Допустимые услуги')), (921, 2, UPPER('Допустимi послуги'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (919, 900, 1, 921, 1);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (919, 919, 'service');
+
 INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (403, 1, UPPER('Префикс л/с ЕИРЦ')), (403, 2, UPPER('Префікс л/р ЄIРЦ'));
 INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (402, 400, 0, 403, 1);
 INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (402, 402, UPPER('string'));

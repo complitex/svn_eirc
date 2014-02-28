@@ -6,7 +6,7 @@ import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.complitex.correction.web.*;
 import org.complitex.template.web.template.ITemplateLink;
 import org.complitex.template.web.template.ResourceTemplateMenu;
-import ru.flexpay.eirc.service.web.list.ServiceCorrectionList;
+import ru.flexpay.eirc.service.correction.web.list.ServiceCorrectionList;
 import ru.flexpay.eirc.service_provider_account.web.list.ServiceProviderAccountCorrectionList;
 
 import java.util.List;

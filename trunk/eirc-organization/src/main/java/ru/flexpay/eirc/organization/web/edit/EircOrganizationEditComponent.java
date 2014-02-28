@@ -27,6 +27,7 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
     @EJB
     private StringCultureBean stringBean;
     private WebMarkupContainer emailContainer;
+    private WebMarkupContainer serviceContainer;
 
     public EircOrganizationEditComponent(String id, boolean disabled) {
         super(id, disabled);
@@ -59,6 +60,14 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
             //initial visibility
             emailContainer.setVisible(isServiceProvider());
         }
+
+        //Services. It is service provider organization only attribute.
+        {
+            serviceContainer = addServiceContainer(isDisabled, organization, "serviceContainer");
+
+            //initial visibility
+            serviceContainer.setVisible(isServiceProvider());
+        }
     }
 
     private WebMarkupContainer addAttributeContainer(final long attributeTypeId, boolean disabled,
@@ -83,6 +92,32 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
         container.add(
                 DomainObjectInputPanel.newInputComponent("organization", getStrategyName(),
                         organization, attribute, getLocale(), disabled));
+
+        return container;
+    }
+
+    private WebMarkupContainer addServiceContainer(boolean disabled,
+                                                     Organization organization, String name) {
+        Long attributeTypeId = EircOrganizationStrategy.SERVICE;
+
+        WebMarkupContainer container = new WebMarkupContainer(name);
+        container.setOutputMarkupPlaceholderTag(true);
+        add(container);
+        Attribute attribute = organization.getAttribute(attributeTypeId);
+        if (attribute == null) {
+            attribute = new Attribute();
+            attribute.setAttributeTypeId(attributeTypeId);
+            attribute.setObjectId(organization.getId());
+            attribute.setAttributeId(1L);
+            attribute.setLocalizedValues(stringBean.newStringCultures());
+        }
+        final EntityAttributeType attributeType =
+                organizationStrategy.getEntity().getAttributeType(attributeTypeId);
+        container.add(new Label("label",
+                DomainObjectInputPanel.labelModel(attributeType.getAttributeNames(), getLocale())));
+        container.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));
+
+        container.add(new ServiceAllowableListPanel("input", organization));
 
         return container;
     }
