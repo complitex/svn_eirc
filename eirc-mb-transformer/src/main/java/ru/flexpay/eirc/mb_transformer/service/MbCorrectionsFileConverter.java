@@ -40,8 +40,8 @@ import ru.flexpay.eirc.registry.service.handle.MbConverterQueueProcessor;
 import ru.flexpay.eirc.registry.service.parse.ParseRegistryConstants;
 import ru.flexpay.eirc.registry.util.FPRegistryConstants;
 import ru.flexpay.eirc.registry.util.StringUtil;
+import ru.flexpay.eirc.service.correction.service.ServiceCorrectionBean;
 import ru.flexpay.eirc.service.service.ServiceBean;
-import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
@@ -424,9 +424,11 @@ public class MbCorrectionsFileConverter {
         }
 		log.debug("fields: {}", fields);
 		log.debug("Getting service provider with id = {} from DB", fields[1]);
+        FilterWrapper<OrganizationCorrection> filter = FilterWrapper.of(new OrganizationCorrection(null, null, "[0]*" + fields[1],
+                context.getMbOrganizationId(), context.getEircOrganizationId(), null));
+        filter.setRegexp(true);
 		List<OrganizationCorrection> organizationCorrections = organizationCorrectionBean.getOrganizationCorrections(
-                FilterWrapper.of(new OrganizationCorrection(null, null, fields[1],
-                        context.getMbOrganizationId(), context.getEircOrganizationId(), null)));
+                filter);
 		if (organizationCorrections.size() <= 0) {
 			throw new MbConverterException("No service provider correction with id {0}", fields[1]);
 		}

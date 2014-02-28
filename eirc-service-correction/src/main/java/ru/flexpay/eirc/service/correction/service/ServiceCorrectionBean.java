@@ -1,10 +1,10 @@
-package ru.flexpay.eirc.service.service;
+package ru.flexpay.eirc.service.correction.service;
 
 import org.complitex.dictionary.entity.Correction;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
-import ru.flexpay.eirc.service.entity.ServiceCorrection;
+import ru.flexpay.eirc.service.correction.entity.ServiceCorrection;
 
 import javax.ejb.Stateless;
 import java.util.List;

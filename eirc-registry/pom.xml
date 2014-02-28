@@ -24,15 +24,15 @@
         </dependency>
         <dependency>
             <groupId>ru.flexpay.eirc</groupId>
-            <artifactId>eirc-service</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ru.flexpay.eirc</groupId>
             <artifactId>eirc-organization</artifactId>
         </dependency>
         <dependency>
             <groupId>ru.flexpay.eirc</groupId>
             <artifactId>eirc-service-provider-account</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ru.flexpay.eirc</groupId>
+            <artifactId>eirc-service-correction</artifactId>
         </dependency>
     </dependencies>
 </project>

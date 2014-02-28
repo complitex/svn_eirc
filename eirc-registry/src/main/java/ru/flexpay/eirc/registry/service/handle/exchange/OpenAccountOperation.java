@@ -15,10 +15,10 @@ import ru.flexpay.eirc.registry.entity.Container;
 import ru.flexpay.eirc.registry.entity.ContainerType;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
+import ru.flexpay.eirc.service.correction.entity.ServiceCorrection;
+import ru.flexpay.eirc.service.correction.service.ServiceCorrectionBean;
 import ru.flexpay.eirc.service.entity.Service;
-import ru.flexpay.eirc.service.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.service.ServiceBean;
-import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 

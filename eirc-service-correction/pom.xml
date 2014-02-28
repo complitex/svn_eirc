@@ -9,13 +9,17 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>eirc-organization</artifactId>
-    <name>EIRC - Organization</name>
+    <artifactId>eirc-service-correction</artifactId>
+    <name>EIRC - Service correction</name>
 
     <dependencies>
         <dependency>
             <groupId>ru.flexpay.eirc</groupId>
-            <artifactId>eirc-organization-type</artifactId>
+            <artifactId>eirc-dictionary</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ru.flexpay.eirc</groupId>
+            <artifactId>eirc-organization</artifactId>
         </dependency>
         <dependency>
             <groupId>ru.flexpay.eirc</groupId>
@@ -23,7 +27,8 @@
         </dependency>
         <dependency>
             <groupId>org.complitex</groupId>
-            <artifactId>complitex-organization</artifactId>
+            <artifactId>complitex-correction</artifactId>
         </dependency>
     </dependencies>
+
 </project>

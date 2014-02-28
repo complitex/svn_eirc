@@ -69,6 +69,11 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
      */
     public final static long EMAIL = 918;
 
+    /**
+     * Service. It is EIRC only attribute.
+     */
+    public final static long SERVICE = 919;
+
 
     /**
      * Itself organization instance id.

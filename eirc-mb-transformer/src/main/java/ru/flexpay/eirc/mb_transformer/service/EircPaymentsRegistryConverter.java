@@ -33,10 +33,10 @@ import ru.flexpay.eirc.registry.util.FileUtil;
 import ru.flexpay.eirc.registry.util.ParseUtil;
 import ru.flexpay.eirc.registry.util.RSASignatureUtil;
 import ru.flexpay.eirc.registry.util.StringUtil;
+import ru.flexpay.eirc.service.correction.entity.ServiceCorrection;
+import ru.flexpay.eirc.service.correction.service.ServiceCorrectionBean;
 import ru.flexpay.eirc.service.entity.Service;
-import ru.flexpay.eirc.service.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.service.ServiceBean;
-import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountCorrectionBean;
 

@@ -1,4 +1,4 @@
-package ru.flexpay.eirc.service.web.edit;
+package ru.flexpay.eirc.service.correction.web.edit;
 
 import org.apache.wicket.Page;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
@@ -12,12 +12,12 @@ import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.FormTemplatePage;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
+import ru.flexpay.eirc.service.correction.entity.ServiceCorrection;
+import ru.flexpay.eirc.service.correction.service.ServiceCorrectionBean;
+import ru.flexpay.eirc.service.correction.web.list.ServiceCorrectionList;
 import ru.flexpay.eirc.service.entity.Service;
-import ru.flexpay.eirc.service.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.service.ServiceBean;
-import ru.flexpay.eirc.service.service.ServiceCorrectionBean;
 import ru.flexpay.eirc.service.web.component.ServicePicker;
-import ru.flexpay.eirc.service.web.list.ServiceCorrectionList;
 
 import javax.ejb.EJB;
 import java.util.List;

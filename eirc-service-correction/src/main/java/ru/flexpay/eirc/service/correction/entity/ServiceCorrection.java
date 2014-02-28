@@ -1,4 +1,4 @@
-package ru.flexpay.eirc.service.entity;
+package ru.flexpay.eirc.service.correction.entity;
 
 import org.complitex.dictionary.entity.Correction;
 
