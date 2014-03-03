@@ -8,7 +8,6 @@ import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
-import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.PropertyModel;
 import org.apache.wicket.model.ResourceModel;
@@ -19,6 +18,7 @@ import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.strategy.IStrategy;
 import org.complitex.dictionary.strategy.StrategyFactory;
 import org.complitex.dictionary.web.component.ShowMode;
+import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.search.CollapsibleInputSearchComponent;
 import org.complitex.dictionary.web.component.search.SearchComponentState;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
@@ -86,7 +86,7 @@ public class EircAccountEdit extends TemplatePage {
         add(new Label("title", labelModel));
         add(new Label("label", labelModel));
 
-        final FeedbackPanel messages = new FeedbackPanel("messages");
+        final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
         messages.setOutputMarkupId(true);
         add(messages);
 
@@ -135,6 +135,7 @@ public class EircAccountEdit extends TemplatePage {
 
                 if (isNullAddressInput(addressInput)) {
                     error(getString("failed_address"));
+                    target.add(messages);
                     return;
                 } else if (address == null) {
                     address = new Address(addressInput.getId(), AddressEntity.BUILDING);
@@ -142,11 +143,13 @@ public class EircAccountEdit extends TemplatePage {
 
                 if (eircAccountBean.eircAccountExists(eircAccount.getId(), address)) {
                     error(getString("error_eirc_account_by_address_exists"));
+                    target.add(messages);
                     return;
                 }
 
                 if (eircAccountBean.eircAccountExists(eircAccount.getId(), eircAccount.getAccountNumber())) {
                     error(getString("error_eirc_account_exists"));
+                    target.add(messages);
                     return;
                 }
 
@@ -156,6 +159,11 @@ public class EircAccountEdit extends TemplatePage {
                 getSession().info(getString("saved"));
 
                 setResponsePage(EircAccountList.class);
+            }
+
+            @Override
+            protected void onError(AjaxRequestTarget target, Form<?> form) {
+                target.add(messages);
             }
         };
         form.add(save);

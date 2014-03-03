@@ -12,6 +12,7 @@ import org.complitex.dictionary.web.component.DomainObjectInputPanel;
 import org.complitex.organization.strategy.web.edit.OrganizationEditComponent;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
+import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 
 import javax.ejb.EJB;
 import java.util.List;
@@ -153,7 +154,14 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
     }
 
     public boolean isServiceProvider() {
-        return getDomainObject().isServiceProvider();
+        List<DomainObject> types = getOrganizationTypesModel().getObject();
+        for (DomainObject type : types) {
+            if (type.getId() != null &&
+                    type.getId().equals(OrganizationType.SERVICE_PROVIDER.getId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
