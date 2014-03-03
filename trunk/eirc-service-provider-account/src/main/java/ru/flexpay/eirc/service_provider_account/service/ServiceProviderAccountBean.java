@@ -3,6 +3,7 @@ package ru.flexpay.eirc.service_provider_account.service;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
+import org.complitex.dictionary.entity.Attribute;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
 import org.complitex.dictionary.mybatis.Transactional;
@@ -11,7 +12,10 @@ import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.service.SequenceBean;
 import org.complitex.dictionary.util.DateUtil;
 import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
+import ru.flexpay.eirc.organization.entity.Organization;
+import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.service.service.ServiceBean;
+import ru.flexpay.eirc.service_provider_account.entity.ServiceNotAllowableException;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 
 import javax.ejb.EJB;
@@ -35,6 +39,9 @@ public class ServiceProviderAccountBean extends AbstractBean {
 
     @EJB
     private LocaleBean localeBean;
+
+    @EJB
+    private EircOrganizationStrategy eircOrganizationStrategy;
 
     @Transactional
     public void archive(ServiceProviderAccount object) {
@@ -63,11 +70,32 @@ public class ServiceProviderAccountBean extends AbstractBean {
     }
 
     @Transactional
-    public void save(ServiceProviderAccount serviceProviderAccount) {
+    public void save(ServiceProviderAccount serviceProviderAccount) throws ServiceNotAllowableException {
+        validate(serviceProviderAccount);
+
         if (serviceProviderAccount.getId() == null) {
             saveNew(serviceProviderAccount);
         } else {
             update(serviceProviderAccount);
+        }
+    }
+
+    public void validate(ServiceProviderAccount serviceProviderAccount) throws ServiceNotAllowableException {
+        if (serviceProviderAccount.getService() != null && serviceProviderAccount.getService().getId() != null) {
+            // check allowable services
+            Organization organization = eircOrganizationStrategy.findById(serviceProviderAccount.getOrganizationId(), true);
+            List<Attribute> allowableServices = organization.getAttributes(EircOrganizationStrategy.SERVICE);
+            boolean check = false;
+            for (Attribute allowableService : allowableServices) {
+                 if (serviceProviderAccount.getService().getId().equals(allowableService.getValueId())) {
+                     check = true;
+                     break;
+                }
+            }
+            if (!check) {
+                throw new ServiceNotAllowableException("Service {0} do not allowable for organization {1}",
+                        serviceProviderAccount.getService(), serviceProviderAccount.getId());
+            }
         }
     }
 
@@ -115,5 +143,6 @@ public class ServiceProviderAccountBean extends AbstractBean {
         super.setSqlSessionFactoryBean(sqlSessionFactoryBean);
         sequenceBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
         localeBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
+        eircOrganizationStrategy.setSqlSessionFactoryBean(sqlSessionFactoryBean);
     }
 }
