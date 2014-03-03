@@ -9,7 +9,6 @@ import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
-import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.CompoundPropertyModel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
@@ -18,6 +17,7 @@ import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.string.StringValue;
 import org.complitex.dictionary.entity.Locale;
 import org.complitex.dictionary.service.LocaleBean;
+import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.FormTemplatePage;
 import ru.flexpay.eirc.service.entity.Service;
@@ -72,7 +72,7 @@ public class ServiceEdit extends FormTemplatePage {
         add(new Label("title", labelModel));
         add(new Label("label", labelModel));
 
-        final FeedbackPanel messages = new FeedbackPanel("messages");
+        final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
         messages.setOutputMarkupId(true);
         add(messages);
 
@@ -132,6 +132,11 @@ public class ServiceEdit extends FormTemplatePage {
                 getSession().info(getString("saved"));
 
                 setResponsePage(ServiceList.class);
+            }
+
+            @Override
+            protected void onError(AjaxRequestTarget target, Form<?> form) {
+                target.add(messages);
             }
         };
         form.add(save);
