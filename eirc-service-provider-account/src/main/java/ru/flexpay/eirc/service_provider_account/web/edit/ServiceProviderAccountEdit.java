@@ -4,13 +4,13 @@ import com.google.common.collect.ImmutableList;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
+import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
-import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.PropertyModel;
 import org.apache.wicket.model.ResourceModel;
@@ -22,6 +22,7 @@ import org.complitex.dictionary.entity.Locale;
 import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.ShowMode;
+import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.search.SearchComponentState;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.search.CollapsibleInputSearchToolbarButton;
@@ -35,6 +36,7 @@ import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
+import ru.flexpay.eirc.service_provider_account.entity.ServiceNotAllowableException;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 import ru.flexpay.eirc.service_provider_account.web.list.ServiceProviderAccountList;
@@ -101,9 +103,14 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
         add(new Label("title", labelModel));
         add(new Label("label", labelModel));
 
-        final FeedbackPanel messages = new FeedbackPanel("messages");
+        final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
         messages.setOutputMarkupId(true);
-        add(messages);
+
+        final WebMarkupContainer container = new WebMarkupContainer("container");
+        container.setOutputMarkupPlaceholderTag(true);
+        container.setVisible(true);
+        add(container);
+        container.add(messages);
 
         Form form = new Form("form");
         add(form);
@@ -177,7 +184,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
                 new IChoiceRenderer<DomainObject>() {
                     @Override
                     public Object getDisplayValue(DomainObject serviceProvider) {
-                        return  organizationStrategy.displayDomainObject(serviceProvider, getLocale());
+                        return organizationStrategy.displayDomainObject(serviceProvider, getLocale());
                     }
 
                     @Override
@@ -207,7 +214,8 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
                 }
 
                 if (isNullAddressInput(addressInput)) {
-                    error(getString("failed_address"));
+                    container.error(getString("failed_address"));
+                    target.add(container);
                     return;
                 } else if (address == null) {
                     address = new Address(addressInput.getId(), AddressEntity.BUILDING);
@@ -215,17 +223,29 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
                 EircAccount eircAccount = eircAccountBean.getEircAccount(address);
                 if (eircAccount == null) {
-                    error(getString("eirc_account_not_found_by_address"));
+                    container.error(getString("eirc_account_not_found_by_address"));
+                    target.add(container);
                     return;
                 }
 
                 serviceProviderAccount.setEircAccount(eircAccount);
 
-                serviceProviderAccountBean.save(serviceProviderAccount);
+                try {
+                    serviceProviderAccountBean.save(serviceProviderAccount);
+                } catch (ServiceNotAllowableException e) {
+                    container.error(getString("eirc_account_service_not_allowable"));
+                    target.add(container);
+                    return;
+                }
 
                 getSession().info(getString("saved"));
 
                 setResponsePage(ServiceProviderAccountList.class);
+            }
+
+            @Override
+            protected void onError(AjaxRequestTarget target, Form<?> form) {
+                target.add(container);
             }
         };
         form.add(save);

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns:wicket>
+<head>
+    <title></title>
+</head>
+<body>
+<wicket:panel>
+
+    <div wicket:id="lookupDialog" wicket:message="title:lookup_dialog_title" style="display: none;">
+        <div wicket:id="content">
+            <form action="#" wicket:id="filterForm" class="service_picker_form">
+                <table class="tbColor" cellpadding="0" cellspacing="0" border="0">
+                    <thead>
+                    <tr>
+                        <th></th>
+                        <th>
+                                        <span>
+                                            <wicket:message key="name"/>
+                                        </span>
+                        </th>
+                        <th>
+                                        <span>
+                                            <wicket:message key="code"/>
+                                        </span>
+                        </th>
+                        <th></th>
+                    </tr>
+                    <tr>
+                        <td class="filter-td"></td>
+                        <td class="filter-td">
+                            <input type="text" wicket:id="nameFilter"></input>
+                        </td>
+                        <td class="filter-td">
+                            <input type="text" wicket:id="codeFilter"></input>
+                        </td>
+                        <td class="filter-td">
+                            <div style="width: 152px;">
+                                <input wicket:id="find" type="submit" wicket:message="value:find"
+                                       class="btnMiddle service-picker-find"/>
+                            </div>
+                        </td>
+                    </tr>
+                    </thead>
+                    <tbody wicket:id="radioGroup">
+                    <tr wicket:id="data">
+                        <td>
+                            <input type="radio" wicket:id="radio"/>
+                        </td>
+                        <td>
+                            <div wicket:id="name"
+                                 style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px;">
+                            </div>
+                        </td>
+                        <td>
+                            <div wicket:id="code"></div>
+                        </td>
+                        <td></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </form>
+            <div wicket:id="navigator"></div>
+            <div style="margin-top: 7px;">
+                <input type="button" wicket:id="select" wicket:message="value:select" class="btnMiddle"/>
+                <input type="button" wicket:id="cancel" wicket:message="value:cancel" class="btnMiddle"/>
+            </div>
+        </div>
+    </div>
+</wicket:panel>
+</body>
+</html>

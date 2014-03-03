@@ -84,9 +84,18 @@ public class ServiceAllowableListPanel extends Panel {
 
             @Override
             public void setObject(Service object) {
-                Attribute addedAttribute = CloneUtil.cloneObject(newService);
-                addedAttribute.setValueId(object.getId());
-                services.add(addedAttribute);
+                boolean contentValue = false;
+                for (Attribute attribute : services) {
+                    if (attribute.getValueId().equals(object.getId())) {
+                        contentValue = true;
+                    }
+                }
+                if (!contentValue) {
+                    Attribute addedAttribute = CloneUtil.cloneObject(newService);
+                    addedAttribute.setValueId(object.getId());
+
+                    services.add(addedAttribute);
+                }
             }
 
             @Override
@@ -108,7 +117,7 @@ public class ServiceAllowableListPanel extends Panel {
 
     }
 
-    public Attribute getNewService(List<Attribute> services) {
+    private Attribute getNewService(List<Attribute> services) {
         Attribute newService = null;
 
         for (Attribute service : services) {
@@ -119,7 +128,14 @@ public class ServiceAllowableListPanel extends Panel {
         }
         if (newService != null) {
             services.remove(newService);
+        } else if (services.size() > 0) {
+            newService = CloneUtil.cloneObject(services.get(0));
+            newService.setValueId(null);
         }
         return newService;
+    }
+
+    public List<Attribute> getServices() {
+        return services;
     }
 }

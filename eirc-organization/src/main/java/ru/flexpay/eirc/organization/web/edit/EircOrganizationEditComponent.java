@@ -14,6 +14,7 @@ import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 
 import javax.ejb.EJB;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,8 +27,11 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
 
     @EJB
     private StringCultureBean stringBean;
+
     private WebMarkupContainer emailContainer;
     private WebMarkupContainer serviceContainer;
+
+    private List<Attribute> services = null;
 
     public EircOrganizationEditComponent(String id, boolean disabled) {
         super(id, disabled);
@@ -63,7 +67,7 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
 
         //Services. It is service provider organization only attribute.
         {
-            serviceContainer = addServiceContainer(isDisabled, organization, "serviceContainer");
+            serviceContainer = addServiceContainer(organization, "serviceContainer");
 
             //initial visibility
             serviceContainer.setVisible(isServiceProvider());
@@ -96,8 +100,7 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
         return container;
     }
 
-    private WebMarkupContainer addServiceContainer(boolean disabled,
-                                                     Organization organization, String name) {
+    private WebMarkupContainer addServiceContainer(Organization organization, String name) {
         Long attributeTypeId = EircOrganizationStrategy.SERVICE;
 
         WebMarkupContainer container = new WebMarkupContainer(name);
@@ -117,7 +120,9 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
                 DomainObjectInputPanel.labelModel(attributeType.getAttributeNames(), getLocale())));
         container.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));
 
-        container.add(new ServiceAllowableListPanel("input", organization));
+        ServiceAllowableListPanel panel = new ServiceAllowableListPanel("input", organization);
+        services = panel.getServices();
+        container.add(panel);
 
         return container;
     }
@@ -135,6 +140,16 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
                 target.add(emailContainer);
             }
         }
+        
+        // allowable services
+        {
+            boolean serviceContainerWasVisible = serviceContainer.isVisible();
+            serviceContainer.setVisible(isServiceProvider());
+            boolean serviceContainerVisibleNow = serviceContainer.isVisible();
+            if (serviceContainerWasVisible ^ serviceContainerVisibleNow) {
+                target.add(serviceContainer);
+            }
+        }
     }
 
     public boolean isServiceProvider() {
@@ -144,11 +159,6 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
     @Override
     public boolean isUserOrganization() {
         return super.isUserOrganization();
-    }
-
-    @Override
-    protected boolean isDistrictRequired() {
-        return isServiceProvider();
     }
 
     @Override
@@ -162,8 +172,15 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
 
         final DomainObject organization = getDomainObject();
 
+        organization.removeAttribute(EircOrganizationStrategy.SERVICE);
         if (!isServiceProvider()) {
             organization.removeAttribute(EircOrganizationStrategy.EMAIL);
+        } else if (services != null) {
+            long attributeId = 1;
+            for (Attribute service : services) {
+                service.setAttributeId(attributeId++);
+                organization.addAttribute(service);
+            }
         }
     }
 
