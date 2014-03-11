@@ -15,6 +15,7 @@ import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.string.StringValue;
+import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.entity.Locale;
 import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
@@ -89,7 +90,7 @@ public class ServiceEdit extends FormTemplatePage {
         form.add(new TextField<>("nameUk"));
 
         // Parent service
-        List<Service> services = serviceBean.getServices(null);
+        List<Service> services = serviceBean.getServices(FilterWrapper.of(new Service()));
         if (service.getId() != null) {
             services.remove(service);
         }

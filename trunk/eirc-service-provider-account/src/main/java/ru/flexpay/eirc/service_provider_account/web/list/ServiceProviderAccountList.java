@@ -264,7 +264,7 @@ public class ServiceProviderAccountList extends TemplatePage {
 
         filterForm.add(new DropDownChoice<>("serviceFilter",
                 new PropertyModel<Service>(filterObject, "service"),
-                serviceBean.getServices(null),
+                serviceBean.getServices(FilterWrapper.of(new Service())),
                 new IChoiceRenderer<Service>() {
                     @Override
                     public Object getDisplayValue(Service service) {
