@@ -10,6 +10,7 @@ import org.complitex.dictionary.service.AbstractBean;
 import ru.flexpay.eirc.service.entity.Service;
 
 import javax.ejb.Stateless;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,13 @@ public class ServiceBean extends AbstractBean {
     public Service getService(long id) {
         List<Service> resultOrderByDescData = sqlSession().selectList(NS + ".selectService", id);
         return resultOrderByDescData.size() > 0? resultOrderByDescData.get(0): null;
+    }
+
+    public List<Service> getServices(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return sqlSession().selectList(NS + ".selectServicesByIds", ids);
     }
 
     public List<Service> getServices(FilterWrapper<Service> filter) {

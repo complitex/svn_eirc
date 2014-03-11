@@ -97,6 +97,17 @@
         where s.`id` = #{id}
     </select>
 
+    <select id="selectServicesByIds" parameterType="list" resultMap="Service" flushCache="false" useCache="false">
+        select
+        <include refid="serviceColumns"/>
+        from `service` s
+        <include refid="serviceJoin"/>
+        where s.`id` IN
+        <foreach collection="list" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
     <insert id="insertService" parameterType="ru.flexpay.eirc.service.entity.Service" keyProperty="id" useGeneratedKeys="true" flushCache="true">
         insert into `service` (`code`, `parent_id`)
                             values (#{code}, #{parentId})

@@ -1,7 +1,9 @@
 package ru.flexpay.eirc.service_provider_account.web.edit;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.apache.wicket.ajax.AjaxRequestTarget;
+import org.apache.wicket.ajax.form.AjaxFormComponentUpdatingBehavior;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.markup.html.WebMarkupContainer;
@@ -12,11 +14,13 @@ import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.model.IModel;
+import org.apache.wicket.model.Model;
 import org.apache.wicket.model.PropertyModel;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.string.StringValue;
 import org.complitex.address.entity.AddressEntity;
+import org.complitex.dictionary.entity.Attribute;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.Locale;
 import org.complitex.dictionary.service.LocaleBean;
@@ -33,6 +37,7 @@ import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.dictionary.web.CollapsibleInputSearchComponent;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
+import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
@@ -42,6 +47,7 @@ import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBe
 import ru.flexpay.eirc.service_provider_account.web.list.ServiceProviderAccountList;
 
 import javax.ejb.EJB;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -140,9 +146,10 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
         form.add(new TextField<>("middleName", new PropertyModel<String>(serviceProviderAccount.getPerson(), "middleName")));
 
         // service
-        form.add(new DropDownChoice<>("service",
+        final IModel<List<? extends Service>> services = Model.ofList(Collections.<Service>emptyList());
+        final DropDownChoice<Service> service = new DropDownChoice<>("service",
                 new PropertyModel<Service>(serviceProviderAccount, "service"),
-                serviceBean.getServices(null),
+                services,
                 new IChoiceRenderer<Service>() {
                     @Override
                     public Object getDisplayValue(Service service) {
@@ -153,26 +160,44 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
                     public String getIdValue(Service service, int i) {
                         return service.getId().toString();
                     }
-                }).setRequired(true));
+                });
+        service.setRequired(true);
+        service.setOutputMarkupId(true);
+        form.add(service);
 
         // service provider
         form.add(new DropDownChoice<>("serviceProvider",
                 new IModel<DomainObject>() {
 
+                    Organization organization = null;
+
                     @Override
                     public DomainObject getObject() {
-                        return serviceProviderAccount.getOrganizationId() != null ?
-                                organizationStrategy.findById(serviceProviderAccount.getOrganizationId(), false) :
-                                null;
+                        return organization;
                     }
 
                     @Override
                     public void setObject(DomainObject domainObject) {
                         if (domainObject != null) {
                             serviceProviderAccount.setOrganizationId(domainObject.getId());
+                            organization = organizationStrategy.findById(domainObject.getId(), false);
+
+                            List<Service> allowableServices = getAllowableServices();
+                            services.setObject(allowableServices);
                         } else {
                             serviceProviderAccount.setOrganizationId(null);
+                            organization = null;
+                            services.setObject(Collections.<Service>emptyList());
                         }
+                    }
+
+                    public List<Service> getAllowableServices() {
+                        List<Attribute> allowableServices = organization.getAttributes(EircOrganizationStrategy.SERVICE);
+                        List<Long> ids = Lists.newArrayList();
+                        for (Attribute allowableService : allowableServices) {
+                            ids.add(allowableService.getValueId());
+                        }
+                        return serviceBean.getServices(ids);
                     }
 
                     @Override
@@ -191,7 +216,13 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
                     public String getIdValue(DomainObject serviceProvider, int i) {
                         return serviceProvider.getId().toString();
                     }
-                }).setRequired(true));
+                }
+        ).setRequired(true).add(new AjaxFormComponentUpdatingBehavior("onchange") {
+            @Override
+            protected void onUpdate(AjaxRequestTarget target) {
+                target.add(service);
+            }
+        }));
 
         // save button
         AjaxButton save = new AjaxButton("save") {
