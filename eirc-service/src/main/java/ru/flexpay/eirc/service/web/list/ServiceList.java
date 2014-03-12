@@ -91,7 +91,7 @@ public class ServiceList extends TemplatePage {
         final DataProvider<Service> dataProvider = new DataProvider<Service>() {
 
             @Override
-            protected Iterable<? extends Service> getData(int first, int count) {
+            protected Iterable<? extends Service> getData(long first, long count) {
                 FilterWrapper<Service> filterWrapper = FilterWrapper.of(filterObject, first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());

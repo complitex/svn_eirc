@@ -76,7 +76,7 @@ public class ServiceDialog extends FormComponentPanel<Service> {
         final DataProvider<Service> dataProvider = new DataProvider<Service>() {
 
             @Override
-            protected Iterable<? extends Service> getData(int first, int count) {
+            protected Iterable<? extends Service> getData(long first, long count) {
                 if (!showData) {
                     return Collections.emptyList();
                 }

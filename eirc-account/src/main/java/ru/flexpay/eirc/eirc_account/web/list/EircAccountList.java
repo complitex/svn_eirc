@@ -138,7 +138,7 @@ public class EircAccountList extends TemplatePage {
         final DataProvider<EircAccount> dataProvider = new DataProvider<EircAccount>() {
 
             @Override
-            protected Iterable<? extends EircAccount> getData(int first, int count) {
+            protected Iterable<? extends EircAccount> getData(long first, long count) {
                 FilterWrapper<EircAccount> filterWrapper = FilterWrapper.of(filterObject, first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());

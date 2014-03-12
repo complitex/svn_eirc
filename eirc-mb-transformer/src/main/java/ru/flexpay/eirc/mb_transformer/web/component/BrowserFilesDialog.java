@@ -22,6 +22,7 @@ import org.apache.wicket.extensions.markup.html.repeater.data.table.DataTable;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.HeadersToolbar;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.IColumn;
 import org.apache.wicket.extensions.markup.html.repeater.util.SingleSortState;
+import org.apache.wicket.markup.head.CssHeaderItem;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
@@ -76,11 +77,11 @@ public class BrowserFilesDialog extends Panel {
 
     private WebMarkupContainer container;
 
-    private SingleSortState state = new SingleSortState();
+    private SingleSortState<String> state = new SingleSortState<>();
     private String sortProperty = "name";
     private Model<String> fileNameModel = new Model<>("*");
 
-    private final List<IColumn<File>> COLUMNS = ImmutableList.<IColumn<File>>of(
+    private final List<IColumn<File, String>> COLUMNS = ImmutableList.<IColumn<File, String>>of(
             new IFileColumn(new ResourceModel("name"), new IFileModel() {
                 @Override
                 public String getObject() {
@@ -114,7 +115,8 @@ public class BrowserFilesDialog extends Panel {
     @Override
     public void renderHead(HtmlHeaderContainer container) {
 
-        container.getHeaderResponse().renderCSSReference(new PackageResourceReference(BrowserFilesDialog.class, "browser.css"));
+        container.getHeaderResponse().render(CssHeaderItem.forReference(
+                new PackageResourceReference(BrowserFilesDialog.class, "browser.css")));
     }
 
     public File getSelectedFile() {
@@ -207,7 +209,7 @@ public class BrowserFilesDialog extends Panel {
         selectedFile.setOutputMarkupId(true);
         form.add(selectedFile);
 
-        final DataTable<File> table = new DataTable<File>("datatable", COLUMNS, provider, 1000) {
+        final DataTable<File, String> table = new DataTable<File, String>("datatable", COLUMNS, provider, 1000) {
             private AttributeAppender style = new AttributeAppender("class", new Model<>("selected"));
 
             @Override
@@ -250,17 +252,17 @@ public class BrowserFilesDialog extends Panel {
                 return rowItem;
             }
         };
-        table.addTopToolbar(new HeadersToolbar(table, new ISortStateLocator() {
+        table.addTopToolbar(new HeadersToolbar<String>(table, new ISortStateLocator<String>() {
             @Override
-            public ISortState getSortState() {
+            public ISortState<String> getSortState() {
                 return state;
             }
         }) {
             @Override
             protected WebMarkupContainer newSortableHeader(final String headerId, final String property,
-                                                           final ISortStateLocator locator)
+                                                           final ISortStateLocator<String> locator)
             {
-                return new AjaxFallbackOrderByBorder(headerId, property, locator) {
+                return new AjaxFallbackOrderByBorder<String>(headerId, property, locator) {
                     private static final long serialVersionUID = 1L;
 
                     @Override
@@ -405,7 +407,7 @@ public class BrowserFilesDialog extends Panel {
         dialog.open(target);
     }
 
-    private class IFileColumn extends AbstractColumn<File> {
+    private class IFileColumn extends AbstractColumn<File, String> {
         private IFileModel cellModel;
         private String cssClass;
 

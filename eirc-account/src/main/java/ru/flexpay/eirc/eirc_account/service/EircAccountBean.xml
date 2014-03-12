@@ -213,9 +213,6 @@
                     <when test="map.eircAccount.address.entity.id == 400">
                         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.cityJoin"/>
                     </when>
-                    <when test="map.eircAccount.address.entity.id == 700">
-                        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.regionJoin"/>
-                    </when>
                     <when test="map.eircAccount.address.entity.id == 800">
                         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.countryJoin"/>
                     </when>
@@ -242,9 +239,6 @@
                 </when>
                 <when test="map.eircAccount.address.entity.id == 400">
                     <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.cityCondition"/>
-                </when>
-                <when test="map.eircAccount.address.entity.id == 700">
-                    <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.regionCondition"/>
                 </when>
                 <when test="map.eircAccount.address.entity.id == 800">
                     <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.countryCondition"/>

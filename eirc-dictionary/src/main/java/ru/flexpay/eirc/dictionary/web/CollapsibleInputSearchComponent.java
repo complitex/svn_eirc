@@ -17,7 +17,7 @@ import java.util.List;
  */
 public abstract class CollapsibleInputSearchComponent extends org.complitex.dictionary.web.component.search.CollapsibleInputSearchComponent {
 
-    private static final List<String> SEARCH_FILTERS = ImmutableList.of("country", "region", "city", "street", "building", "apartment", "room");
+    private static final List<String> SEARCH_FILTERS = ImmutableList.of("city", "street", "building", "apartment", "room");
 
     private static final List<String> ADDRESS_DESCRIPTION = ImmutableList.of("street", "city", "region", "country");
 

@@ -138,7 +138,7 @@ public class RegistryList extends TemplatePage {
         final DataProvider<Registry> dataProvider = new DataProvider<Registry>() {
 
             @Override
-            protected Iterable<? extends Registry> getData(int first, int count) {
+            protected Iterable<? extends Registry> getData(long first, long count) {
                 FilterWrapper<Registry> filterWrapper = FilterWrapper.of(filterModel.getObject(), first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
@@ -465,7 +465,7 @@ public class RegistryList extends TemplatePage {
             showIMessages(target);
 
             if (finishCallback.isCompleted() && imessenger.countIMessages() <= 0) {
-                stop();
+                stop(target);
                 container.remove(timerBehavior);
                 timerBehavior = null;
             }

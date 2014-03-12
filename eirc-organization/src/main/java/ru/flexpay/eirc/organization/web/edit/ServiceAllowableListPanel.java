@@ -39,10 +39,10 @@ public class ServiceAllowableListPanel extends Panel {
 
     private List<Attribute> services;
 
-    private DataTable<Attribute> table;
+    private DataTable<Attribute, String> table;
 
-    private final List<IColumn<Attribute>> COLUMNS = ImmutableList.<IColumn<Attribute>>of(
-            new AbstractColumn<Attribute>(new ResourceModel("name")) {
+    private final List<IColumn<Attribute, String>> COLUMNS = ImmutableList.<IColumn<Attribute, String>>of(
+            new AbstractColumn<Attribute, String>(new ResourceModel("name")) {
 
                 @Override
                 public void populateItem(Item<ICellPopulator<Attribute>> cellItem, String componentId, IModel<Attribute> rowModel) {
@@ -51,7 +51,7 @@ public class ServiceAllowableListPanel extends Panel {
                     cellItem.add(new Label(componentId, service.getName(localeBean.convert(getLocale()))));
                 }
             },
-            new AbstractColumn<Attribute>(new ResourceModel("action")) {
+            new AbstractColumn<Attribute, String>(new ResourceModel("action")) {
 
                 @Override
                 public void populateItem(Item<ICellPopulator<Attribute>> cellItem, String componentId, final IModel<Attribute> rowModel) {
