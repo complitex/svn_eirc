@@ -194,7 +194,7 @@ public class EircPaymentsTransformer extends TemplatePage {
             showIMessages(target);
 
             if (finishCallback.isCompleted() && imessenger.countIMessages() <= 0) {
-                stop();
+                stop(target);
                 container.remove(timerBehavior);
                 timerBehavior = null;
             }

@@ -191,7 +191,7 @@ public class RegistryRecordList extends TemplatePage {
         final DataProvider<RegistryRecordData> dataProvider = new DataProvider<RegistryRecordData>() {
 
             @Override
-            protected Iterable<? extends RegistryRecordData> getData(int first, int count) {
+            protected Iterable<? extends RegistryRecordData> getData(long first, long count) {
                 FilterWrapper<RegistryRecordData> filterWrapper = FilterWrapper.of(filterModel.getObject(), first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
@@ -246,7 +246,7 @@ public class RegistryRecordList extends TemplatePage {
 
                 final DataProvider<Container> dataProvider = new DataProvider<Container>() {
                     @Override
-                    protected Iterable<? extends Container> getData(int first, int count) {
+                    protected Iterable<? extends Container> getData(long first, long count) {
                         return registryRecord.getContainers();
                     }
 
@@ -487,7 +487,7 @@ public class RegistryRecordList extends TemplatePage {
             showIMessages(target);
 
             if (finishCallback.isCompleted() && imessenger.countIMessages() <= 0) {
-                stop();
+                stop(target);
                 container.remove(timerBehavior);
                 timerBehavior = null;
             }

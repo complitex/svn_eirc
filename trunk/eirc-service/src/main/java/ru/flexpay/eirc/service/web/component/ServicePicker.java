@@ -2,7 +2,9 @@ package ru.flexpay.eirc.service.web.component;
 
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
-import org.apache.wicket.markup.html.IHeaderResponse;
+import org.apache.wicket.markup.head.CssHeaderItem;
+import org.apache.wicket.markup.head.IHeaderResponse;
+import org.apache.wicket.markup.head.JavaScriptHeaderItem;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.FormComponentPanel;
 import org.apache.wicket.model.AbstractReadOnlyModel;
@@ -28,10 +30,10 @@ public class ServicePicker extends FormComponentPanel<Service> {
 
     @Override
     public void renderHead(IHeaderResponse response) {
-        response.renderCSSReference(new PackageResourceReference(
-                ServicePicker.class, ServicePicker.class.getSimpleName() + ".css"));
-        response.renderJavaScriptReference(new PackageResourceReference(
-                ServicePicker.class, ServicePicker.class.getSimpleName() + ".js"));
+        response.render(CssHeaderItem.forReference(new PackageResourceReference(
+                ServicePicker.class, ServicePicker.class.getSimpleName() + ".css")));
+        response.render(JavaScriptHeaderItem.forReference(new PackageResourceReference(
+                ServicePicker.class, ServicePicker.class.getSimpleName() + ".js")));
     }
 
     public ServicePicker(String id, IModel<Service> model) {
