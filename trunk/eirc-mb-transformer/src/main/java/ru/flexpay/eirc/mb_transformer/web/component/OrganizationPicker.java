@@ -11,7 +11,7 @@ import javax.ejb.EJB;
 /**
  * @author Pavel Sknar
  */
-public class OrganizationPicker extends org.complitex.organization.web.component.OrganizationPicker {
+public class OrganizationPicker extends org.complitex.dictionary.web.component.organization.OrganizationPicker {
 
     @EJB
     private ConfigBean configBean;
