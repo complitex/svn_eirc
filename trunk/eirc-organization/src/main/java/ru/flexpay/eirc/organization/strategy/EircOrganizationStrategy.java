@@ -323,6 +323,15 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
     }
 
     @Override
+    public String displayAttribute(Attribute attribute, Locale locale) {
+        if (attribute.getAttributeTypeId().equals(USER_ORGANIZATION_PARENT)){
+            return displayShortNameAndCode(attribute.getValueId(), locale);
+        }
+
+        return super.displayAttribute(attribute, locale);
+    }
+
+    @Override
     public void setSqlSessionFactoryBean(SqlSessionFactoryBean sqlSessionFactoryBean) {
         super.setSqlSessionFactoryBean(sqlSessionFactoryBean);
         localeBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
