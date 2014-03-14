@@ -30,7 +30,7 @@ public class EircAccountBean extends AbstractBean {
 
     public static final String FILTER_MAPPING_ATTRIBUTE_NAME = "eircAccount";
 
-    private static final List<String> searchFilters = ImmutableList.of("city", "street", "building", "apartment", "room");
+    private static final List<String> searchFilters = ImmutableList.of("country", "region", "city", "street", "building", "apartment", "room");
 
     private static final CheckDigit CHECK_DIGIT = EAN13CheckDigit.EAN13_CHECK_DIGIT;
     @EJB

@@ -39,8 +39,7 @@ import org.complitex.dictionary.web.component.paging.PagingNavigator;
 import org.complitex.template.web.template.FormTemplatePage;
 import org.complitex.template.web.template.TemplatePage;
 import org.odlabs.wiquery.ui.accordion.Accordion;
-import org.odlabs.wiquery.ui.accordion.AccordionActive;
-import org.odlabs.wiquery.ui.accordion.AccordionAnimated;
+import org.odlabs.wiquery.ui.options.HeightStyleEnum;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryBean;
@@ -236,12 +235,9 @@ public class RegistryRecordList extends TemplatePage {
 
                 Accordion accordion = new Accordion("accordionContainers");
                 accordion.setCollapsible(true);
-                accordion.setClearStyle(true);
-                accordion.setNavigation(true);
-                accordion.setActive(new AccordionActive(false));
-                accordion.setAnimated(new AccordionAnimated(false));
+                accordion.setActive(false);
                 accordion.setOutputMarkupPlaceholderTag(true);
-                accordion.setAutoHeight(false);
+                accordion.setHeightStyle(HeightStyleEnum.CONTENT);
                 item.add(accordion);
 
                 final DataProvider<Container> dataProvider = new DataProvider<Container>() {

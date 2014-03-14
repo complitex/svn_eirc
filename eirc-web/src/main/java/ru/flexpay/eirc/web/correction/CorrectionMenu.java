@@ -206,6 +206,50 @@ public class CorrectionMenu extends ResourceTemplateMenu {
                 return "building_correction_item";
             }
         });
+        links.add(new ITemplateLink() {
+
+            @Override
+            public String getLabel(Locale locale) {
+                return getString(CorrectionMenu.class, locale, "apartment_correction");
+            }
+
+            @Override
+            public Class<? extends Page> getPage() {
+                return ApartmentCorrectionList.class;
+            }
+
+            @Override
+            public PageParameters getParameters() {
+                return new PageParameters();
+            }
+
+            @Override
+            public String getTagId() {
+                return "apartment_correction_item";
+            }
+        });
+        links.add(new ITemplateLink() {
+
+            @Override
+            public String getLabel(Locale locale) {
+                return getString(CorrectionMenu.class, locale, "room_correction");
+            }
+
+            @Override
+            public Class<? extends Page> getPage() {
+                return RoomCorrectionList.class;
+            }
+
+            @Override
+            public PageParameters getParameters() {
+                return new PageParameters();
+            }
+
+            @Override
+            public String getTagId() {
+                return "room_correction_item";
+            }
+        });
         return links;
     }
 
