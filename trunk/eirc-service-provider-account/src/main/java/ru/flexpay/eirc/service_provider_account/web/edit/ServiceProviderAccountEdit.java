@@ -166,45 +166,47 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
         form.add(service);
 
         // service provider
+        IModel<DomainObject> serviceProviderModel = new IModel<DomainObject>() {
+
+            Organization organization = null;
+
+            @Override
+            public DomainObject getObject() {
+                return organization;
+            }
+
+            @Override
+            public void setObject(DomainObject domainObject) {
+                if (domainObject != null) {
+                    serviceProviderAccount.setOrganizationId(domainObject.getId());
+                    organization = organizationStrategy.findById(domainObject.getId(), false);
+
+                    List<Service> allowableServices = getAllowableServices();
+                    services.setObject(allowableServices);
+                } else {
+                    serviceProviderAccount.setOrganizationId(null);
+                    organization = null;
+                    services.setObject(Collections.<Service>emptyList());
+                }
+            }
+
+            public List<Service> getAllowableServices() {
+                List<Attribute> allowableServices = organization.getAttributes(EircOrganizationStrategy.SERVICE);
+                List<Long> ids = Lists.newArrayList();
+                for (Attribute allowableService : allowableServices) {
+                    ids.add(allowableService.getValueId());
+                }
+                return serviceBean.getServices(ids);
+            }
+
+            @Override
+            public void detach() {
+
+            }
+        };
+        serviceProviderModel.setObject(new DomainObject(serviceProviderAccount.getOrganizationId()));
         form.add(new DropDownChoice<>("serviceProvider",
-                new IModel<DomainObject>() {
-
-                    Organization organization = null;
-
-                    @Override
-                    public DomainObject getObject() {
-                        return organization;
-                    }
-
-                    @Override
-                    public void setObject(DomainObject domainObject) {
-                        if (domainObject != null) {
-                            serviceProviderAccount.setOrganizationId(domainObject.getId());
-                            organization = organizationStrategy.findById(domainObject.getId(), false);
-
-                            List<Service> allowableServices = getAllowableServices();
-                            services.setObject(allowableServices);
-                        } else {
-                            serviceProviderAccount.setOrganizationId(null);
-                            organization = null;
-                            services.setObject(Collections.<Service>emptyList());
-                        }
-                    }
-
-                    public List<Service> getAllowableServices() {
-                        List<Attribute> allowableServices = organization.getAttributes(EircOrganizationStrategy.SERVICE);
-                        List<Long> ids = Lists.newArrayList();
-                        for (Attribute allowableService : allowableServices) {
-                            ids.add(allowableService.getValueId());
-                        }
-                        return serviceBean.getServices(ids);
-                    }
-
-                    @Override
-                    public void detach() {
-
-                    }
-                },
+                serviceProviderModel,
                 organizationStrategy.getAllServiceProviders(getLocale()),
                 new IChoiceRenderer<DomainObject>() {
                     @Override
