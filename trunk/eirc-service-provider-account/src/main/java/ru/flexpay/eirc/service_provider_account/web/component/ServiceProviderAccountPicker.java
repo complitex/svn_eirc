@@ -93,7 +93,6 @@ public class ServiceProviderAccountPicker extends FormComponentPanel<ServiceProv
                 getOptions().putLiteral("width", "auto");
             }
         };
-        lookupDialog.setPosition(Dialog.WindowPosition.CENTER);
         lookupDialog.setModal(true);
         lookupDialog.setOpenEvent(JsScopeUiEvent.quickScope(new JsStatement().self().chain("parents", "'.ui-dialog:first'").
                 chain("find", "'.ui-dialog-titlebar-close'").

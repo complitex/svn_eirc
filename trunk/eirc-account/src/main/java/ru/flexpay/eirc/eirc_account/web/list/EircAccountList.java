@@ -8,6 +8,8 @@ import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
+import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxButton;
+import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxLink;
 import org.apache.wicket.extensions.markup.html.repeater.data.sort.SortOrder;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.WebPage;
@@ -97,6 +99,7 @@ public class EircAccountList extends TemplatePage {
         final List<String> searchFilters = eircAccountBean.getSearchFilters();
         container.setVisible(true);
         add(container);
+
 
         final IModel<ShowMode> showModeModel = new Model<>(ShowMode.ACTIVE);
         searchPanel = new CollapsibleSearchPanel("searchPanel", getTemplateSession().getGlobalSearchComponentState(),
@@ -242,7 +245,7 @@ public class EircAccountList extends TemplatePage {
         filterForm.add(new TextField<>("addressFilter", new Model<String>()));
 
         //Reset Action
-        AjaxLink reset = new AjaxLink("reset") {
+        AjaxLink reset = new IndicatingAjaxLink("reset") {
 
             @Override
             public void onClick(AjaxRequestTarget target) {
@@ -257,7 +260,7 @@ public class EircAccountList extends TemplatePage {
         filterForm.add(reset);
 
         //Submit Action
-        AjaxButton submit = new AjaxButton("submit", filterForm) {
+        AjaxButton submit = new IndicatingAjaxButton("submit", filterForm) {
 
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form<?> form) {

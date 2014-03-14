@@ -62,7 +62,7 @@ import static org.complitex.dictionary.util.PageUtil.newSorting;
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
 public class ServiceProviderAccountList extends TemplatePage {
 
-    private static final List<String> searchFilters = ImmutableList.of("city", "street", "building", "apartment", "room");
+    private static final List<String> searchFilters = ImmutableList.of("country", "region", "city", "street", "building", "apartment", "room");
 
     @EJB
     private ServiceProviderAccountBean serviceProviderAccountBean;
