@@ -191,7 +191,13 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
             }
 
             public List<Service> getAllowableServices() {
+                if (organization == null) {
+                    return Collections.emptyList();
+                }
                 List<Attribute> allowableServices = organization.getAttributes(EircOrganizationStrategy.SERVICE);
+                if (allowableServices == null || allowableServices.isEmpty()) {
+                    return Collections.emptyList();
+                }
                 List<Long> ids = Lists.newArrayList();
                 for (Attribute allowableService : allowableServices) {
                     ids.add(allowableService.getValueId());
