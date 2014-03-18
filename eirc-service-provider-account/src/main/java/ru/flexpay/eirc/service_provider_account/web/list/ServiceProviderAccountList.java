@@ -169,7 +169,7 @@ public class ServiceProviderAccountList extends TemplatePage {
 
             @Override
             protected int getSize() {
-                FilterWrapper<ServiceProviderAccount> filterWrapper = FilterWrapper.of(new ServiceProviderAccount());
+                FilterWrapper<ServiceProviderAccount> filterWrapper = FilterWrapper.of(filterObject);
                 return serviceProviderAccountBean.count(filterWrapper);
             }
         };
@@ -183,7 +183,7 @@ public class ServiceProviderAccountList extends TemplatePage {
                 final ServiceProviderAccount serviceProviderAccount = item.getModelObject();
 
                 item.add(new Label("accountNumber", serviceProviderAccount.getAccountNumber()));
-                item.add(new Label("service", serviceProviderAccount.getService().getName(locale)));
+                item.add(new Label("service", serviceProviderAccount.getService().getName(locale) + " (" + serviceProviderAccount.getService().getCode() + ")" ));
                 item.add(new Label("serviceProvider", serviceProviderAccount.getOrganizationName()));
                 item.add(new Label("person", serviceProviderAccount.getPerson() != null? serviceProviderAccount.getPerson().toString(): ""));
                 item.add(new Label("address", new AbstractReadOnlyModel<String>() {
@@ -268,7 +268,7 @@ public class ServiceProviderAccountList extends TemplatePage {
                 new IChoiceRenderer<Service>() {
                     @Override
                     public Object getDisplayValue(Service service) {
-                        return service.getName(locale);
+                        return service.getName(locale) + " (" + service.getCode() + ")";
                     }
 
                     @Override

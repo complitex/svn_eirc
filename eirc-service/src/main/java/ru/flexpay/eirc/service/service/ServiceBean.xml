@@ -28,7 +28,7 @@
 
     <sql id="serviceCondition">
         <if test="map.service != null">
-            <if test="map.service.name != null">
+            <if test="map.service.name != null and map.service.name != ''">
                 and sn.`value` like concat('%', #{map.service.name}, '%')
             </if>
             <if test="map.service.code != null and like == true">
@@ -40,9 +40,6 @@
             <if test="map.service.parentId != null">
                 and s.`parent_id` = #{map.service.parentId}
             </if>
-        </if>
-        <if test="locale != null">
-            and sn.`locale_id` = #{locale.id}
         </if>
     </sql>
 
@@ -60,6 +57,9 @@
 
     <sql id="serviceJoin">
         left join `service_string_culture` sn on s.`id` = sn.`service_id`
+        <if test="_parameter instanceof org.complitex.dictionary.entity.FilterWrapper and locale != null">
+            and sn.`locale_id` = #{locale.id}
+        </if>
         left join `locales` sl on sn.`locale_id` = sl.`id`
     </sql>
 

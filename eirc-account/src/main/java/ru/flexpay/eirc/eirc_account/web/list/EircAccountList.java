@@ -153,7 +153,7 @@ public class EircAccountList extends TemplatePage {
 
             @Override
             protected int getSize() {
-                FilterWrapper<EircAccount> filterWrapper = FilterWrapper.of(new EircAccount());
+                FilterWrapper<EircAccount> filterWrapper = FilterWrapper.of(filterObject);
                 return eircAccountBean.count(filterWrapper);
             }
         };
