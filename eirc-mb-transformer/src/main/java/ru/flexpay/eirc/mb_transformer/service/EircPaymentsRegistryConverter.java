@@ -433,7 +433,8 @@ public class EircPaymentsRegistryConverter {
             log.info("Writing service lines");
 
             writeCharToLine(buffer, '_', 128);
-            writeCharToLine(buffer, ' ', 306);
+            buffer.put(new byte[306]);
+            writeLine(buffer, "");
             writeCharToLine(buffer, '_', 128);
 
 			// заголовочные строки
