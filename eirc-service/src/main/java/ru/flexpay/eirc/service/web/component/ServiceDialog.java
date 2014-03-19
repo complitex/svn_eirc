@@ -48,7 +48,7 @@ public class ServiceDialog extends FormComponentPanel<Service> {
 
     public ServiceDialog(String id, IModel<Service> model, boolean enabled, final Component ...refreshComponents) {
         super(id, model);
-         lookupDialog = new Dialog("lookupDialog") {
+        lookupDialog = new Dialog("lookupDialog") {
 
             {
                 getOptions().putLiteral("width", "auto");
@@ -59,7 +59,6 @@ public class ServiceDialog extends FormComponentPanel<Service> {
                 chain("find", "'.ui-dialog-titlebar-close'").
                 chain("hide").render()));
         lookupDialog.setCloseOnEscape(false);
-        add(lookupDialog);
         lookupDialog.setVisibilityAllowed(enabled);
         add(lookupDialog);
 

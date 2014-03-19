@@ -36,8 +36,13 @@ import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.resource.PackageResourceReference;
+import org.apache.wicket.util.template.PackageTextTemplate;
+import org.apache.wicket.util.template.TextTemplate;
+import org.odlabs.wiquery.core.javascript.JsStatement;
+import org.odlabs.wiquery.ui.core.JsScopeUiEvent;
 import org.odlabs.wiquery.ui.dialog.Dialog;
 import ru.flexpay.eirc.mb_transformer.service.FileService;
+import ru.flexpay.eirc.service.web.component.ServicePicker;
 
 import javax.ejb.EJB;
 import java.io.File;
@@ -56,9 +61,12 @@ import java.util.List;
  */
 public class BrowserFilesDialog extends Panel {
 
+    private static final TextTemplate CENTER_DIALOG_JS =
+            new PackageTextTemplate(ServicePicker.class, "CenterDialog.js");
+
     private static final RegexMatcher MATCHER = new SimpleRegexMatcher();
 
-    private Dialog dialog;
+    private Dialog lookupDialog;
 
     @EJB
     private FileService fileService;
@@ -124,17 +132,25 @@ public class BrowserFilesDialog extends Panel {
     }
 
     private void init() {
-        dialog = new Dialog("dialog");
-        dialog.setTitle(new ResourceModel("title"));
-        dialog.setWidth(500);
-        dialog.setHeight(550);
-        add(dialog);
+
+        lookupDialog = new Dialog("lookupDialog") {
+
+            {
+                getOptions().putLiteral("width", "auto");
+            }
+        };
+        lookupDialog.setModal(true);
+        lookupDialog.setOpenEvent(JsScopeUiEvent.quickScope(new JsStatement().self().chain("parents", "'.ui-dialog:first'").
+                chain("find", "'.ui-dialog-titlebar-close'").
+                chain("hide").render()));
+        lookupDialog.setCloseOnEscape(false);
+        add(lookupDialog);
 
 
         container = new WebMarkupContainer("container");
         container.setOutputMarkupId(true);
 
-        dialog.add(container);
+        lookupDialog.add(container);
 
         final Form form = new Form("form");
         container.add(form);
@@ -146,11 +162,10 @@ public class BrowserFilesDialog extends Panel {
         options.set("height", 430);
         options.set("scrollable", "{ virtual: true }"); //infinite scroll
         */
-
         final AjaxLink selectButton = new AjaxLink("select") {
             @Override
             public void onClick(AjaxRequestTarget target) {
-                dialog.close(target);
+                lookupDialog.close(target);
                 if (isFile()) {
                     selectedModel.setObject(selected.getModelObject());
                     target.add(refreshComponent);
@@ -166,7 +181,7 @@ public class BrowserFilesDialog extends Panel {
         final AjaxLink cancelButton = new AjaxLink("cancel") {
             @Override
             public void onClick(AjaxRequestTarget target) {
-                dialog.close(target);
+                lookupDialog.close(target);
                 if (isFile()) {
                     selectedModel.setObject(selected.getModelObject());
                     target.add(refreshComponent);
@@ -404,7 +419,7 @@ public class BrowserFilesDialog extends Panel {
 
     public void open(AjaxRequestTarget target) {
         target.add(container);
-        dialog.open(target);
+        lookupDialog.open(target);
     }
 
     private class IFileColumn extends AbstractColumn<File, String> {

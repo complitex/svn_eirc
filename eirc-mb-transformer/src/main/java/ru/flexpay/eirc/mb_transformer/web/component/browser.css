@@ -13,10 +13,12 @@
 }
 
 .tbColor > thead {
-    width: 472px;
+    width: auto;
     display: block;
-    border-left: 1px dotted #667584;
-    border-right: 1px dotted #667584;
+}
+
+.tbColor th {
+    border-top: 1px solid #667584;
 }
 
 .nameColumn {
