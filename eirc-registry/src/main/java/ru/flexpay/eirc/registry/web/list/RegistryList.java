@@ -3,12 +3,10 @@ package ru.flexpay.eirc.registry.web.list;
 import com.google.common.collect.ImmutableList;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.ajax.AjaxSelfUpdatingTimerBehavior;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.extensions.markup.html.repeater.data.sort.SortOrder;
-import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.DropDownChoice;
@@ -23,14 +21,13 @@ import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.request.resource.SharedResourceReference;
-import org.apache.wicket.util.time.Duration;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
-import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.DatePicker;
+import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.image.StaticImage;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
@@ -44,14 +41,16 @@ import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryStatus;
 import ru.flexpay.eirc.registry.entity.RegistryType;
-import ru.flexpay.eirc.registry.service.IMessenger;
+import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
 import ru.flexpay.eirc.registry.service.RegistryBean;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
+import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.handle.RegistryHandler;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryParser;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
+import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 
 import javax.ejb.EJB;
 import java.text.SimpleDateFormat;
@@ -90,22 +89,27 @@ public class RegistryList extends TemplatePage {
     @EJB
     private RegistryHandler handler;
 
-    private WebMarkupContainer container;
+    private IMessengerContainer container;
 
     @EJB
-    private RegistryMessenger imessenger;
+    private RegistryMessenger imessengerService;
+
+    private AbstractMessenger imessenger;
+
+    @EJB
+    private RegistryFinishCallback finishCallbackService;
+
+    private AbstractFinishCallback finishCallback;
 
     private IModel<Registry> filterModel = new CompoundPropertyModel<>(new Registry());
 
     @EJB
-    private RegistryFinishCallback finishCallback;
-
-    @EJB
     private RegistryWorkflowManager registryWorkflowManager;
 
-    private AjaxSelfUpdatingTimerBehavior timerBehavior;
-
     public RegistryList() throws ExecutionException, InterruptedException {
+        imessenger = imessengerService.getInstance();
+        finishCallback = finishCallbackService.getInstance();
+
         init();
     }
 
@@ -118,17 +122,11 @@ public class RegistryList extends TemplatePage {
         final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
         messages.setOutputMarkupId(true);
 
-        container = new WebMarkupContainer("container");
+        container = new IMessengerContainer("container", imessenger, finishCallback);
         container.setOutputMarkupPlaceholderTag(true);
         container.setVisible(true);
         add(container);
         container.add(messages);
-
-
-        if (imessenger.countIMessages() > 0 || !finishCallback.isCompleted()) {
-            initTimerBehavior();
-        }
-
 
         //Form
         final Form<Registry> filterForm = new Form<>("filterForm", filterModel);
@@ -429,47 +427,11 @@ public class RegistryList extends TemplatePage {
     }
 
     private void initTimerBehavior() {
-        if (timerBehavior == null) {
-
-            timerBehavior = new MessageBehavior(Duration.seconds(5));
-
-            container.add(timerBehavior);
-        }
+        container.initTimerBehavior();
     }
 
     private void showIMessages(AjaxRequestTarget target) {
-        if (imessenger.countIMessages() > 0) {
-            IMessenger.IMessage importMessage;
-
-            while ((importMessage = imessenger.getNextIMessage()) != null) {
-                switch (importMessage.getType()) {
-                    case ERROR:
-                        container.error(importMessage.getLocalizedString(getLocale()));
-                        break;
-                    case INFO:
-                        container.info(importMessage.getLocalizedString(getLocale()));
-                        break;
-                }
-            }
-            target.add(container);
-        }
-    }
-
-    private class MessageBehavior extends AjaxSelfUpdatingTimerBehavior {
-        private MessageBehavior(Duration updateInterval) {
-            super(updateInterval);
-        }
-
-        @Override
-        protected void onPostProcessTarget(AjaxRequestTarget target) {
-            showIMessages(target);
-
-            if (finishCallback.isCompleted() && imessenger.countIMessages() <= 0) {
-                stop(target);
-                container.remove(timerBehavior);
-                timerBehavior = null;
-            }
-        }
+        container.showIMessages(target);
     }
 
 }

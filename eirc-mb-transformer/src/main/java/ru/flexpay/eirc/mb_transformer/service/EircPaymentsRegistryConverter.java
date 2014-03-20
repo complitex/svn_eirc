@@ -2,6 +2,7 @@ package ru.flexpay.eirc.mb_transformer.service;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.session.SqlSessionManager;
@@ -31,7 +32,6 @@ import ru.flexpay.eirc.registry.service.parse.ParseRegistryConstants;
 import ru.flexpay.eirc.registry.service.parse.RegistryFormatException;
 import ru.flexpay.eirc.registry.util.FileUtil;
 import ru.flexpay.eirc.registry.util.ParseUtil;
-import ru.flexpay.eirc.registry.util.RSASignatureUtil;
 import ru.flexpay.eirc.registry.util.StringUtil;
 import ru.flexpay.eirc.service.correction.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.correction.service.ServiceCorrectionBean;
@@ -46,13 +46,11 @@ import javax.ejb.Singleton;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.security.Signature;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -95,33 +93,31 @@ public class EircPaymentsRegistryConverter {
 			"   по ",
 			"Всего  "
 	};
-	private static final Map<String, String> SERVICE_NAMES = new HashMap<String, String>();
-
-	static {
-		SERVICE_NAMES.put("01", "ЭЛЕКТР  ");
-		SERVICE_NAMES.put("02", "КВ/ЭКСПЛ"); // точно известно
-		SERVICE_NAMES.put("03", "ОТОПЛ   ");
-		SERVICE_NAMES.put("04", "ГОР ВОДА");
-		SERVICE_NAMES.put("05", "ХОЛ ВОДА");
-		SERVICE_NAMES.put("06", "КАНАЛИЗ ");
-		SERVICE_NAMES.put("07", "ГАЗ ВАР ");
-		SERVICE_NAMES.put("08", "ГАЗ ОТОП");
-		SERVICE_NAMES.put("09", "РАДИО   ");
-		SERVICE_NAMES.put("10", "АНТ     "); // точно известно
-		SERVICE_NAMES.put("11", "ЖИВ     "); // точно известно
-		SERVICE_NAMES.put("12", "ГАРАЖ   "); // точно известно
-		SERVICE_NAMES.put("13", "ПОГРЕБ  "); // точно известно
-		SERVICE_NAMES.put("14", "САРАЙ   "); // точно известно
-		SERVICE_NAMES.put("15", "КЛАДОВКА"); // точно известно
-		SERVICE_NAMES.put("16", "ТЕЛЕФОН ");
-		SERVICE_NAMES.put("19", "АССЕНИЗ ");
-		SERVICE_NAMES.put("20", "ЛИФТ    ");
-		SERVICE_NAMES.put("21", "ХОЗ РАСХ"); // точно известно
-		SERVICE_NAMES.put("22", "НАЛ ЗЕМЛ");
-		SERVICE_NAMES.put("23", "ПОВ ПОДК");
-		SERVICE_NAMES.put("24", "ОПЛ АКТ ");
-		SERVICE_NAMES.put("25", "РЕМ СЧЁТ");
-	}
+	private static final Map<String, String> SERVICE_NAMES = ImmutableMap.<String, String>builder()
+            .put("01", "ЭЛЕКТР  ")
+            .put("02", "КВ/ЭКСПЛ") // точно известно
+            .put("03", "ОТОПЛ   ")
+            .put("04", "ГОР ВОДА")
+            .put("05", "ХОЛ ВОДА")
+            .put("06", "КАНАЛИЗ ")
+            .put("07", "ГАЗ ВАР ")
+            .put("08", "ГАЗ ОТОП")
+            .put("09", "РАДИО   ")
+            .put("10", "АНТ     ") // точно известно
+            .put("11", "ЖИВ     ") // точно известно
+            .put("12", "ГАРАЖ   ") // точно известно
+            .put("13", "ПОГРЕБ  ") // точно известно
+            .put("14", "САРАЙ   ") // точно известно
+            .put("15", "КЛАДОВКА") // точно известно
+            .put("16", "ТЕЛЕФОН ")
+            .put("19", "АССЕНИЗ ")
+            .put("20", "ЛИФТ    ")
+            .put("21", "ХОЗ РАСХ") // точно известно
+            .put("22", "НАЛ ЗЕМЛ")
+            .put("23", "ПОВ ПОДК")
+            .put("24", "ОПЛ АКТ ")
+            .put("25", "РЕМ СЧЁТ")
+            .build();
 
     private final static byte[] DELIMITER = "|".getBytes(MbParsingConstants.REGISTRY_FILE_CHARSET);
 
@@ -181,10 +177,10 @@ public class EircPaymentsRegistryConverter {
         serviceProviderAccountBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
     }
 
-    public void exportToMegaBank(final File eircFile, final String dir, final String mbFileName, final Long mbOrganizationId,
-                            final Long eircOrganizationId, final String privateKey, final String tmpDir,
-                            final AbstractMessenger imessenger, final AbstractFinishCallback finishConvert) throws AbstractException {
-        imessenger.addMessageInfo("eirc_payments_convert_starting", eircFile.getName());
+    public void exportToMegaBank(final FileReader reader, final String dir, final String mbFileName,
+                                 final Long mbOrganizationId, final Long eircOrganizationId,
+                                 final AbstractMessenger imessenger, final AbstractFinishCallback finishConvert) throws AbstractException {
+        imessenger.addMessageInfo("eirc_payments_convert_starting", reader.getFileName());
         finishConvert.init();
 
         mbConverterQueueProcessor.execute(
@@ -192,13 +188,12 @@ public class EircPaymentsRegistryConverter {
                     @Override
                     public Void execute() throws ExecuteException {
                         try {
-                            exportToMegaBank(eircFile, dir, mbFileName, mbOrganizationId, eircOrganizationId,
-                                    privateKey, tmpDir, imessenger);
+                            exportToMegaBank(reader, dir, mbFileName, mbOrganizationId, eircOrganizationId, imessenger);
                         } catch (Exception e) {
                             log.error("Can not convert files", e);
-                            imessenger.addMessageError("eirc_payments_fail_convert", eircFile.getName(), e.toString());
+                            imessenger.addMessageError("eirc_payments_fail_convert", e.toString());
                         } finally {
-                            imessenger.addMessageInfo("eirc_payments_convert_finish", eircFile.getName());
+                            imessenger.addMessageInfo("eirc_payments_convert_finish", reader.getFileName());
                             finishConvert.complete();
                         }
                         return null;
@@ -207,11 +202,10 @@ public class EircPaymentsRegistryConverter {
         );
     }
 
-    public void exportToMegaBank(final File eircFile, String dir, String mbFileName,
-                                 Long mbOrganizationId, Long eircOrganizationId,
-                                 String privateKey, String tmpDir, final AbstractMessenger imessenger) throws IOException,
+    public void exportToMegaBank(final FileReader reader, String dir, String mbFileName,
+                                 Long mbOrganizationId, Long eircOrganizationId, final AbstractMessenger imessenger) throws IOException,
             RegistryFormatException, ExecuteException {
-        final FileReader reader = new FileReader(new FileInputStream(eircFile));
+        final AbstractMessenger fileMessenger = new FileProxyMessenger(imessenger, reader.getFileName());
         try {
             DataSource dataSource = new DataSource() {
                 List<FileReader.Message> listMessage = Lists.newArrayList();
@@ -230,14 +224,14 @@ public class EircPaymentsRegistryConverter {
                     try {
                         message = getNextMessage();
                     } catch (RegistryFormatException | ExecuteException e ) {
-                        imessenger.addMessageError("eirc_payments_fail_convert", eircFile.getName(), e.toString());
+                        fileMessenger.addMessageError("eirc_payments_fail_convert", e.toString());
                         log.error("Failed message", e);
                     }
                     if (message == null) {
                         return null;
                     }
                     if (message.getType() != MESSAGE_TYPE_HEADER) {
-                        imessenger.addMessageError("eirc_registry_wanted_header", eircFile.getName());
+                        fileMessenger.addMessageError("eirc_registry_wanted_header");
                         log.error("Failed registry format: wanted header");
                         return null;
                     }
@@ -247,7 +241,7 @@ public class EircPaymentsRegistryConverter {
                         ParseUtil.fillUpRegistry(listMessage, ParseRegistryConstants.HEADER_DATE_FORMAT, registry);
                         return registry;
                     } catch (RegistryFormatException e) {
-                        imessenger.addMessageError("eirc_payments_fail_convert", eircFile.getName(), e.toString());
+                        fileMessenger.addMessageError("eirc_payments_fail_convert", e.toString());
                         log.error("Failed fill up registry", e.toString());
                     }
                     return null;
@@ -263,12 +257,12 @@ public class EircPaymentsRegistryConverter {
                         return null;
                     }
                     if (message.getType() == MESSAGE_TYPE_FOOTER) {
-                        imessenger.addMessageInfo("eirc_registry_success_header", eircFile.getName(), totalCount);
+                        fileMessenger.addMessageInfo("eirc_registry_success_header", totalCount);
                         log.info("Find footer. End of file");
                         return null;
                     }
                     if (message.getType() != MESSAGE_TYPE_RECORD) {
-                        imessenger.addMessageError("eirc_registry_wanted_record", eircFile.getName());
+                        fileMessenger.addMessageError("eirc_registry_wanted_record");
                         log.error("Failed registry format: wanted record");
                         return null;
                     }
@@ -288,7 +282,7 @@ public class EircPaymentsRegistryConverter {
                     totalCount++;
                     FileReader.Message message = listMessage.get(idx++);
                     if (message != null && totalCount%10000 == 0) {
-                        imessenger.addMessageInfo("processed_lines", totalCount, eircFile.getName());
+                        fileMessenger.addMessageInfo("processed_lines", totalCount);
                     }
                     return message;
                 }
@@ -307,64 +301,16 @@ public class EircPaymentsRegistryConverter {
             Organization serviceProvider = eircOrganizationStrategy.findById(registry.getRecipientOrganizationId(), true);
 
             if (serviceProvider == null) {
-                imessenger.addMessageError("eirc_payments_recipient_not_found", eircFile.getName(), registry.getRecipientOrganizationId());
+                fileMessenger.addMessageError("eirc_payments_recipient_not_found", registry.getRecipientOrganizationId());
                 log.error("Service provider {} not found", registry.getRecipientOrganizationId());
                 return;
             }
 
             try {
-                Signature signature = getPrivateSignature(privateKey);
-                exportToMegaBank(dataSource, serviceProvider, mbOrganizationId, eircOrganizationId, signature, dir,
-                        tmpDir, mbFileName, 2*eircFile.length() + 2048, new AbstractMessenger() {
-
-                    @Override
-                    public void addMessageInfo(String message, Object... parameters) {
-                        if (parameters == null || parameters.length == 0) {
-                            imessenger.addMessageInfo(message, eircFile.getName());
-                        } else if (parameters.length == 1) {
-                            imessenger.addMessageInfo(message, eircFile.getName(), parameters[0]);
-                        } else if (parameters.length == 2) {
-                            imessenger.addMessageInfo(message, eircFile.getName(), parameters[0], parameters[1]);
-                        } else if (parameters.length == 3) {
-                            imessenger.addMessageInfo(message, eircFile.getName(), parameters[0], parameters[1], parameters[2]);
-                        }
-                    }
-
-                    @Override
-                    public void addMessageError(String message, Object... parameters) {
-                        if (parameters == null || parameters.length == 0) {
-                            imessenger.addMessageError(message, eircFile.getName());
-                        } else if (parameters.length == 1) {
-                            imessenger.addMessageError(message, eircFile.getName(), parameters[0]);
-                        } else if (parameters.length == 2) {
-                            imessenger.addMessageError(message, eircFile.getName(), parameters[0], parameters[1]);
-                        } else if (parameters.length == 3) {
-                            imessenger.addMessageError(message, eircFile.getName(), parameters[0], parameters[1], parameters[2]);
-                        }
-                    }
-
-                    @Override
-                    public Queue<IMessage> getIMessages() {
-                        return imessenger.getIMessages();
-                    }
-
-                    @Override
-                    public int countIMessages() {
-                        return imessenger.countIMessages();
-                    }
-
-                    @Override
-                    public IMessage getNextIMessage() {
-                        return imessenger.getNextIMessage();
-                    }
-
-                    @Override
-                    protected String getResourceBundle() {
-                        return null;
-                    }
-                });
+                exportToMegaBank(dataSource, serviceProvider, mbOrganizationId, eircOrganizationId, dir,
+                        mbFileName, 2*reader.getFileLength() + 2048, fileMessenger);
             } catch (Exception e) {
-                imessenger.addMessageError("eirc_payments_fail_convert", eircFile.getName(), e.toString());
+                fileMessenger.addMessageError("eirc_payments_fail_convert", e.toString());
                 log.error("Failed export EIRC payments to MB payments", e);
             }
 
@@ -382,7 +328,7 @@ public class EircPaymentsRegistryConverter {
 	 */
 	public void exportToMegaBank(DataSource dataSource, Organization serviceProviderOrganization,
                                      Long mbOrganizationId, Long eircOrganizationId,
-                                     Signature signature, String dir, String tmpDir, String mbFileName, long mbFileLength,
+                                     String dir, String mbFileName, long mbFileLength,
                                      AbstractMessenger imessenger)
             throws ExecutionException, AbstractException {
 
@@ -469,7 +415,7 @@ public class EircPaymentsRegistryConverter {
 
             RegistryRecordData registryRecord;
             while ((registryRecord = dataSource.getNextRecord()) != null){
-                writeInfoLine(buffer, "|", registryRecord, serviceProviderOrganization.getId(), eircOrganizationId, mbOrganizationId);
+                writeInfoLine(buffer, registryRecord, serviceProviderOrganization.getId(), eircOrganizationId, mbOrganizationId);
 			}
 
             outChannel.truncate(buffer.position());
@@ -545,7 +491,7 @@ public class EircPaymentsRegistryConverter {
         return service;
     }
 
-    private void writeInfoLine(ByteBuffer buffer, String delimeter, RegistryRecordData record,
+    private void writeInfoLine(ByteBuffer buffer, RegistryRecordData record,
                                Long serviceProviderId, Long eircOrganizationId, Long mbOrganizationId)
             throws ExecutionException, MbConverterException, IOException {
 
@@ -650,6 +596,7 @@ public class EircPaymentsRegistryConverter {
 
 	}
 
+    @SuppressWarnings("unused")
     private String getEircAccount(RegistryRecordData record, Long serviceProviderId, Long eircOrganizationId, Long mbOrganizationId) throws MbConverterException {
         return "";
         /*
@@ -701,21 +648,6 @@ public class EircPaymentsRegistryConverter {
 		return sb.toString();
 	}
 
-	private void writeDigitalSignature(ByteBuffer buffer, byte[] sign) throws IOException {
-		if (sign != null) {
-			String str = new String(sign, MbParsingConstants.REGISTRY_FILE_CHARSET);
-            writeLine(buffer, str);
-            int nLineFeeds = StringUtils.countMatches(str, "\n") + 1; // one added in writeLine(buffer, sign);
-			while (nLineFeeds < 2) {
-				writeLine(buffer, "");
-				++nLineFeeds;
-			}
-		} else {
-			writeLine(buffer, "");
-			writeLine(buffer, "");
-		}
-	}
-
 	private Locale getLocation() {
 		return new Locale("ru");
 	}
@@ -736,23 +668,69 @@ public class EircPaymentsRegistryConverter {
         FileUtil.writeCharToLine(buffer, ch, count, null, MbParsingConstants.REGISTRY_FILE_CHARSET);
     }
 
-    private Signature getPrivateSignature(String privateKey) throws AbstractException {
-        if (privateKey != null) {
-            try {
-                return RSASignatureUtil.readPrivateSignature(privateKey);
-            } catch (Exception e) {
-                throw new AbstractException("Error read private signature: " + privateKey, e) {};
-            }
-        }
-        return null;
-    }
-
     private char mod31(int value) {
         if (value <= 0 || value > 31) {
             throw new IllegalArgumentException("The number must have range [1, 31]");
         }
 
         return value <= 9 ? String.valueOf(value).charAt(0) : (char)('A' + (value - 10));
+    }
+
+    private class FileProxyMessenger extends AbstractMessenger {
+
+        private AbstractMessenger imessenger;
+        private String fileName;
+
+        private FileProxyMessenger(AbstractMessenger imessenger, String fileName) {
+            this.imessenger = imessenger;
+            this.fileName = fileName;
+        }
+
+        @Override
+        public void addMessageInfo(String message, Object... parameters) {
+            if (parameters == null || parameters.length == 0) {
+                imessenger.addMessageInfo(message, fileName);
+            } else if (parameters.length == 1) {
+                imessenger.addMessageInfo(message, fileName, parameters[0]);
+            } else if (parameters.length == 2) {
+                imessenger.addMessageInfo(message, fileName, parameters[0], parameters[1]);
+            } else if (parameters.length == 3) {
+                imessenger.addMessageInfo(message, fileName, parameters[0], parameters[1], parameters[2]);
+            }
+        }
+
+        @Override
+        public void addMessageError(String message, Object... parameters) {
+            if (parameters == null || parameters.length == 0) {
+                imessenger.addMessageError(message, fileName);
+            } else if (parameters.length == 1) {
+                imessenger.addMessageError(message, fileName, parameters[0]);
+            } else if (parameters.length == 2) {
+                imessenger.addMessageError(message, fileName, parameters[0], parameters[1]);
+            } else if (parameters.length == 3) {
+                imessenger.addMessageError(message, fileName, parameters[0], parameters[1], parameters[2]);
+            }
+        }
+
+        @Override
+        public Queue<IMessage> getIMessages() {
+            return imessenger.getIMessages();
+        }
+
+        @Override
+        public int countIMessages() {
+            return imessenger.countIMessages();
+        }
+
+        @Override
+        public IMessage getNextIMessage() {
+            return imessenger.getNextIMessage();
+        }
+
+        @Override
+        protected String getResourceBundle() {
+            return null;
+        }
     }
 
 }

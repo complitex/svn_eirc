@@ -12,6 +12,7 @@ import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.*;
+import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.parse.RegistryRecordWorkflowManager;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 import ru.flexpay.eirc.registry.service.parse.TransitionNotAllowed;
@@ -66,16 +67,16 @@ public class RegistryLinker {
     @EJB
     private ServiceProviderAccountBean serviceProviderAccountBean;
 
-    public void link(final Long registryId, final IMessenger imessenger, final FinishCallback finishLink) {
+    public void link(final Long registryId, final AbstractMessenger imessenger, final AbstractFinishCallback finishLink) {
         link(FilterWrapper.<RegistryRecordData>of(new RegistryRecord(registryId)), imessenger, finishLink, false);
     }
 
-    public void linkAfterCorrection(RegistryRecordData record, final IMessenger imessenger, final FinishCallback finishLink) {
+    public void linkAfterCorrection(RegistryRecordData record, final AbstractMessenger imessenger, final AbstractFinishCallback finishLink) {
         link(FilterWrapper.<RegistryRecordData>of(record), imessenger, finishLink, true);
     }
 
-    private void link(final FilterWrapper<RegistryRecordData> filter, final IMessenger imessenger,
-                      final FinishCallback finishLink, final boolean afterCorrection) {
+    private void link(final FilterWrapper<RegistryRecordData> filter, final AbstractMessenger imessenger,
+                      final AbstractFinishCallback finishLink, final boolean afterCorrection) {
         final AtomicBoolean finishReadRecords = new AtomicBoolean(false);
         final AtomicInteger recordLinkingCounter = new AtomicInteger(0);
 
@@ -314,9 +315,9 @@ public class RegistryLinker {
         private Lock lock = new ReentrantLock();
 
         private Long registryNumber;
-        private IMessenger imessenger;
+        private AbstractMessenger imessenger;
 
-        private Statistics(Long registryNumber, IMessenger imessenger) {
+        private Statistics(Long registryNumber, AbstractMessenger imessenger) {
             this.registryNumber = registryNumber;
             this.imessenger = imessenger;
         }

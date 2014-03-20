@@ -19,6 +19,7 @@ import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.*;
+import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.util.ParseUtil;
 import ru.flexpay.eirc.registry.util.StringUtil;
 import ru.flexpay.eirc.service.service.ServiceBean;
@@ -28,9 +29,6 @@ import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import java.io.*;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -71,7 +69,7 @@ public class RegistryParser implements Serializable {
     @EJB
     private OrganizationCorrectionBean organizationCorrectionBean;
 
-    public void parse(final IMessenger imessenger, final FinishCallback finishUpload) throws ExecuteException {
+    public void parse(final AbstractMessenger imessenger, final AbstractFinishCallback finishUpload) throws ExecuteException {
         imessenger.addMessageInfo("starting_upload_registries");
         finishUpload.init();
 
@@ -116,13 +114,13 @@ public class RegistryParser implements Serializable {
         }
     }
 
-    public Registry parse(IMessenger imessenger, InputStream is, String fileName) throws ExecuteException {
+    public Registry parse(AbstractMessenger imessenger, InputStream is, String fileName) throws ExecuteException {
         int numberReadChars = configBean.getInteger(RegistryConfig.NUMBER_READ_CHARS, true);
         int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
         return parse(imessenger, is, fileName, numberReadChars, numberFlushRegistryRecords);
     }
 
-    public Registry parse(IMessenger imessenger, InputStream is, String fileName, int numberReadChars, int numberFlushRegistryRecords)
+    public Registry parse(AbstractMessenger imessenger, InputStream is, String fileName, int numberReadChars, int numberFlushRegistryRecords)
             throws ExecuteException {
         log.debug("start action");
 
@@ -130,7 +128,7 @@ public class RegistryParser implements Serializable {
 
         Context context = new Context(imessenger, numberFlushRegistryRecords);
 
-        FileReader reader = new FileReader(is);
+        FileReader reader = new FileReader(is, fileName, -1);
 
         try {
             List<FileReader.Message> listMessage = Lists.newArrayList();
@@ -206,9 +204,7 @@ public class RegistryParser implements Serializable {
     }
 
     private Logger getProcessLogger(Long registryId) {
-        InvocationHandler handler = new RegistryLogger(log, registryId);
-        ClassLoader cl = Logger.class.getClassLoader();
-        return (Logger) Proxy.newProxyInstance(cl, new Class[]{Logger.class}, handler);
+        return RegistryLogger.getInstance(log, registryId);
     }
 
     private void flushRecordStack(Context context, Logger processLog) throws ExecuteException {
@@ -317,7 +313,7 @@ public class RegistryParser implements Serializable {
         return false;
     }
 
-    private Registry processHeader(IMessenger iMessenger, String fileName, List<String> messageFieldList, Logger processLog) {
+    private Registry processHeader(AbstractMessenger iMessenger, String fileName, List<String> messageFieldList, Logger processLog) {
         if (messageFieldList.size() < 10) {
             processLog.error("Message header error, invalid number of fields: {}, expected at least 10", messageFieldList.size());
             return null;
@@ -384,29 +380,9 @@ public class RegistryParser implements Serializable {
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void saveRegistry(Registry registry) {
         registryService.save(registry);
-
-            /*
-            final CountDownLatch latch = new CountDownLatch(1);
-            processor.processJob(new AbstractJob<Void>() {
-                @Override
-                public Void execute() throws ExecuteException {
-                    try {
-                        EjbBeanLocator.getBean(RegistryBean.class).save(newRegistry);
-                        return null;
-                    } finally {
-                        latch.countDown();
-                    }
-                }
-            });
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                //
-            }
-            */
     }
 
-    private boolean validateServiceProvider(Registry registry, IMessenger iMessenger, Logger processLog) {
+    private boolean validateServiceProvider(Registry registry, AbstractMessenger iMessenger, Logger processLog) {
         Organization provider = getProvider(registry);
         /*
         if (registry.getType().isPayments()) {
@@ -425,7 +401,7 @@ public class RegistryParser implements Serializable {
         return true;
     }
 
-    private boolean validatePaymentCollector(Registry registry, IMessenger iMessenger, Logger processLog) {
+    private boolean validatePaymentCollector(Registry registry, AbstractMessenger iMessenger, Logger processLog) {
         Organization paymentCollector = organizationStrategy.findById(registry.getSenderOrganizationId(), false);
         if (registry.getType().isPayments() && !paymentCollector.isPaymentCollector()) {
             iMessenger.addMessageError("organization_not_payment_collector", paymentCollector.getId(), registry.getRegistryNumber());
@@ -453,7 +429,7 @@ public class RegistryParser implements Serializable {
         return sender;
     }
 
-    private Organization getRecipient(Registry registry, IMessenger iMessenger, Logger processLog) {
+    private Organization getRecipient(Registry registry, AbstractMessenger iMessenger, Logger processLog) {
 
         Integer eircOrganizationId = configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true);
 
@@ -484,13 +460,14 @@ public class RegistryParser implements Serializable {
     }
 
     // TODO Find organization in corrections (maybe it is impossible)
+    @SuppressWarnings("unused")
     private Organization findOrgByRegistryCorrections(Registry registry, Long code, Logger processLog) {
 
         return null;
     }
 
     @Transactional(isolationLevel = TransactionIsolationLevel.READ_UNCOMMITTED)
-    public boolean validateRegistry(Registry registry, IMessenger iMessenger, Logger processLog) {
+    public boolean validateRegistry(Registry registry, AbstractMessenger iMessenger, Logger processLog) {
         Registry filterObject = new Registry();
         filterObject.setRegistryNumber(registry.getRegistryNumber());
         int countRegistries = registryService.count(FilterWrapper.of(filterObject));
@@ -521,8 +498,8 @@ public class RegistryParser implements Serializable {
                     registry.getTillDate().before(record.getOperationDate())) {
 
                 processLog.error("Failed operation date {} in operation number {} for account {}",
-                        new Object[]{record.getOperationDate(), record.getUniqueOperationNumber(),
-                                record.getPersonalAccountExt()});
+                        record.getOperationDate(), record.getUniqueOperationNumber(),
+                        record.getPersonalAccountExt());
                 failed = true;
             }
 
@@ -568,11 +545,11 @@ public class RegistryParser implements Serializable {
 
         private BatchProcessor<JobResult> batchProcessor;
 
-        private IMessenger imessenger;
+        private AbstractMessenger imessenger;
 
         private AtomicDouble totalAmount = new AtomicDouble(0);
 
-        private Context(IMessenger imessenger, int numberFlushRegistryRecords) {
+        private Context(AbstractMessenger imessenger, int numberFlushRegistryRecords) {
             this.numberFlushRegistryRecords = numberFlushRegistryRecords;
             this.imessenger = imessenger;
             batchProcessor = new BatchProcessor<>(10, processor);
@@ -639,39 +616,4 @@ public class RegistryParser implements Serializable {
         }
     }
 
-    private class RegistryLogger implements InvocationHandler {
-
-        private Logger logger;
-        private String incMessage;
-
-        private RegistryLogger(Logger logger, Long registryId) {
-            this.logger = logger;
-            this.incMessage = registryId > 0? "(Registry : " + registryId + ")" : "";
-        }
-
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] params) throws Throwable {
-            if (
-                    StringUtils.equals(method.getName(), "trace") ||
-                    StringUtils.equals(method.getName(), "debug") ||
-                    StringUtils.equals(method.getName(), "warn") ||
-                    StringUtils.equals(method.getName(), "info") ||
-                    StringUtils.equals(method.getName(), "error")
-                    ) {
-
-                if (StringUtils.isNotEmpty(incMessage)) {
-                    int i = 0;
-                    while (i < params.length && !(params[i] instanceof String)) {
-                        i++;
-                    }
-                    if (i < params.length) {
-                        String message = ((String)params[i]).concat(incMessage);
-                        params[i] = message;
-                    }
-                }
-
-            }
-            return method.invoke(logger, params);
-        }
-    }
 }

@@ -1,17 +1,14 @@
 package ru.flexpay.eirc.mb_transformer.web.registry;
 
 import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.ajax.AjaxSelfUpdatingTimerBehavior;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
-import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
-import org.apache.wicket.util.time.Duration;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
@@ -22,10 +19,10 @@ import ru.flexpay.eirc.mb_transformer.service.MbCorrectionsFileConverter;
 import ru.flexpay.eirc.mb_transformer.service.MbTransformerConfigBean;
 import ru.flexpay.eirc.mb_transformer.web.component.BrowserFilesDialog;
 import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
-import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
 import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
+import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 import ru.flexpay.eirc.service.entity.Service;
 
 import javax.ejb.EJB;
@@ -38,7 +35,7 @@ import java.util.concurrent.ExecutionException;
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
 public class MbCorrectionsTransformer extends TemplatePage {
 
-    private WebMarkupContainer container;
+    private IMessengerContainer container;
 
     @EJB
     private RegistryMessenger imessengerService;
@@ -58,8 +55,6 @@ public class MbCorrectionsTransformer extends TemplatePage {
 
     @EJB
     private FileService fileService;
-
-    private AjaxSelfUpdatingTimerBehavior timerBehavior;
 
     private Model<File> correctionsFile = new Model<>();
     private Model<File> chargesFile = new Model<>();
@@ -83,7 +78,7 @@ public class MbCorrectionsTransformer extends TemplatePage {
         final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
         messages.setOutputMarkupId(true);
 
-        container = new WebMarkupContainer("container");
+        container = new IMessengerContainer("container", imessenger, finishCallback);
         container.setOutputMarkupPlaceholderTag(true);
         container.setVisible(true);
         add(container);
@@ -91,10 +86,6 @@ public class MbCorrectionsTransformer extends TemplatePage {
 
         Form<Service> form = new Form<>("form");
         container.add(form);
-
-        if (imessenger.countIMessages() > 0 || !finishCallback.isCompleted()) {
-            initTimerBehavior();
-        }
 
         final BrowserFilesDialog chargesDialog = new BrowserFilesDialog("chargesDialog", container, chargesFile);
         add(chargesDialog);
@@ -215,47 +206,11 @@ public class MbCorrectionsTransformer extends TemplatePage {
     }
 
     private void initTimerBehavior() {
-        if (timerBehavior == null) {
-
-            timerBehavior = new MessageBehavior(Duration.seconds(5));
-
-            container.add(timerBehavior);
-        }
+        container.initTimerBehavior();
     }
 
     private void showIMessages(AjaxRequestTarget target) {
-        if (imessenger.countIMessages() > 0) {
-            IMessenger.IMessage importMessage;
-
-            while ((importMessage = imessenger.getNextIMessage()) != null) {
-                switch (importMessage.getType()) {
-                    case ERROR:
-                        container.error(importMessage.getLocalizedString(getLocale()));
-                        break;
-                    case INFO:
-                        container.info(importMessage.getLocalizedString(getLocale()));
-                        break;
-                }
-            }
-            target.add(container);
-        }
-    }
-
-    private class MessageBehavior extends AjaxSelfUpdatingTimerBehavior {
-        private MessageBehavior(Duration updateInterval) {
-            super(updateInterval);
-        }
-
-        @Override
-        protected void onPostProcessTarget(AjaxRequestTarget target) {
-            showIMessages(target);
-
-            if (finishCallback.isCompleted() && imessenger.countIMessages() <= 0) {
-                stop(target);
-                container.remove(timerBehavior);
-                timerBehavior = null;
-            }
-        }
+        container.showIMessages(target);
     }
 
 }

@@ -1,17 +1,14 @@
 package ru.flexpay.eirc.mb_transformer.web.registry;
 
 import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.ajax.AjaxSelfUpdatingTimerBehavior;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
-import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
-import org.apache.wicket.util.time.Duration;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
@@ -21,14 +18,16 @@ import ru.flexpay.eirc.mb_transformer.service.FileService;
 import ru.flexpay.eirc.mb_transformer.service.MbTransformerConfigBean;
 import ru.flexpay.eirc.mb_transformer.web.component.BrowserFilesDialog;
 import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
-import ru.flexpay.eirc.registry.service.IMessenger;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
 import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
+import ru.flexpay.eirc.registry.service.parse.FileReader;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
+import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 import ru.flexpay.eirc.service.entity.Service;
 
 import javax.ejb.EJB;
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -37,7 +36,7 @@ import java.util.concurrent.ExecutionException;
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
 public class EircPaymentsTransformer extends TemplatePage {
 
-    private WebMarkupContainer container;
+    private IMessengerContainer container;
 
     @EJB
     private RegistryMessenger imessengerService;
@@ -58,8 +57,6 @@ public class EircPaymentsTransformer extends TemplatePage {
     @EJB
     private FileService fileService;
 
-    private AjaxSelfUpdatingTimerBehavior timerBehavior;
-
     private Model<File> paymentsFileName = new Model<>();
 
     public EircPaymentsTransformer() throws ExecutionException, InterruptedException {
@@ -79,15 +76,11 @@ public class EircPaymentsTransformer extends TemplatePage {
         final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
         messages.setOutputMarkupId(true);
 
-        container = new WebMarkupContainer("container");
+        container = new IMessengerContainer("container", imessenger, finishCallback);
         container.setOutputMarkupPlaceholderTag(true);
         container.setVisible(true);
         add(container);
         container.add(messages);
-
-        if (imessenger.countIMessages() > 0 || !finishCallback.isCompleted()) {
-            initTimerBehavior();
-        }
 
         final BrowserFilesDialog paymentsDialog = new BrowserFilesDialog("paymentsDialog", container, paymentsFileName);
         add(paymentsDialog);
@@ -132,20 +125,17 @@ public class EircPaymentsTransformer extends TemplatePage {
                 try {
                     Long mbOrganizationId = configBean.getInteger(MbTransformerConfig.MB_ORGANIZATION_ID, true).longValue();
                     Long eircOrganizationId = configBean.getInteger(MbTransformerConfig.EIRC_ORGANIZATION_ID, true).longValue();
-                    String tmpDir = fileService.getTmpDir();
-                    if (tmpDir == null) {
-                        container.error("undefined_tmp_dir");
-                        return;
-                    }
                     String workDir = fileService.getWorkDir();
                     if (workDir == null) {
                         container.error("undefined_work_dir");
                         return;
                     }
 
-                    eircPaymentsRegistryConverter.exportToMegaBank(paymentsFileName.getObject(), workDir, null,
-                            mbOrganizationId, eircOrganizationId, null, tmpDir,
-                            imessenger, finishCallback);
+                    File eircFile = paymentsFileName.getObject();
+                    FileReader reader = new FileReader(new FileInputStream(eircFile), eircFile.getName(), eircFile.length());
+
+                    eircPaymentsRegistryConverter.exportToMegaBank(reader, workDir, null, mbOrganizationId,
+                            eircOrganizationId, imessenger, finishCallback);
                 } catch (Exception e) {
                     log().error("Failed convert", e);
                 } finally {
@@ -158,46 +148,10 @@ public class EircPaymentsTransformer extends TemplatePage {
     }
 
     private void initTimerBehavior() {
-        if (timerBehavior == null) {
-
-            timerBehavior = new MessageBehavior(Duration.seconds(5));
-
-            container.add(timerBehavior);
-        }
+        container.initTimerBehavior();
     }
 
     private void showIMessages(AjaxRequestTarget target) {
-        if (imessenger.countIMessages() > 0) {
-            IMessenger.IMessage importMessage;
-
-            while ((importMessage = imessenger.getNextIMessage()) != null) {
-                switch (importMessage.getType()) {
-                    case ERROR:
-                        container.error(importMessage.getLocalizedString(getLocale()));
-                        break;
-                    case INFO:
-                        container.info(importMessage.getLocalizedString(getLocale()));
-                        break;
-                }
-            }
-            target.add(container);
-        }
-    }
-
-    private class MessageBehavior extends AjaxSelfUpdatingTimerBehavior {
-        private MessageBehavior(Duration updateInterval) {
-            super(updateInterval);
-        }
-
-        @Override
-        protected void onPostProcessTarget(AjaxRequestTarget target) {
-            showIMessages(target);
-
-            if (finishCallback.isCompleted() && imessenger.countIMessages() <= 0) {
-                stop(target);
-                container.remove(timerBehavior);
-                timerBehavior = null;
-            }
-        }
+        container.showIMessages(target);
     }
 }

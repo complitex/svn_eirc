@@ -3,12 +3,10 @@ package ru.flexpay.eirc.registry.web.list;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.ajax.AjaxSelfUpdatingTimerBehavior;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxLink;
 import org.apache.wicket.extensions.markup.html.repeater.data.sort.SortOrder;
-import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
@@ -23,7 +21,6 @@ import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.string.StringValue;
-import org.apache.wicket.util.time.Duration;
 import org.complitex.address.entity.AddressEntity;
 import org.complitex.correction.service.AddressService;
 import org.complitex.correction.service.exception.DuplicateCorrectionException;
@@ -41,13 +38,15 @@ import org.complitex.template.web.template.TemplatePage;
 import org.odlabs.wiquery.ui.accordion.Accordion;
 import org.odlabs.wiquery.ui.options.HeightStyleEnum;
 import ru.flexpay.eirc.registry.entity.*;
-import ru.flexpay.eirc.registry.service.IMessenger;
+import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
 import ru.flexpay.eirc.registry.service.RegistryBean;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
 import ru.flexpay.eirc.registry.service.RegistryRecordBean;
+import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
+import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 
 import javax.ejb.EJB;
 import java.text.SimpleDateFormat;
@@ -81,10 +80,14 @@ public class RegistryRecordList extends TemplatePage {
     private RegistryLinker registryLinker;
 
     @EJB
-    private RegistryMessenger imessenger;
+    private RegistryMessenger imessengerService;
+
+    private AbstractMessenger imessenger;
 
     @EJB
-    private RegistryFinishCallback finishCallback;
+    private RegistryFinishCallback finishCallbackService;
+
+    private AbstractFinishCallback finishCallback;
 
     @EJB
     private ConfigBean configBean;
@@ -93,11 +96,12 @@ public class RegistryRecordList extends TemplatePage {
 
     private Registry registry;
 
-    private WebMarkupContainer container;
-
-    private AjaxSelfUpdatingTimerBehavior timerBehavior;
+    private IMessengerContainer container;
 
     public RegistryRecordList(PageParameters params) throws ExecutionException, InterruptedException {
+        imessenger = imessengerService.getInstance();
+        finishCallback = finishCallbackService.getInstance();
+
         StringValue registryIdParam = params.get("registryId");
         if (registryIdParam == null || registryIdParam.isEmpty()) {
             getSession().error(getString("error_registryId_not_found"));
@@ -121,7 +125,7 @@ public class RegistryRecordList extends TemplatePage {
         add(new Label("title", labelModel));
         add(new Label("label", labelModel));
 
-        container = new WebMarkupContainer("container");
+        container = new IMessengerContainer("container", imessenger, finishCallback);
         container.setOutputMarkupPlaceholderTag(true);
         container.setVisible(true);
         add(container);
@@ -129,11 +133,6 @@ public class RegistryRecordList extends TemplatePage {
         final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
         messages.setOutputMarkupId(true);
         container.add(messages);
-
-        if (imessenger.countIMessages() > 0 || !finishCallback.isCompleted()) {
-            timerBehavior = new MessageBehavior(Duration.seconds(5));
-            container.add(timerBehavior);
-        }
 
         //Form
         final Form<RegistryRecordData> filterForm = new Form<>("filterForm", filterModel);
@@ -163,10 +162,7 @@ public class RegistryRecordList extends TemplatePage {
                         return;
                     }
 
-                    if (timerBehavior == null) {
-                        timerBehavior = new MessageBehavior(Duration.seconds(5));
-                        container.add(timerBehavior);
-                    }
+                    initTimerBehavior();
 
                     addressService.correctAddress(registryRecord, entity, cityId, streetTypeId, streetId, buildingId, apartmentId, roomId,
                             userOrganizationId, registry.getSenderOrganizationId());
@@ -455,38 +451,11 @@ public class RegistryRecordList extends TemplatePage {
         return parameters;
     }
 
-    private void showIMessages(AjaxRequestTarget target) {
-        if (imessenger.countIMessages() > 0) {
-            IMessenger.IMessage importMessage;
-
-            while ((importMessage = imessenger.getNextIMessage()) != null) {
-                switch (importMessage.getType()) {
-                    case ERROR:
-                        container.error(importMessage.getLocalizedString(getLocale()));
-                        break;
-                    case INFO:
-                        container.info(importMessage.getLocalizedString(getLocale()));
-                        break;
-                }
-            }
-            target.add(container);
-        }
+    private void initTimerBehavior() {
+        container.initTimerBehavior();
     }
 
-    private class MessageBehavior extends AjaxSelfUpdatingTimerBehavior {
-        private MessageBehavior(Duration updateInterval) {
-            super(updateInterval);
-        }
-
-        @Override
-        protected void onPostProcessTarget(AjaxRequestTarget target) {
-            showIMessages(target);
-
-            if (finishCallback.isCompleted() && imessenger.countIMessages() <= 0) {
-                stop(target);
-                container.remove(timerBehavior);
-                timerBehavior = null;
-            }
-        }
+    private void showIMessages(AjaxRequestTarget target) {
+        container.showIMessages(target);
     }
 }

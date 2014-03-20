@@ -17,6 +17,9 @@ public class FileReader {
     public static final int MAX_RECORD_LENGTH = 10000;
 
     private BufferedInputStream is;
+    private String fileName;
+    private long fileLength = -1;
+
     private String charset;
     private int b;
     private byte[] record = new byte[MAX_RECORD_LENGTH];
@@ -24,14 +27,24 @@ public class FileReader {
     private long position;
 
 
-    public FileReader(InputStream is) {
-        this(is, -1);
+    public FileReader(InputStream is, String fileName, long fileLength) {
+        this(is, fileName, fileLength, -1);
     }
 
-    public FileReader(InputStream is, int bufferSize) {
+    public FileReader(InputStream is, String fileName, long fileLength, int bufferSize) {
+        this.fileName = fileName;
+        this.fileLength = fileLength;
         this.is = bufferSize > 0? new BufferedInputStream(is, bufferSize) : new BufferedInputStream(is);
         this.charset = DEFAULT_CHARSET;
         this.position = 0;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public long getFileLength() {
+        return fileLength;
     }
 
     @SuppressWarnings ({"unchecked"})

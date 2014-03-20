@@ -65,12 +65,12 @@ public class RegistryHandler {
     @EJB
     private OperationFactory operationFactory;
 
-    public void handle(final Long registryId, final IMessenger imessenger, final FinishCallback finishLink) {
+    public void handle(final Long registryId, final AbstractMessenger imessenger, final AbstractFinishCallback finishLink) {
         handle(FilterWrapper.<RegistryRecordData>of(new RegistryRecord(registryId)), imessenger, finishLink);
     }
 
-    private void handle(final FilterWrapper<RegistryRecordData> filter, final IMessenger imessenger,
-                      final FinishCallback finishHandle) {
+    private void handle(final FilterWrapper<RegistryRecordData> filter, final AbstractMessenger imessenger,
+                      final AbstractFinishCallback finishHandle) {
         final AtomicBoolean finishReadRecords = new AtomicBoolean(false);
         final AtomicInteger recordHandlingCounter = new AtomicInteger(0);
 
@@ -284,9 +284,9 @@ public class RegistryHandler {
         private Lock lock = new ReentrantLock();
 
         private Long registryNumber;
-        private IMessenger imessenger;
+        private AbstractMessenger imessenger;
 
-        private Statistics(Long registryNumber, IMessenger imessenger) {
+        private Statistics(Long registryNumber, AbstractMessenger imessenger) {
             this.registryNumber = registryNumber;
             this.imessenger = imessenger;
         }
