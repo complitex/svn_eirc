@@ -119,19 +119,28 @@ public class EircPaymentsTransformer extends TemplatePage {
 
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
+                boolean error = false;
+                File eircFile = paymentsFileName.getObject();
+                if (eircFile == null) {
+                    error = true;
+                    container.error(getString("required_eirc_file"));
+                }
+                String workDir = fileService.getWorkDir();
+                if (workDir == null) {
+                    error = true;
+                    container.error(getString("undefined_work_dir"));
+                }
+                if (error) {
+                    target.add(container);
+                    return;
+                }
 
                 EircPaymentsTransformer.this.initTimerBehavior();
 
                 try {
                     Long mbOrganizationId = configBean.getInteger(MbTransformerConfig.MB_ORGANIZATION_ID, true).longValue();
                     Long eircOrganizationId = configBean.getInteger(MbTransformerConfig.EIRC_ORGANIZATION_ID, true).longValue();
-                    String workDir = fileService.getWorkDir();
-                    if (workDir == null) {
-                        container.error("undefined_work_dir");
-                        return;
-                    }
 
-                    File eircFile = paymentsFileName.getObject();
                     FileReader reader = new FileReader(new FileInputStream(eircFile), eircFile.getName(), eircFile.length());
 
                     eircPaymentsRegistryConverter.exportToMegaBank(reader, workDir, null, mbOrganizationId,

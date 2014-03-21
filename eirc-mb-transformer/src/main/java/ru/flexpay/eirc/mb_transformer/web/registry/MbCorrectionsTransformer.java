@@ -1,5 +1,6 @@
 package ru.flexpay.eirc.mb_transformer.web.registry;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
@@ -170,20 +171,39 @@ public class MbCorrectionsTransformer extends TemplatePage {
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
 
+                boolean error = false;
+                if (MbCorrectionsTransformer.this.correctionsFile.getObject() == null) {
+                    error = true;
+                    container.error(getString("required_corrections_file"));
+                }
+                if (MbCorrectionsTransformer.this.chargesFile.getObject() == null) {
+                    error = true;
+                    container.error(getString("required_charges_file"));
+                }
+                if (StringUtils.isEmpty(MbCorrectionsTransformer.this.resultFileName)) {
+                    error = true;
+                    container.error(getString("required_result"));
+                }
+                String tmpDir = fileService.getTmpDir();
+                if (tmpDir == null) {
+                    error = true;
+                    container.error(getString("undefined_tmp_dir"));
+                }
+                String workDir = fileService.getWorkDir();
+                if (workDir == null) {
+                    error = true;
+                    container.error(getString("undefined_work_dir"));
+                }
+                if (error) {
+                    target.add(container);
+                    return;
+                }
+
                 MbCorrectionsTransformer.this.initTimerBehavior();
 
                 try {
                     Long mbOrganizationId = configBean.getInteger(MbTransformerConfig.MB_ORGANIZATION_ID, true).longValue();
                     Long eircOrganizationId = configBean.getInteger(MbTransformerConfig.EIRC_ORGANIZATION_ID, true).longValue();
-                    String tmpDir = fileService.getTmpDir();
-                    if (tmpDir == null) {
-                        return;
-                    }
-
-                    if (MbCorrectionsTransformer.this.correctionsFile.getObject() == null ||
-                            MbCorrectionsTransformer.this.chargesFile.getObject() == null) {
-                        return;
-                    }
 
                     MbFile correctionsFile = new MbFile(MbCorrectionsTransformer.this.correctionsFile.getObject().getParentFile().getPath(),
                             MbCorrectionsTransformer.this.correctionsFile.getObject().getName());
