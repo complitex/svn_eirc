@@ -196,11 +196,4 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
     protected String getStrategyName() {
         return EircOrganizationStrategy.EIRC_ORGANIZATION_STRATEGY_NAME;
     }
-
-    @Override
-    protected boolean isOrganizationTypeEnabled() {
-        Long organizationId = getDomainObject().getId();
-        return !(organizationId != null && (organizationId.equals(EircOrganizationStrategy.MODULE_ID)))
-                && super.isOrganizationTypeEnabled();
-    }
 }

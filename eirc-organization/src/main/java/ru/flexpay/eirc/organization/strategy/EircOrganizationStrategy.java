@@ -37,8 +37,6 @@ import java.util.Map;
  */
 @Stateless(name = IOrganizationStrategy.BEAN_NAME)
 public class EircOrganizationStrategy extends AbstractOrganizationStrategy<DomainObject> {
-    public final static Long MODULE_ID = 0L;
-
     /**
      * KPP. It is EIRC only attribute.
      */
@@ -151,11 +149,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
 //        example.addAdditionalParam(ORGANIZATION_TYPE_PARAMETER, ImmutableList.of(OrganizationType.SERVICE_PROVIDER.getId()));
         configureExample(example, ImmutableMap.<String, Long>of(), null);
         return find(example);
-    }
-
-    @Override
-    public Long getModuleId() {
-        return MODULE_ID;
     }
 
     /**
@@ -290,15 +283,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
         //EircOrganization oldOrganization = (EircOrganization) oldObject;
 
         super.update(oldObject, newObject, updateDate);
-    }
-
-    @Transactional
-    @Override
-    protected void deleteChecks(long objectId, Locale locale) throws DeleteException {
-        if (MODULE_ID == objectId) {
-            throw new DeleteException(ResourceUtil.getString(RESOURCE_BUNDLE, "delete_reserved_instance_error", locale));
-        }
-        super.deleteChecks(objectId, locale);
     }
 
     @Transactional
