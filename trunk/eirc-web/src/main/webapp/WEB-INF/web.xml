@@ -9,6 +9,20 @@
         <param-value>development</param-value>
 <!--        <param-value>deployment</param-value>  -->
     </context-param>
+
+    <servlet>
+        <servlet-name>rest</servlet-name>
+        <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
+        <init-param>
+            <param-name>jersey.config.server.provider.packages</param-name>
+            <param-value>ru.flexpay.eirc.payments_communication.service</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>rest</servlet-name>
+        <url-pattern>/resources/*</url-pattern>
+    </servlet-mapping>
     
     <filter>
         <filter-name>wicket</filter-name>
@@ -80,6 +94,21 @@
             <form-error-page>/fake_login_resource.html</form-error-page>
         </form-login-config>
     </login-config>
+
+    <!--security-constraint>
+        <web-resource-collection>
+            <web-resource-name>resources</web-resource-name>
+            <url-pattern>/*</url-pattern>
+            <http-method>GET</http-method>
+        </web-resource-collection>
+        <auth-constraint>
+            <description/>
+            <role-name>AUTHORIZED</role-name>
+        </auth-constraint>
+        <user-data-constraint>
+            <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+        </user-data-constraint>
+    </security-constraint-->
     
     <session-config>
         <session-timeout>30</session-timeout>
