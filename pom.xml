@@ -38,6 +38,7 @@
         <module>eirc-service-correction</module>
         <module>eirc-service-provider-account</module>
         <module>eirc-mb-transformer</module>
+        <module>eirc-payments-communication</module>
 
         <module>../complitex/complitex-dictionary</module>
         <module>../complitex/complitex-template</module>
@@ -168,6 +169,19 @@
                 <artifactId>eirc-mb-transformer</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>ru.flexpay.eirc</groupId>
+                <artifactId>eirc-payments-communication</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.glassfish.jersey.containers</groupId>
+                <artifactId>jersey-container-servlet</artifactId>
+                <version>2.7</version>
+                <scope>provided</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 </project>
