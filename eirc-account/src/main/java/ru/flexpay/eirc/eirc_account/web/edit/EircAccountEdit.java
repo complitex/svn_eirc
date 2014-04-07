@@ -32,6 +32,7 @@ import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
 import ru.flexpay.eirc.eirc_account.web.list.EircAccountList;
+import ru.flexpay.eirc.service_provider_account.web.component.ServiceProviderAccountListPanel;
 
 import javax.ejb.EJB;
 import java.util.List;
@@ -112,6 +113,10 @@ public class EircAccountEdit extends TemplatePage {
         form.add(new TextField<>("lastName",   new PropertyModel<String>(eircAccount.getPerson(), "lastName")));
         form.add(new TextField<>("firstName",  new PropertyModel<String>(eircAccount.getPerson(), "firstName")));
         form.add(new TextField<>("middleName", new PropertyModel<String>(eircAccount.getPerson(), "middleName")));
+
+        // service provider accounts
+        form.add(new ServiceProviderAccountListPanel("serviceProviderAccounts", eircAccount.getId() == null? 0: eircAccount.getId()).
+                setVisible(eircAccount.getId() != null && eircAccount.getId() > 0));
 
         // save button
         AjaxButton save = new AjaxButton("save") {
