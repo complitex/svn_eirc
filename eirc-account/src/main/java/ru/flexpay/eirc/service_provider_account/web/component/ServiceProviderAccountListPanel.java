@@ -1,10 +1,13 @@
 package ru.flexpay.eirc.service_provider_account.web.component;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
+import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.behavior.AttributeAppender;
 import org.apache.wicket.extensions.ajax.markup.html.repeater.data.sort.AjaxFallbackOrderByBorder;
 import org.apache.wicket.extensions.markup.html.repeater.data.grid.ICellPopulator;
@@ -19,6 +22,7 @@ import org.apache.wicket.extensions.markup.html.repeater.util.SingleSortState;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
+import org.apache.wicket.markup.html.form.CheckBox;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.panel.Panel;
@@ -45,6 +49,7 @@ import ru.flexpay.eirc.service_provider_account.web.edit.ServiceProviderAccountE
 
 import javax.ejb.EJB;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Pavel Sknar
@@ -70,6 +75,9 @@ public class ServiceProviderAccountListPanel extends Panel {
 
     private ServiceProviderAccount filterObject = new ServiceProviderAccount(new EircAccount());
 
+    private Map<ServiceProviderAccount, Model<Boolean>> selected = Maps.newHashMap();
+    private List<CheckBox> checkBoxes = Lists.newArrayList();
+
     public ServiceProviderAccountListPanel(String id, Long eircAccountId) {
         super(id);
         filterObject.getEircAccount().setId(eircAccountId);
@@ -87,6 +95,24 @@ public class ServiceProviderAccountListPanel extends Panel {
         final Locale locale = localeBean.convert(getLocale());
 
         final List<IColumn<ServiceProviderAccount, String>> COLUMNS = ImmutableList.<IColumn<ServiceProviderAccount, String>>of(
+                new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("empty")) {
+                    @Override
+                    public void populateItem(Item<ICellPopulator<ServiceProviderAccount>> cellItem, String componentId,
+                                             IModel<ServiceProviderAccount> rowModel) {
+                        Model<Boolean> model = new Model<>();
+                        selected.put(rowModel.getObject(), model);
+                        CheckBoxPanel checkBoxPanel = new CheckBoxPanel(componentId, model);
+                        checkBoxes.add(checkBoxPanel.getCheckBox());
+                        cellItem.add(checkBoxPanel);
+                    }
+
+                    @Override
+                    public Component getFilter(String componentId, FilterForm<?> form) {
+                        CheckBox[] arrayCheckBoxes = new CheckBox[checkBoxes.size()];
+                        checkBoxes.toArray(arrayCheckBoxes);
+                        return new CheckBoxSelectorFilter(componentId, form, arrayCheckBoxes);
+                    }
+                },
                 new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("accountNumber"), "spa_account_number") {
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
@@ -222,7 +248,7 @@ public class ServiceProviderAccountListPanel extends Panel {
                         components.add(new Label(s, serviceProviderAccount.getPerson() != null? serviceProviderAccount.getPerson().toString(): ""));
                     }
                 },
-                new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("empty")) {
+                new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("empty"), "action") {
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
                         return new AjaxGoAndClearFilter(s, components, new ResourceModel("filter"), new ResourceModel("clear")) {
@@ -233,7 +259,10 @@ public class ServiceProviderAccountListPanel extends Panel {
 
                             @Override
                             public void onClearSubmit(AjaxRequestTarget target, Form<?> form) {
-                                filterObject = new ServiceProviderAccount(filterObject.getEircAccount());
+                                filterObject.setAccountNumber(null);
+                                filterObject.setOrganizationId(null);
+                                filterObject.setService(null);
+                                filterObject.setPerson(null);
                                 target.add(container);
                             }
                         };
@@ -264,6 +293,9 @@ public class ServiceProviderAccountListPanel extends Panel {
                 filterWrapper.getMap().put("address", Boolean.FALSE);
                 filterWrapper.setLocale(locale);
 
+                selected.clear();
+                checkBoxes.clear();
+
                 return serviceProviderAccountBean.getServiceProviderAccounts(filterWrapper);
             }
 
@@ -286,7 +318,7 @@ public class ServiceProviderAccountListPanel extends Panel {
             }
         };
 
-        FilterForm<ServiceProviderAccount> filterForm = new FilterForm<>("filterForm", locator);
+        final FilterForm<ServiceProviderAccount> filterForm = new FilterForm<>("filterForm", locator);
 
         final DataTable<ServiceProviderAccount, String> table = new DataTable<ServiceProviderAccount, String>("datatable", COLUMNS, provider, 1000) {
             private AttributeAppender style = new AttributeAppender("class", new Model<>("selected"));
@@ -304,8 +336,7 @@ public class ServiceProviderAccountListPanel extends Panel {
         }) {
             @Override
             protected WebMarkupContainer newSortableHeader(final String headerId, final String property,
-                                                           final ISortStateLocator<String> locator)
-            {
+                                                           final ISortStateLocator<String> locator) {
                 return new AjaxFallbackOrderByBorder<String>(headerId, property, locator) {
                     private static final long serialVersionUID = 1L;
 
@@ -320,17 +351,38 @@ public class ServiceProviderAccountListPanel extends Panel {
         table.addTopToolbar(new FilterToolbar(table, filterForm, locator));
         container.add(filterForm);
         filterForm.add(table);
+
+        filterForm.add(new AjaxButton("add") {
+            @Override
+            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
+                this.getPage().setResponsePage(getEditPage(), getEditPageParams(null));
+            }
+        });
+
+        filterForm.add(new AjaxButton("delete") {
+            @Override
+            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
+                for (Map.Entry<ServiceProviderAccount, Model<Boolean>> entry : selected.entrySet()) {
+                    if (entry.getValue().getObject()) {
+                        serviceProviderAccountBean.archive(entry.getKey());
+                    }
+                }
+                target.add(container);
+            }
+        });
     }
 
     private Class<? extends Page> getEditPage() {
         return ServiceProviderAccountEdit.class;
     }
 
-    private PageParameters getEditPageParams(Long id) {
+    private PageParameters getEditPageParams(Long serviceProviderAccountId) {
         PageParameters parameters = new PageParameters();
-        if (id != null) {
-            parameters.add("serviceProviderAccountId", id);
+        if (serviceProviderAccountId != null) {
+            parameters.add("serviceProviderAccountId", serviceProviderAccountId);
         }
+        parameters.add("eircAccountId", filterObject.getEircAccount().getId());
+        parameters.add("revertToEircAccount", Boolean.TRUE);
         return parameters;
     }
 }
