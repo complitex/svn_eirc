@@ -8,7 +8,7 @@ import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.description.EntityAttributeType;
 import org.complitex.dictionary.service.StringCultureBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
-import org.complitex.dictionary.web.component.DomainObjectInputPanel;
+import org.complitex.dictionary.web.component.DomainObjectComponentUtil;
 import org.complitex.organization.strategy.web.edit.OrganizationEditComponent;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
@@ -91,11 +91,11 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
         final EntityAttributeType attributeType =
                 organizationStrategy.getEntity().getAttributeType(attributeTypeId);
         container.add(new Label("label",
-                DomainObjectInputPanel.labelModel(attributeType.getAttributeNames(), getLocale())));
+                DomainObjectComponentUtil.labelModel(attributeType.getAttributeNames(), getLocale())));
         container.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));
 
         container.add(
-                DomainObjectInputPanel.newInputComponent("organization", getStrategyName(),
+                DomainObjectComponentUtil.newInputComponent("organization", getStrategyName(),
                         organization, attribute, getLocale(), disabled));
 
         return container;
@@ -118,7 +118,7 @@ public class EircOrganizationEditComponent extends OrganizationEditComponent {
         final EntityAttributeType attributeType =
                 organizationStrategy.getEntity().getAttributeType(attributeTypeId);
         container.add(new Label("label",
-                DomainObjectInputPanel.labelModel(attributeType.getAttributeNames(), getLocale())));
+                DomainObjectComponentUtil.labelModel(attributeType.getAttributeNames(), getLocale())));
         container.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));
 
         ServiceAllowableListPanel panel = new ServiceAllowableListPanel("input", organization);
