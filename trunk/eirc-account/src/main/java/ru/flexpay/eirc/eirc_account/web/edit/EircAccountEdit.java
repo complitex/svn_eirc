@@ -25,6 +25,8 @@ import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.search.CollapsibleInputSearchToolbarButton;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
+import org.odlabs.wiquery.ui.accordion.Accordion;
+import org.odlabs.wiquery.ui.options.HeightStyleEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.dictionary.entity.Address;
@@ -115,7 +117,13 @@ public class EircAccountEdit extends TemplatePage {
         form.add(new TextField<>("middleName", new PropertyModel<String>(eircAccount.getPerson(), "middleName")));
 
         // service provider accounts
-        form.add(new ServiceProviderAccountListPanel("serviceProviderAccounts", eircAccount.getId() == null? 0: eircAccount.getId()).
+        Accordion accordion = new Accordion("accordionSPA");
+        accordion.setCollapsible(true);
+        accordion.setActive(false);
+        accordion.setOutputMarkupPlaceholderTag(true);
+        accordion.setHeightStyle(HeightStyleEnum.CONTENT);
+        form.add(accordion);
+        accordion.add(new ServiceProviderAccountListPanel("serviceProviderAccounts", eircAccount.getId() == null? 0: eircAccount.getId()).
                 setVisible(eircAccount.getId() != null && eircAccount.getId() > 0));
 
         // save button

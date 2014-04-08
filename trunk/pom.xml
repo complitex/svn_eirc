@@ -36,7 +36,6 @@
         <module>eirc-account</module>
         <module>eirc-service</module>
         <module>eirc-service-correction</module>
-        <module>eirc-service-provider-account</module>
         <module>eirc-mb-transformer</module>
         <module>eirc-payments-communication</module>
 
@@ -157,11 +156,6 @@
             <dependency>
                 <groupId>ru.flexpay.eirc</groupId>
                 <artifactId>eirc-service-correction</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ru.flexpay.eirc</groupId>
-                <artifactId>eirc-service-provider-account</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

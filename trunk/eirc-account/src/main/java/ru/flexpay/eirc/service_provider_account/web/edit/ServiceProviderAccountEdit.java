@@ -2,6 +2,7 @@ package ru.flexpay.eirc.service_provider_account.web.edit;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.form.AjaxFormComponentUpdatingBehavior;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
@@ -37,6 +38,7 @@ import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.dictionary.web.CollapsibleInputSearchComponent;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
+import ru.flexpay.eirc.eirc_account.web.edit.EircAccountEdit;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.service.entity.Service;
@@ -44,7 +46,6 @@ import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceNotAllowableException;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
-import ru.flexpay.eirc.service_provider_account.web.list.ServiceProviderAccountList;
 
 import javax.ejb.EJB;
 import java.util.Collections;
@@ -75,11 +76,25 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
     private ServiceProviderAccount serviceProviderAccount;
 
+    private long eircAccountId;
+
+    private boolean revertToEircAccount;
+
     public ServiceProviderAccountEdit() {
         init();
     }
 
     public ServiceProviderAccountEdit(PageParameters parameters) {
+        StringValue eircAccountIdValue = parameters.get("eircAccountId");
+        if (eircAccountIdValue != null && !eircAccountIdValue.isNull()) {
+            eircAccountId = eircAccountIdValue.toLong();
+        }
+
+        StringValue revertToEircAccountValue = parameters.get("revertToEircAccount");
+        if (revertToEircAccountValue != null && !revertToEircAccountValue.isNull()) {
+            revertToEircAccount = revertToEircAccountValue.toBoolean();
+        }
+
         StringValue serviceProviderAccountId = parameters.get("serviceProviderAccountId");
         if (serviceProviderAccountId != null && !serviceProviderAccountId.isNull()) {
             serviceProviderAccount = serviceProviderAccountBean.getServiceProviderAccount(serviceProviderAccountId.toLong());
@@ -100,6 +115,10 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
         }
         if (serviceProviderAccount.getEircAccount() == null) {
             serviceProviderAccount.setEircAccount(new EircAccount());
+            if (eircAccountId > 0) {
+                EircAccount eircAccount = eircAccountBean.getEircAccount(eircAccountId);
+                serviceProviderAccount.setEircAccount(eircAccount);
+            }
         }
 
         final Locale locale = localeBean.convert(getLocale());
@@ -279,7 +298,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
                 getSession().info(getString("saved"));
 
-                setResponsePage(ServiceProviderAccountList.class);
+                setResponsePage(getRevertPage(), getRevertPageParams());
             }
 
             @Override
@@ -294,7 +313,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
             @Override
             public void onClick() {
-                setResponsePage(ServiceProviderAccountList.class);
+                setResponsePage(getRevertPage(), getRevertPageParams());
             }
         };
         form.add(cancel);
@@ -307,5 +326,20 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
     @Override
     protected List<? extends ToolbarButton> getToolbarButtons(String id) {
         return ImmutableList.of(new CollapsibleInputSearchToolbarButton(id));
+    }
+
+    private Class<? extends Page> getRevertPage() {
+        if (revertToEircAccount) {
+            return EircAccountEdit.class;
+        }
+        return ServiceProviderAccountEdit.class;
+    }
+
+    private PageParameters getRevertPageParams() {
+        PageParameters parameters = new PageParameters();
+        if (eircAccountId > 0) {
+            parameters.add("eircAccountId", eircAccountId);
+        }
+        return parameters;
     }
 }

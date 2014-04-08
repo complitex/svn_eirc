@@ -79,10 +79,6 @@
         </dependency>
         <dependency>
             <groupId>ru.flexpay.eirc</groupId>
-            <artifactId>eirc-service-provider-account</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ru.flexpay.eirc</groupId>
             <artifactId>eirc-payments-communication</artifactId>
         </dependency>
         <dependency>
