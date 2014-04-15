@@ -1,5 +1,5 @@
 INSERT INTO `sequence` (`sequence_name`, `sequence_value`) VALUES
-('eirc_account',1), ('service_provider_account', 1), ('service_provider_account_string_culture', 1);
+('eirc_account',1), ('service_provider_account', 1), ('service_provider_account_string_culture', 1), ('module_instance', 1), ('module_instance_string_culture', 1);
 
 -- --------------------------------
 -- Organization type
@@ -75,6 +75,21 @@ INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_
 INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (6006, 1, UPPER('ФИО основного квартиросъемщика')), (6006, 2, UPPER('ПIБ основного квартиронаймача'));
 INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (6005, 6000, 0, 6006, 1);
 INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (6005, 6005, UPPER('string'));
+
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1011, 1, 'Модуль'), (1011, 2, 'Модуль');
+INSERT INTO `entity`(`id`, `entity_table`, `entity_name_id`, `strategy_factory`) VALUES (1010, 'module_instance', 1011, '');
+
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1011, 1, UPPER('Название')), (1011, 2, UPPER('Назва'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (1010, 1010, 0, 1011, 1);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (1010, 1010, UPPER('string'));
+
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1012, 1, UPPER('Секретный ключ')), (1012, 2, UPPER('Секретний ключ'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (1011, 1010, 0, 1012, 0);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (1011, 1011, UPPER('string'));
+
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1013, 1, UPPER('Идентификатор')), (1013, 2, UPPER('Ідентифікатор'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (1012, 1010, 1, 1013, 0);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (1012, 1012, UPPER('string'));
 
 INSERT INTO `registry_status` (`code`, `name`) values
     (0, 'Загружается'),
