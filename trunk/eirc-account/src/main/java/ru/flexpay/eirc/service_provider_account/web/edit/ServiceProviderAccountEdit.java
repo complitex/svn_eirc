@@ -298,7 +298,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
                 getSession().info(getString("saved"));
 
-                setResponsePage(getRevertPage(), getRevertPageParams());
+                setResponsePage(getRevertPage(), getRevertPageParams(eircAccount.getId()));
             }
 
             @Override
@@ -313,7 +313,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
             @Override
             public void onClick() {
-                setResponsePage(getRevertPage(), getRevertPageParams());
+                setResponsePage(getRevertPage(), getRevertPageParams(eircAccountId));
             }
         };
         form.add(cancel);
@@ -335,7 +335,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
         return ServiceProviderAccountEdit.class;
     }
 
-    private PageParameters getRevertPageParams() {
+    private PageParameters getRevertPageParams(Long eircAccountId) {
         PageParameters parameters = new PageParameters();
         if (eircAccountId > 0) {
             parameters.add("eircAccountId", eircAccountId);

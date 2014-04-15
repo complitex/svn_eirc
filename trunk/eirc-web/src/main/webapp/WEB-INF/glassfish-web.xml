@@ -79,5 +79,15 @@
         <role-name>REFERENCE_DATA_MODULE_EDIT</role-name>
         <group-name>ADMINISTRATORS</group-name>
     </security-role-mapping>
-  
+
+    <!-- EIRC related mappings -->
+    <security-role-mapping>
+        <role-name>MODULE_INSTANCE_VIEW</role-name>
+        <group-name>ADMINISTRATORS</group-name>
+    </security-role-mapping>
+    <security-role-mapping>
+        <role-name>MODULE_INSTANCE_EDIT</role-name>
+        <group-name>ADMINISTRATORS</group-name>
+    </security-role-mapping>
+
 </glassfish-web-app>
