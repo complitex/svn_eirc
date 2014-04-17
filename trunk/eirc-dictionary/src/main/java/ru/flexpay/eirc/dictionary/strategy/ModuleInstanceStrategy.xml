@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="ru.flexpay.eirc.dictionary.service.ModuleInstance">
+<mapper namespace="ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy">
 
-    <select id="selectModuleInstances" parameterType="map" resultType="long">
+    <select id="selectModuleInstanceId" parameterType="map" resultType="long">
         select distinct a.`object_id` from `module_instance` a
 
         join `module_instance_attribute` n on (n.`object_id` = a.`object_id` and n.`status` = 'ACTIVE'
-        and n.`attribute_type_id` = 100)
+        and n.`attribute_type_id` = 1012)
         join `module_instance_string_culture` n_sc on (n_sc.`id` = n.`value_id`)
 
-        where a.`status` = 'ACTIVE' and n_sc.`value` = #{name}
+        where a.`status` = 'ACTIVE' and n_sc.`value` = #{uniqueIndex}
     </select>
 
 </mapper>
