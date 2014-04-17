@@ -47,7 +47,7 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
     public static final long PRIVATE_KEY = 1011L;
     public static final long UNIQUE_INDEX = 1012L;
 
-    private static final String MODULE_INSTANCE_NAMESPACE = ModuleInstanceStrategy.class.getPackage().getName() + ".ModuleInstance";
+    private static final String MODULE_INSTANCE_NAMESPACE = ModuleInstanceStrategy.class.getName();
 
     @Override
     protected List<Long> getListAttributeTypes() {
@@ -131,12 +131,12 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
     /**
      * Найти квартиру в локальной адресной базе.
      */
-    public List<Long> getModuleInstanceObjectIds(String name) {
+    public Long getModuleInstanceObjectId(String uniqueIndex) {
         Map<String, Object> params = Maps.newHashMap();
 
-        params.put("name", name);
+        params.put("uniqueIndex", uniqueIndex);
 
-        return sqlSession().selectList(MODULE_INSTANCE_NAMESPACE + ".selectModuleInstances", params);
+        return sqlSession().selectOne(MODULE_INSTANCE_NAMESPACE + ".selectModuleInstanceId", params);
     }
 
     @Override
