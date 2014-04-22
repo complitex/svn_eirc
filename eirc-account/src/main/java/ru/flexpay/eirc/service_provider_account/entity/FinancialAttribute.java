@@ -10,19 +10,18 @@ import java.util.Date;
  */
 public abstract class FinancialAttribute extends DictionaryObject {
 
-    private Long serviceProviderAccountId;
+    private ServiceProviderAccount serviceProviderAccount;
 
     private BigDecimal amount;
 
     private Date dateFormation;
 
-
-    public Long getServiceProviderAccountId() {
-        return serviceProviderAccountId;
+    public ServiceProviderAccount getServiceProviderAccount() {
+        return serviceProviderAccount;
     }
 
-    public void setServiceProviderAccountId(Long serviceProviderAccountId) {
-        this.serviceProviderAccountId = serviceProviderAccountId;
+    public void setServiceProviderAccount(ServiceProviderAccount serviceProviderAccount) {
+        this.serviceProviderAccount = serviceProviderAccount;
     }
 
     public BigDecimal getAmount() {

@@ -32,7 +32,7 @@ public abstract class BaseFinancialOperation<T extends FinancialAttribute> exten
 
         T data = getBean().getInstance();
         try {
-            data.setServiceProviderAccountId(serviceProviderAccount.getId());
+            data.setServiceProviderAccount(serviceProviderAccount);
             data.setAmount(new BigDecimal(containerData.get(1)));
             data.setDateFormation(DATE_TIME_FORMATTER.parseDateTime(containerData.get(2)).toDate());
         } catch (Exception e) {

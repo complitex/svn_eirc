@@ -24,6 +24,8 @@ public class DebInfo extends PersonalInfo {
     private String serviceProviderAccount;
     private String eircAccount;
 
+    private String serviceMasterIndex;
+
     public Long getServiceId() {
         return serviceId;
     }
@@ -142,5 +144,13 @@ public class DebInfo extends PersonalInfo {
 
     public void setEircAccount(String eircAccount) {
         this.eircAccount = eircAccount;
+    }
+
+    public String getServiceMasterIndex() {
+        return serviceMasterIndex;
+    }
+
+    public void setServiceMasterIndex(String serviceMasterIndex) {
+        this.serviceMasterIndex = serviceMasterIndex;
     }
 }

@@ -42,7 +42,7 @@ public class ServiceBean extends AbstractBean {
     }
 
     public List<Service> getServices(FilterWrapper<Service> filter) {
-        addFilterMappingObject(filter);
+        ServiceUtil.addFilterMappingObject(filter);
         if (filter != null && StringUtils.equals(filter.getSortProperty(), "id")) {
             filter.setSortProperty("service_id");
         }
@@ -50,7 +50,7 @@ public class ServiceBean extends AbstractBean {
     }
 
     public int count(FilterWrapper<Service> filter) {
-        addFilterMappingObject(filter);
+        ServiceUtil.addFilterMappingObject(filter);
         return sqlSession().selectOne(NS + ".countServices", filter);
     }
 
@@ -115,18 +115,6 @@ public class ServiceBean extends AbstractBean {
         sqlSession().delete(NS + ".deleteServiceName", ImmutableMap.<String, Object>of(
                 "serviceId", service.getId(),
                 "localeId",  locale.getId()));
-    }
-
-    private static void addFilterMappingObject(FilterWrapper<Service> filter) {
-        if (filter != null) {
-            addFilterMappingObject(filter, filter.getObject());
-        }
-    }
-
-    public static void addFilterMappingObject(FilterWrapper<?> filter, Service service) {
-        if (filter != null) {
-            filter.getMap().put(FILTER_MAPPING_ATTRIBUTE_NAME, service);
-        }
     }
 
 }
