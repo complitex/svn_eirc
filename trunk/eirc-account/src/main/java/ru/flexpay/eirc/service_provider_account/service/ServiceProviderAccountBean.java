@@ -11,10 +11,8 @@ import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.service.SequenceBean;
 import org.complitex.dictionary.util.DateUtil;
-import ru.flexpay.eirc.eirc_account.service.EircAccountBean;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
-import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceNotAllowableException;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 
@@ -57,7 +55,7 @@ public class ServiceProviderAccountBean extends AbstractBean {
     }
 
     public List<ServiceProviderAccount> getServiceProviderAccounts(FilterWrapper<ServiceProviderAccount> filter) {
-        addFilterMappingObject(filter);
+        ServiceProviderAccountUtil.addFilterMappingObject(filter);
         if (filter != null && StringUtils.equals(filter.getSortProperty(), "id")) {
             filter.setSortProperty("spa_object_id");
         }
@@ -65,7 +63,7 @@ public class ServiceProviderAccountBean extends AbstractBean {
     }
 
     public int count(FilterWrapper<ServiceProviderAccount> filter) {
-        addFilterMappingObject(filter);
+        ServiceProviderAccountUtil.addFilterMappingObject(filter);
         return sqlSession().selectOne(NS + ".countServiceProviderAccounts", filter);
     }
 
@@ -119,23 +117,6 @@ public class ServiceProviderAccountBean extends AbstractBean {
         params.put("pkId", pkId);
         params.put("locale", localeBean.convert(localeBean.getSystemLocale()).getId());
         return sqlSession().selectOne(NS + ".selectServiceProviderAccountByPkId", pkId);
-    }
-
-    private void addFilterMappingObject(FilterWrapper<ServiceProviderAccount> filter) {
-        if (filter != null) {
-            if (filter.getObject() != null) {
-                ServiceBean.addFilterMappingObject(filter, filter.getObject().getService());
-                EircAccountBean.addFilterMappingObject(filter, filter.getObject().getEircAccount());
-            }
-            addFilterMappingObject(filter, filter.getObject());
-        }
-    }
-
-    public void addFilterMappingObject(FilterWrapper<?> filter,
-                                              ServiceProviderAccount serviceProviderAccount) {
-        if (filter != null) {
-            filter.getMap().put(FILTER_MAPPING_ATTRIBUTE_NAME, serviceProviderAccount);
-        }
     }
 
     @Override

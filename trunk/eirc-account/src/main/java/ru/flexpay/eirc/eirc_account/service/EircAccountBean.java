@@ -82,12 +82,12 @@ public class EircAccountBean extends AbstractBean {
     }
 
     public List<EircAccount> getEircAccounts(FilterWrapper<EircAccount> filter) {
-        addFilterMappingObject(filter);
+        EircAccountUtil.addFilterMappingObject(filter);
         return sqlSession().selectList(NS + ".selectEircAccounts", filter);
     }
 
     public int count(FilterWrapper<EircAccount> filter) {
-        addFilterMappingObject(filter);
+        EircAccountUtil.addFilterMappingObject(filter);
         return sqlSession().selectOne(NS + ".countEircAccounts", filter);
     }
 
@@ -121,18 +121,6 @@ public class EircAccountBean extends AbstractBean {
 
     public List<String> getSearchFilters() {
         return searchFilters;
-    }
-
-    private static void addFilterMappingObject(FilterWrapper<EircAccount> filter) {
-        if (filter != null) {
-            addFilterMappingObject(filter, filter.getObject());
-        }
-    }
-
-    public static void addFilterMappingObject(FilterWrapper<?> filter, EircAccount eircAccount) {
-        if (filter != null) {
-            filter.getMap().put(FILTER_MAPPING_ATTRIBUTE_NAME, eircAccount);
-        }
     }
 
 }

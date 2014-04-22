@@ -14,7 +14,9 @@ public enum SearchType implements IFixedIdType {
     TYPE_COMBINED(6L),
     TYPE_ERC_KVP_NUMBER(7L),
     TYPE_ERC_KVP_ADDRESS(8L),
-    TYPE_ADDRESS_STR(9L);
+    TYPE_ADDRESS_STR(9L),
+    TYPE_BUILDING_NUMBER(10L),
+    TYPE_ROOM_NUMBER(11L);
 
     private Long id;
 

@@ -5,34 +5,41 @@
 
     <resultMap id="FinancialAttribute" type="ru.flexpay.eirc.service_provider_account.entity.FinancialAttribute">
         <id     column="id"                             property="id"/>
-        <result column="service_provider_account_id"    property="serviceProviderAccountId"/>
         <result column="amount"                         property="amount"/>
         <result column="date_formation"                 property="dateFormation"/>
+        <association property="serviceProviderAccount"  resultMap="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.ServiceProviderAccount"/>
     </resultMap>
 
     <cache/>
 
     <sql id="tableName">`template`</sql>
 
+    <sql id="financialAttributeColumns">
+        fa.`id` as `fa_id`, fa.`amount` as `fa_amount`, fa.`date_formation` as `fa_date_formation`
+    </sql>
+
     <sql id="financialAttributeWhere">
         <where>
             <if test="object != null">
                 <if test="object.id != null">
-                    and `id` = #{id}
+                    and fa.`id` = #{id}
                 </if>
-                <if test="object.serviceProviderAccountId != null">
-                    and `service_provider_account_id` = #{serviceProviderAccountId}
-                </if>
+                <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPACondition"/>
             </if>
         </where>
     </sql>
 
 
     <sql id="selectFinancialAttributes">
-        select *
+        select
+        <include refid="financialAttributeColumns"/>,
+        <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAColumns"/>
         from
 
-        <include refid="tableName"/>
+        <include refid="tableName"/> as fa
+
+        left join `service_provider_account` spa on spa.`id` = fa.`service_provider_account_id`
+        <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAJoin"/>
 
         <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeWhere"/>
 
@@ -50,25 +57,38 @@
 
     <sql id="countFinancialAttributes">
         select count(distinct `id`) from
-        <include refid="tableName"/>
+        <include refid="tableName"/> as fa
+
+        left join `service_provider_account` spa on spa.`id` = fa.`service_provider_account_id`
+        <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAJoin"/>
 
         <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeWhere"/>
 
     </sql>
 
+    <sql id="selectFinancialAttributeExt">
+
+    </sql>
+
     <sql id="selectFinancialAttribute">
-        select *
-        from <include refid="tableName"/>
-        where `id` = #{id}
+        select
+        <include refid="financialAttributeColumns"/>,
+        <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAColumns"/>
+        from <include refid="tableName"/> as fa
+
+        left join `service_provider_account` spa on spa.`id` = fa.`service_provider_account_id`
+        <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAJoin"/>
+
+        where fa.`id` = #{id}
     </sql>
 
     <sql id="insertFinancialAttribute">
         insert into <include refid="tableName"/> (`service_provider_account_id`, `amount`, `date_formation`)
-                            values (#{serviceProviderAccountId}, #{amount}, #{dateFormation})
+                            values (#{serviceProviderAccount.id}, #{amount}, #{dateFormation})
     </sql>
 
     <sql id="updateFinancialAttribute">
-        update <include refid="tableName"/> set `service_provider_account_id` = #{serviceProviderAccountId},
+        update <include refid="tableName"/> set `service_provider_account_id` = #{serviceProviderAccount.id},
             `amount` = #{amount}, `date_formation` = #{dateFormation} where `id` = #{id}
     </sql>
 
