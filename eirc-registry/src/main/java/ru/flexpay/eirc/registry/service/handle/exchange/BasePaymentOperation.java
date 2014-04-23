@@ -31,7 +31,7 @@ public abstract class BasePaymentOperation <T extends PaymentAttribute> extends 
 
         T data = getBean().getInstance();
 
-        data.setServiceProviderAccountId(serviceProviderAccount.getId());
+        data.setServiceProviderAccount(serviceProviderAccount);
         data.setAmount(registryRecord.getAmount());
         data.setDateFormation(registryRecord.getOperationDate());
         data.setNumberQuittance(containerData.get(2));
