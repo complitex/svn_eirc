@@ -4,6 +4,7 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
+import org.complitex.dictionary.util.StringUtil;
 import ru.flexpay.eirc.service_provider_account.entity.FinancialAttribute;
 
 import java.util.List;
@@ -26,6 +27,9 @@ public abstract class FinancialAttributeBean<T extends FinancialAttribute> exten
     }
 
     public List<T> getFinancialAttributes(FilterWrapper<T> filter, boolean last) {
+        if (filter.getSortProperty() != null && StringUtil.equal(filter.getSortProperty(), "id")) {
+            filter.setSortProperty("fa_id");
+        }
         return last ?
                 sqlSession().<T>selectList(getNameSpace() + ".selectLastDateFinancialAttributes", filter) :
                 sqlSession().<T>selectList(getNameSpace() + ".selectAllPeriodDateFinancialAttributes", filter);
