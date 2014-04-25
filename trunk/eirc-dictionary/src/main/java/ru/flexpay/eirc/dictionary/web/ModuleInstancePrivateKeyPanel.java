@@ -13,7 +13,9 @@ import org.complitex.dictionary.entity.description.EntityAttributeType;
 import org.complitex.dictionary.service.StringCultureBean;
 import org.complitex.dictionary.strategy.web.AbstractComplexAttributesPanel;
 import org.complitex.dictionary.web.component.DomainObjectComponentUtil;
+import org.complitex.dictionary.web.component.organization.OrganizationPicker;
 import org.complitex.dictionary.web.model.AttributeStringModel;
+import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
 
 import javax.crypto.KeyGenerator;
@@ -40,25 +42,43 @@ public class ModuleInstancePrivateKeyPanel extends AbstractComplexAttributesPane
     protected void init() {
         DomainObject moduleInstance = getDomainObject();
 
-        addAttributeContainer(ModuleInstanceStrategy.PRIVATE_KEY, false, moduleInstance, "privateKeyContainer", new CallbackButton() {
+        addPrivateKeyContainer(ModuleInstanceStrategy.PRIVATE_KEY, false, moduleInstance, "privateKeyContainer", new CallbackButton() {
             @Override
             public void onSubmit(AttributeStringModel attributeStringModel) {
                 try {
-                    KeyGenerator keyGen = KeyGenerator.getInstance("HmacMD5");
-                    SecretKey key = keyGen.generateKey();
+                    //KeyGenerator keyGen = KeyGenerator.getInstance("HmacMD5");
+                    //SecretKey key = keyGen.generateKey();
                     // Generate a key for the HMAC-SHA1 keyed-hashing algorithm
-                    keyGen = KeyGenerator.getInstance("HmacSHA1");
-                    key = keyGen.generateKey();
+                    KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA1");
+                    SecretKey key = keyGen.generateKey();
                     attributeStringModel.setObject(new String(Base64.encodeBase64(key.getEncoded()), Charset.forName("UTF-8")));
                 } catch (Exception ex) {
                     throw new RuntimeException("Inner error", ex);
                 }
             }
         });
+
+        addOrganizationContainer(moduleInstance, "organizationContainer");
     }
 
-    private WebMarkupContainer addAttributeContainer(final long attributeTypeId, boolean disabled,
-                                                     DomainObject moduleInstance, String name, final CallbackButton callbackButton) {
+    private void addOrganizationContainer(DomainObject moduleInstance, String name) {
+        WebMarkupContainer container = new WebMarkupContainer(name);
+        container.setOutputMarkupPlaceholderTag(true);
+        add(container);
+
+        Attribute attribute = moduleInstance.getAttribute(ModuleInstanceStrategy.ORGANIZATION);
+        final AttributeStringModel model = new AttributeStringModel(attribute);
+        container.add(new OrganizationPicker("organization", model, OrganizationType.USER_ORGANIZATION.getId()));
+
+        final EntityAttributeType attributeType =
+                moduleInstanceStrategy.getEntity().getAttributeType(ModuleInstanceStrategy.ORGANIZATION);
+        container.add(new Label("label",
+                DomainObjectComponentUtil.labelModel(attributeType.getAttributeNames(), getLocale())));
+        container.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));
+    }
+
+    private WebMarkupContainer addPrivateKeyContainer(final long attributeTypeId, boolean disabled,
+                                                      DomainObject moduleInstance, String name, final CallbackButton callbackButton) {
         WebMarkupContainer container = new WebMarkupContainer(name);
         container.setOutputMarkupPlaceholderTag(true);
         add(container);

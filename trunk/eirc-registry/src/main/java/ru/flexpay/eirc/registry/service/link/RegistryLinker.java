@@ -2,13 +2,17 @@ package ru.flexpay.eirc.registry.service.link;
 
 import org.apache.commons.lang.StringUtils;
 import org.complitex.correction.service.AddressService;
+import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.executor.ExecuteException;
+import org.complitex.dictionary.util.AttributeUtil;
 import org.complitex.dictionary.util.EjbBeanLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.dictionary.entity.Address;
+import ru.flexpay.eirc.dictionary.entity.EircConfig;
+import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.*;
@@ -67,6 +71,9 @@ public class RegistryLinker {
     @EJB
     private ServiceProviderAccountBean serviceProviderAccountBean;
 
+    @EJB
+    private ModuleInstanceStrategy moduleInstanceStrategy;
+
     public void link(final Long registryId, final AbstractMessenger imessenger, final AbstractFinishCallback finishLink) {
         link(FilterWrapper.<RegistryRecordData>of(new RegistryRecord(registryId)), imessenger, finishLink, false);
     }
@@ -87,10 +94,12 @@ public class RegistryLinker {
         final AtomicLong userOrganizationId = new AtomicLong(0);
 
         try {
-            userOrganizationId.set(configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true).longValue());
+            Long moduleId = configBean.getInteger(EircConfig.MODULE_ID, true).longValue();
+            DomainObject module = moduleInstanceStrategy.findById(moduleId, true);
+            userOrganizationId.set(AttributeUtil.getIntegerValue(module, ModuleInstanceStrategy.ORGANIZATION).longValue());
         } catch (Exception e) {
             imessenger.addMessageError("eirc_organization_id_not_defined");
-            log.error("Can not get {} from config: {}", RegistryConfig.SELF_ORGANIZATION_ID, e.toString());
+            log.error("Can not get {} from config: {}", EircConfig.MODULE_ID, e.toString());
             return;
         }
 
@@ -142,7 +151,7 @@ public class RegistryLinker {
 
                         final Statistics statistics = new Statistics(registry.getRegistryNumber(), imessenger);
 
-                        int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
+                        int numberFlushRegistryRecords = configBean.getInteger(EircConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
                         List<RegistryRecordData> registryRecords;
                         FilterWrapper<RegistryRecordData> innerFilter = FilterWrapper.of(filter.getObject(), 0, numberFlushRegistryRecords);
                         do {

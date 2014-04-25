@@ -15,7 +15,20 @@
     <sql id="tableName">`template`</sql>
 
     <sql id="financialAttributeColumns">
-        fa.`id` as `fa_id`, fa.`amount` as `fa_amount`, fa.`date_formation` as `fa_date_formation`
+        fa.`id` as `fa_id`, fa.`amount` as `fa_amount`,
+        <choose>
+            <when test="last == 'true'">
+                max(fa.`date_formation`)
+            </when>
+            <otherwise>
+                fa.`date_formation`
+            </otherwise>
+        </choose>
+        as `fa_date_formation`
+    </sql>
+
+    <sql id="financialAttributeLastColumns">
+        fa.`id` as `fa_id`, fa.`amount` as `fa_amount`, max(fa.`date_formation`) as `fa_date_formation`
     </sql>
 
     <sql id="financialAttributeWhere">
@@ -32,7 +45,7 @@
 
     <sql id="selectFinancialAttributes">
         select
-        <include refid="financialAttributeColumns"/>,
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeColumns"/>,
         <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAColumns"/>
         from
 
@@ -55,6 +68,17 @@
         </if>
     </sql>
 
+    <sql id="selectAllPeriodDateFinancialAttributes">
+        <bind name="last" value="false"/>
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.selectFinancialAttributes"/>
+    </sql>
+
+    <sql id="selectLastDateFinancialAttributes">
+        <bind name="last" value="true"/>
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.selectFinancialAttributes"/>
+    </sql>
+
+
     <sql id="countFinancialAttributes">
         select count(distinct `id`) from
         <include refid="tableName"/> as fa
@@ -66,13 +90,21 @@
 
     </sql>
 
-    <sql id="selectFinancialAttributeExt">
-
+    <sql id="countAllPeriodDateFinancialAttributes">
+        <bind name="last" value="false"/>
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.countFinancialAttributes"/>
     </sql>
 
+    <sql id="countLastDateFinancialAttributes">
+        <bind name="last" value="true"/>
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.countFinancialAttributes"/>
+    </sql>
+
+
     <sql id="selectFinancialAttribute">
+        <bind name="last" value="false"/>
         select
-        <include refid="financialAttributeColumns"/>,
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeColumns"/>,
         <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAColumns"/>
         from <include refid="tableName"/> as fa
 

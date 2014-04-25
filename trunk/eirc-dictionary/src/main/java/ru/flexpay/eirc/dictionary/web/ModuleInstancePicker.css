@@ -1,0 +1,11 @@
+a.module_instance_picker_choose_link, a.module_instance_picker_choose_link:visited {
+    color: #007AAE  !important;
+}
+
+.module_instance_picker_form table th {
+    text-align: center;
+}
+
+.ui-widget .btnSmall {
+    font-size: 10px;
+}

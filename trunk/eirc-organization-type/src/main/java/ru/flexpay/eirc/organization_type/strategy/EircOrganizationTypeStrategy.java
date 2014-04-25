@@ -1,10 +1,11 @@
 package ru.flexpay.eirc.organization_type.strategy;
 
 import com.google.common.collect.ImmutableList;
-import java.util.Collection;
-import javax.ejb.Stateless;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
-import ru.flexpay.eirc.organization_type.entity.OrganizationType;
+import ru.flexpay.eirc.dictionary.entity.OrganizationType;
+
+import javax.ejb.Stateless;
+import java.util.Collection;
 
 /**
  *

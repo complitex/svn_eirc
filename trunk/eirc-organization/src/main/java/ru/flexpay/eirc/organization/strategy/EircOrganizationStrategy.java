@@ -16,14 +16,13 @@ import org.complitex.dictionary.strategy.DeleteException;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.strategy.web.AbstractComplexAttributesPanel;
 import org.complitex.dictionary.strategy.web.validate.IValidator;
-import org.complitex.dictionary.util.ResourceUtil;
 import org.complitex.organization.strategy.AbstractOrganizationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.web.edit.EircOrganizationEditComponent;
 import ru.flexpay.eirc.organization.web.edit.EircOrganizationValidator;
-import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;

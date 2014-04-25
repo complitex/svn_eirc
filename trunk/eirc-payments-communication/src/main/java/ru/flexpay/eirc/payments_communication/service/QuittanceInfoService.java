@@ -32,7 +32,7 @@ public class QuittanceInfoService extends RestAuthorizationService<QuittanceInfo
     }
 
     @Override
-    protected List<QuittanceInfo> geConstrainedAuthorized() {
+    protected List<QuittanceInfo> geConstrainedAuthorized(String searchCriteria, long searchType) {
         QuittanceInfo quittanceInfo1 = new QuittanceInfo();
         quittanceInfo1.setQuittanceNumber("111");
         quittanceInfo1.setTotalToPay(BigDecimal.TEN);

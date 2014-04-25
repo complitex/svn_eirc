@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import org.complitex.dictionary.entity.Attribute;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
-import ru.flexpay.eirc.organization_type.entity.OrganizationType;
+import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 
 import java.util.List;
 

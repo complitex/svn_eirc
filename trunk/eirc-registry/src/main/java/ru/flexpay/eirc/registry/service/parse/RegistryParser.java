@@ -6,18 +6,25 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.complitex.correction.service.OrganizationCorrectionBean;
 import org.complitex.dictionary.entity.DictionaryConfig;
+import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.executor.ExecuteException;
+import org.complitex.dictionary.util.AttributeUtil;
 import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.util.EjbBeanLocator;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.flexpay.eirc.dictionary.entity.EircConfig;
+import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
-import ru.flexpay.eirc.registry.entity.*;
+import ru.flexpay.eirc.registry.entity.Container;
+import ru.flexpay.eirc.registry.entity.Registry;
+import ru.flexpay.eirc.registry.entity.RegistryRecord;
+import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.util.ParseUtil;
@@ -69,6 +76,9 @@ public class RegistryParser implements Serializable {
     @EJB
     private OrganizationCorrectionBean organizationCorrectionBean;
 
+    @EJB
+    private ModuleInstanceStrategy moduleInstanceStrategy;
+
     public void parse(final AbstractMessenger imessenger, final AbstractFinishCallback finishUpload) throws ExecuteException {
         imessenger.addMessageInfo("starting_upload_registries");
         finishUpload.init();
@@ -115,8 +125,8 @@ public class RegistryParser implements Serializable {
     }
 
     public Registry parse(AbstractMessenger imessenger, InputStream is, String fileName) throws ExecuteException {
-        int numberReadChars = configBean.getInteger(RegistryConfig.NUMBER_READ_CHARS, true);
-        int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
+        int numberReadChars = configBean.getInteger(EircConfig.NUMBER_READ_CHARS, true);
+        int numberFlushRegistryRecords = configBean.getInteger(EircConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
         return parse(imessenger, is, fileName, numberReadChars, numberFlushRegistryRecords);
     }
 
@@ -431,7 +441,15 @@ public class RegistryParser implements Serializable {
 
     private Organization getRecipient(Registry registry, AbstractMessenger iMessenger, Logger processLog) {
 
-        Integer eircOrganizationId = configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true);
+        Integer eircOrganizationId = null;
+
+        try {
+            Long moduleId = configBean.getInteger(EircConfig.MODULE_ID, true).longValue();
+            DomainObject module = moduleInstanceStrategy.findById(moduleId, true);
+            eircOrganizationId = AttributeUtil.getIntegerValue(module, ModuleInstanceStrategy.ORGANIZATION);
+        } catch (Exception e) {
+            //
+        }
 
         if (eircOrganizationId == null) {
             iMessenger.addMessageError("eirc_organization_id_not_defined");

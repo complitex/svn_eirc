@@ -91,6 +91,10 @@ INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1013, 1, UPPER(
 INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (1012, 1010, 1, 1013, 0);
 INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (1012, 1012, UPPER('string'));
 
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1014, 1, UPPER('Организация')), (1014, 2, UPPER('Организація'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (1013, 1010, 1, 1014, 1);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (1013, 1013, UPPER('string'));
+
 INSERT INTO `registry_status` (`code`, `name`) values
     (0, 'Загружается'),
     (1, 'Загружается с ошибкой'),
@@ -203,4 +207,4 @@ INSERT INTO `container_type` (`code`, `name`) values
 ;
 
 -- Current database version
- INSERT INTO `update` (`version`) VALUE ('20130905_41_0.0.1');
+ INSERT INTO `update` (`version`) VALUE ('20140425_152_0.0.1');

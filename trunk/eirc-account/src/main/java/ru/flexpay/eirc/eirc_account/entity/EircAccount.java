@@ -15,6 +15,13 @@ public class EircAccount extends DictionaryTemporalObject {
 
     private Person person;
 
+    public EircAccount() {
+    }
+
+    public EircAccount(Address address) {
+        this.address = address;
+    }
+
     public String getAccountNumber() {
         return accountNumber;
     }
