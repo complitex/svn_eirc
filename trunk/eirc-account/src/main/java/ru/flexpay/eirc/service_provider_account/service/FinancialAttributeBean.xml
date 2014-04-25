@@ -17,7 +17,7 @@
     <sql id="financialAttributeColumns">
         fa.`id` as `fa_id`, fa.`amount` as `fa_amount`,
         <choose>
-            <when test="last == 'true'">
+            <when test="last == 1">
                 max(fa.`date_formation`)
             </when>
             <otherwise>
@@ -51,10 +51,14 @@
 
         <include refid="tableName"/> as fa
 
-        left join `service_provider_account` spa on spa.`id` = fa.`service_provider_account_id`
+        left join `service_provider_account` spa on spa.`object_id` = fa.`service_provider_account_id`
         <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAJoin"/>
 
         <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeWhere"/>
+
+        <if test="last == 1">
+            group by fa.`service_provider_account_id`
+        </if>
 
         <if test="sortProperty != null">
             order by ${sortProperty}
@@ -63,52 +67,69 @@
                 ${asc}
             </if>
         </if>
+
         <if test="count > 0">
             limit ${first},${count}
         </if>
     </sql>
 
     <sql id="selectAllPeriodDateFinancialAttributes">
-        <bind name="last" value="false"/>
+        <bind name="last" value="0"/>
         <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.selectFinancialAttributes"/>
     </sql>
 
     <sql id="selectLastDateFinancialAttributes">
-        <bind name="last" value="true"/>
+        <bind name="last" value="1"/>
         <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.selectFinancialAttributes"/>
     </sql>
 
 
     <sql id="countFinancialAttributes">
-        select count(distinct `id`) from
-        <include refid="tableName"/> as fa
+        <choose>
+            <when test="last == 1">
 
-        left join `service_provider_account` spa on spa.`id` = fa.`service_provider_account_id`
-        <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAJoin"/>
+                select count(distinct `fa_id`) from
+                (select fa.`id` as `fa_id`, max(fa.`data_formation`) from <include refid="tableName"/>
+                as fa
 
-        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeWhere"/>
+                left join `service_provider_account` spa on spa.`object_id` = fa.`service_provider_account_id`
+                <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAJoin"/>
+
+                <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeWhere"/>
+                group by fa.`service_provider_account_id`)
+            </when>
+            <otherwise>
+                select count(distinct `id`) from
+                <include refid="tableName"/> as fa
+
+                left join `service_provider_account` spa on spa.`object_id` = fa.`service_provider_account_id`
+                <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAJoin"/>
+
+                <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeWhere"/>
+            </otherwise>
+        </choose>
 
     </sql>
 
     <sql id="countAllPeriodDateFinancialAttributes">
-        <bind name="last" value="false"/>
+        <bind name="last" value="0"/>
         <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.countFinancialAttributes"/>
     </sql>
 
     <sql id="countLastDateFinancialAttributes">
-        <bind name="last" value="true"/>
+        <bind name="last" value="1"/>
         <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.countFinancialAttributes"/>
     </sql>
 
 
     <sql id="selectFinancialAttribute">
-        <bind name="last" value="false"/>
+        <bind name="last" value="0"/>
         select
         <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeColumns"/>,
         <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAColumns"/>
         from <include refid="tableName"/> as fa
 
-        left join `service_provider_account` spa on spa.`id` = fa.`service_provider_account_id`
+        left join `service_provider_account` spa on spa.`object_id` = fa.`service_provider_account_id`
         <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAJoin"/>
 
         where fa.`id` = #{id}
