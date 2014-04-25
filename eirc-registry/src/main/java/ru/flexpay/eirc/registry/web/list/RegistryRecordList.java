@@ -27,8 +27,10 @@ import org.complitex.correction.service.exception.DuplicateCorrectionException;
 import org.complitex.correction.service.exception.MoreOneCorrectionException;
 import org.complitex.correction.service.exception.NotFoundCorrectionException;
 import org.complitex.correction.web.component.AddressCorrectionPanel;
+import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
+import org.complitex.dictionary.util.AttributeUtil;
 import org.complitex.dictionary.web.component.DatePicker;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
@@ -37,6 +39,8 @@ import org.complitex.template.web.template.FormTemplatePage;
 import org.complitex.template.web.template.TemplatePage;
 import org.odlabs.wiquery.ui.accordion.Accordion;
 import org.odlabs.wiquery.ui.options.HeightStyleEnum;
+import ru.flexpay.eirc.dictionary.entity.EircConfig;
+import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
 import ru.flexpay.eirc.registry.service.RegistryBean;
@@ -92,6 +96,9 @@ public class RegistryRecordList extends TemplatePage {
     @EJB
     private ConfigBean configBean;
 
+    @EJB
+    private ModuleInstanceStrategy moduleInstanceStrategy;
+
     private IModel<RegistryRecordData> filterModel = new CompoundPropertyModel<RegistryRecordData>(new RegistryRecord());
 
     private Registry registry;
@@ -138,17 +145,20 @@ public class RegistryRecordList extends TemplatePage {
         final Form<RegistryRecordData> filterForm = new Form<>("filterForm", filterModel);
         container.add(filterForm);
 
-        Long userOrganizationId = null;
-
+        Long moduleId = null;
         try {
-            userOrganizationId = configBean.getInteger(RegistryConfig.SELF_ORGANIZATION_ID, true).longValue();
+            moduleId = configBean.getInteger(EircConfig.MODULE_ID, true).longValue();
         } catch (Exception e) {
-            log().error("Can not get {} from config: {}", RegistryConfig.SELF_ORGANIZATION_ID, e.toString());
+            log().error("Can not get {} from config: {}", EircConfig.MODULE_ID, e.toString());
         }
+
+        DomainObject module = moduleInstanceStrategy.findById(moduleId, true);
+
+        final Integer userOrganizationId = AttributeUtil.getIntegerValue(module, ModuleInstanceStrategy.ORGANIZATION);
 
         //Панель коррекции адреса
         final AddressCorrectionPanel<RegistryRecordData> addressCorrectionPanel = new AddressCorrectionPanel<RegistryRecordData>("addressCorrectionPanel",
-                userOrganizationId, container) {
+                userOrganizationId != null? userOrganizationId.longValue() : -1 , container) {
 
             @Override
             protected void correctAddress(RegistryRecordData registryRecord, AddressEntity entity, Long cityId, Long streetTypeId, Long streetId,

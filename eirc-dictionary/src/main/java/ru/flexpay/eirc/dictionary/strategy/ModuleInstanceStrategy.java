@@ -1,5 +1,6 @@
 package ru.flexpay.eirc.dictionary.strategy;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.wicket.Component;
@@ -46,6 +47,9 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
     public static final long NAME = 1010L;
     public static final long PRIVATE_KEY = 1011L;
     public static final long UNIQUE_INDEX = 1012L;
+    public static final long ORGANIZATION = 1013L;
+
+    public static final List<Long> CUSTOM_ATTRIBUTES = ImmutableList.of(PRIVATE_KEY, ORGANIZATION);
 
     private static final String MODULE_INSTANCE_NAMESPACE = ModuleInstanceStrategy.class.getName();
 
@@ -141,15 +145,17 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
 
     @Override
     public boolean isSimpleAttributeType(EntityAttributeType entityAttributeType) {
-        return entityAttributeType.getId() != PRIVATE_KEY && super.isSimpleAttributeType(entityAttributeType);
+        return !CUSTOM_ATTRIBUTES.contains(entityAttributeType.getId()) && super.isSimpleAttributeType(entityAttributeType);
     }
 
     @Override
     protected void fillAttributes(DomainObject object) {
         super.fillAttributes(object);
 
-        if (object.getAttribute(PRIVATE_KEY).getLocalizedValues() == null) {
-            object.getAttribute(PRIVATE_KEY).setLocalizedValues(stringBean.newStringCultures());
+        for (long attributeTypeId : CUSTOM_ATTRIBUTES) {
+            if (object.getAttribute(attributeTypeId).getLocalizedValues() == null) {
+                object.getAttribute(attributeTypeId).setLocalizedValues(stringBean.newStringCultures());
+            }
         }
     }
 
@@ -158,7 +164,7 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
         super.loadStringCultures(attributes);
 
         for (Attribute attribute : attributes) {
-            if (attribute.getAttributeTypeId() == PRIVATE_KEY) {
+            if (CUSTOM_ATTRIBUTES.contains(attribute.getAttributeTypeId())) {
                 if (attribute.getValueId() != null) {
                     loadStringCultures(attribute);
                 } else {
@@ -174,7 +180,7 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
         /* if it's data source or one of load/save request file directory attributes
          * or root directory for loading and saving request files
          * then string value should be inserted as is and not upper cased. */
-        return attributeTypeId == PRIVATE_KEY
+        return CUSTOM_ATTRIBUTES.contains(attributeTypeId)
                 ? stringBean.insertStrings(strings, getEntityTable(), false)
                 : super.insertStrings(attributeTypeId, strings);
     }

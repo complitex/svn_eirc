@@ -10,9 +10,9 @@ import org.complitex.dictionary.service.StringCultureBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.DomainObjectComponentUtil;
 import org.complitex.organization.strategy.web.edit.OrganizationEditComponent;
+import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
-import ru.flexpay.eirc.organization_type.entity.OrganizationType;
 
 import javax.ejb.EJB;
 import java.util.List;

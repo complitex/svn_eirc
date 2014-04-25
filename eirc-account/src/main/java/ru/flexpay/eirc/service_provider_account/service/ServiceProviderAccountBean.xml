@@ -86,7 +86,7 @@
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressCondition"/>
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.otherConditions"/>
 
-        <include refid="serviceProviderAccountCondition"/>
+        <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.serviceProviderAccountCondition"/>
     </sql>
 
     <select id="selectServiceProviderAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" 

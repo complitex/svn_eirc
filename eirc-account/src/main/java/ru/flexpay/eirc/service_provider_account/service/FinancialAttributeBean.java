@@ -5,7 +5,6 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import ru.flexpay.eirc.service_provider_account.entity.FinancialAttribute;
-import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 
 import java.util.List;
 
@@ -26,16 +25,16 @@ public abstract class FinancialAttributeBean<T extends FinancialAttribute> exten
         return resultOrderByDescData.size() > 0? resultOrderByDescData.get(0): null;
     }
 
-    public List<T> getFinancialAttributes(FilterWrapper<T> filter) {
-        return sqlSession().selectList(getNameSpace() + ".selectFinancialAttributes", filter);
+    public List<T> getFinancialAttributes(FilterWrapper<T> filter, boolean last) {
+        return last ?
+                sqlSession().<T>selectList(getNameSpace() + ".selectLastDateFinancialAttributes", filter) :
+                sqlSession().<T>selectList(getNameSpace() + ".selectAllPeriodDateFinancialAttributes", filter);
     }
 
-    public int count(FilterWrapper<T> filter) {
-        return sqlSession().selectOne(getNameSpace() + ".countFinancialAttributes", filter);
-    }
-
-    public List<T> getFinancialAttributesExt(FilterWrapper<ServiceProviderAccount> filter) {
-        return sqlSession().selectList(getNameSpace() + ".selectFinancialAttributesExt", filter);
+    public int count(FilterWrapper<T> filter, boolean last) {
+        return last ?
+                sqlSession().<Integer>selectOne(getNameSpace() + ".countLastDateFinancialAttributes", filter) :
+                sqlSession().<Integer>selectOne(getNameSpace() + ".countAllPeriodDateFinancialAttributes", filter);
     }
 
     @Transactional

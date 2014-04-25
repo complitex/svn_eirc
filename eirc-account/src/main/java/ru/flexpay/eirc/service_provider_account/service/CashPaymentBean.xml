@@ -8,12 +8,20 @@
 
     <sql id="tableName">`cash_payment`</sql>
 
-    <select id="selectFinancialAttributes" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="FinancialAttribute">
-        <include refid="ru.flexpay.eirc.service_provider_account.service.PaymentAttributeBean.selectFinancialAttributes"/>
+    <select id="selectAllPeriodDateFinancialAttributes" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="FinancialAttribute">
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.selectAllPeriodDateFinancialAttributes"/>
     </select>
 
-    <select id="countFinancialAttributes" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
-        <include refid="ru.flexpay.eirc.service_provider_account.service.PaymentAttributeBean.countFinancialAttributes"/>
+    <select id="selectLastDateFinancialAttributes" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="FinancialAttribute">
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.selectLastDateFinancialAttributes"/>
+    </select>
+
+    <select id="countAllPeriodDateFinancialAttributes" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.countAllPeriodDateFinancialAttributes"/>
+    </select>
+
+    <select id="countLastDateFinancialAttributes" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer">
+        <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.countLastDateFinancialAttributes"/>
     </select>
 
     <select id="selectFinancialAttribute" parameterType="long" resultMap="FinancialAttribute">

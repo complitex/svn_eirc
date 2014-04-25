@@ -9,7 +9,11 @@ import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.util.EjbBeanLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.flexpay.eirc.registry.entity.*;
+import ru.flexpay.eirc.dictionary.entity.EircConfig;
+import ru.flexpay.eirc.registry.entity.Container;
+import ru.flexpay.eirc.registry.entity.Registry;
+import ru.flexpay.eirc.registry.entity.RegistryRecord;
+import ru.flexpay.eirc.registry.entity.RegistryRecordData;
 import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.handle.exchange.Operation;
 import ru.flexpay.eirc.registry.service.handle.exchange.OperationFactory;
@@ -122,7 +126,7 @@ public class RegistryHandler {
 
                         final Statistics statistics = new Statistics(registry.getRegistryNumber(), imessenger);
 
-                        int numberFlushRegistryRecords = configBean.getInteger(RegistryConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
+                        int numberFlushRegistryRecords = configBean.getInteger(EircConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
                         List<RegistryRecordData> registryRecords;
                         FilterWrapper<RegistryRecordData> innerFilter = FilterWrapper.of(filter.getObject(), 0, numberFlushRegistryRecords);
                         do {

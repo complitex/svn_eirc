@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -33,18 +35,20 @@ public abstract class RestAuthorizationService<T> {
 
     @GET
     @Path("/constrain/{searchType: [0-9]+}/{searchCriteria}")
-    public List<T> getConstrained(@Context SecurityContext context,
-                                    @PathParam("searchCriteria") String searchCriteria,
-                                    @PathParam("searchType") int searchType) throws ServletException {
+    public List<T> getConstrained(@Context SecurityContext context, @Context HttpServletRequest request,
+                                    @NotNull @PathParam("searchCriteria") String searchCriteria,
+                                    @NotNull @PathParam("searchType") int searchType) throws ServletException {
+
+
 
         if (!auth(context)) {
             return Collections.emptyList();
         }
 
-        return geConstrainedAuthorized();
+        return geConstrainedAuthorized(searchCriteria, searchType);
     }
 
-    protected abstract List<T> geConstrainedAuthorized();
+    protected abstract List<T> geConstrainedAuthorized(String searchCriteria, long searchType);
 
     protected boolean auth(SecurityContext context) throws ServletException {
         /*
