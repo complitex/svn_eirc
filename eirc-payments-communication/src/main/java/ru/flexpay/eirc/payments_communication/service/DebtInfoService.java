@@ -161,13 +161,17 @@ public class DebtInfoService extends RestAuthorizationService<DebInfo> {
 
                     @Override
                     protected Address getAddress(Long id) {
-                        DomainObject domainObject = apartmentStrategy.findById(id, true);
+                        DomainObject domainObject = roomStrategy.findById(id, true);
                         if (domainObject == null) {
                             return null;
                         }
-                        return new Address(id, AddressEntity.APARTMENT);
+                        return new Address(id, AddressEntity.ROOM);
                     }
                 });
+            case TYPE_ACCOUNT_NUMBER:
+                return getByEircAccountNumber(searchString, service);
+            case TYPE_SERVICE_PROVIDER_ACCOUNT_NUMBER:
+                return getBySPAAccountNumber(searchString, service);
             case UNKNOWN_TYPE:
                 break;
         }
@@ -218,6 +222,29 @@ public class DebtInfoService extends RestAuthorizationService<DebInfo> {
         filterObject.setServiceProviderAccount(new ServiceProviderAccount(new EircAccount(address), service));
         FilterWrapper<SaldoOut> filterWrapper = FilterWrapper.of(filterObject);
 
+        return getDebInfos(filterWrapper);
+    }
+
+    private List<DebInfo> getByEircAccountNumber(String searchString, Service service) {
+        SaldoOut filterObject = new SaldoOut();
+        filterObject.setServiceProviderAccount(new ServiceProviderAccount(new EircAccount(searchString), service));
+        FilterWrapper<SaldoOut> filterWrapper = FilterWrapper.of(filterObject);
+        filterWrapper.setLike(false);
+
+        return getDebInfos(filterWrapper);
+    }
+
+    private List<DebInfo> getBySPAAccountNumber(String searchString, Service service) {
+        SaldoOut filterObject = new SaldoOut();
+        filterObject.setServiceProviderAccount(new ServiceProviderAccount(searchString, null, service));
+        FilterWrapper<SaldoOut> filterWrapper = FilterWrapper.of(filterObject);
+        filterWrapper.setLike(false);
+
+        return getDebInfos(filterWrapper);
+    }
+
+    private List<DebInfo> getDebInfos(FilterWrapper<SaldoOut> filterWrapper) {
+        Service service;
         List<SaldoOut> saldoOuts = saldoOutBean.getFinancialAttributes(filterWrapper, true);
         if (saldoOuts.isEmpty()) {
             return Collections.emptyList();

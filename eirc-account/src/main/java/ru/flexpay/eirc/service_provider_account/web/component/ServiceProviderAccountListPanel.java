@@ -113,7 +113,7 @@ public class ServiceProviderAccountListPanel extends Panel {
                         return new CheckBoxSelectorFilter(componentId, form, arrayCheckBoxes);
                     }
                 },
-                new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("accountNumber"), "spa_account_number") {
+                new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("spa_accountNumber"), "spa_account_number") {
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
                         return new TextFilter<>(s, new PropertyModel<String>(filterObject, "accountNumber"), components);
