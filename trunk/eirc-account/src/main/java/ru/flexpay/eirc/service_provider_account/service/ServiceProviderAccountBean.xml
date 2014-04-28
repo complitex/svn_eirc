@@ -30,7 +30,14 @@
     <sql id="serviceProviderAccountCondition">
         <if test="map.serviceProviderAccount != null">
             <if test="map.serviceProviderAccount.accountNumber != null">
-                and spa.`account_number` like concat('%', #{map.serviceProviderAccount.accountNumber}, '%')
+                <choose>
+                    <when test="like">
+                        and spa.`account_number` like concat('%', #{map.serviceProviderAccount.accountNumber}, '%')
+                    </when>
+                    <otherwise>
+                        and spa.`account_number` = #{map.serviceProviderAccount.accountNumber}
+                    </otherwise>
+                </choose>
             </if>
 
             <if test="map.serviceProviderAccount.person != null">

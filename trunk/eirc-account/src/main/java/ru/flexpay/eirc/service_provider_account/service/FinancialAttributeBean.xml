@@ -4,9 +4,9 @@
 <mapper namespace="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean">
 
     <resultMap id="FinancialAttribute" type="ru.flexpay.eirc.service_provider_account.entity.FinancialAttribute">
-        <id     column="id"                             property="id"/>
-        <result column="amount"                         property="amount"/>
-        <result column="date_formation"                 property="dateFormation"/>
+        <id     column="fa_id"                             property="id"/>
+        <result column="fa_amount"                         property="amount"/>
+        <result column="fa_date_formation"                 property="dateFormation"/>
         <association property="serviceProviderAccount"  resultMap="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.ServiceProviderAccount"/>
     </resultMap>
 
@@ -15,20 +15,8 @@
     <sql id="tableName">`template`</sql>
 
     <sql id="financialAttributeColumns">
-        fa.`id` as `fa_id`, fa.`amount` as `fa_amount`,
-        <choose>
-            <when test="last == 1">
-                max(fa.`date_formation`)
-            </when>
-            <otherwise>
-                fa.`date_formation`
-            </otherwise>
-        </choose>
-        as `fa_date_formation`
-    </sql>
-
-    <sql id="financialAttributeLastColumns">
-        fa.`id` as `fa_id`, fa.`amount` as `fa_amount`, max(fa.`date_formation`) as `fa_date_formation`
+        fa.`id` as `fa_id`, fa.`amount` as `fa_amount`, fa.`date_formation` as `fa_date_formation`,
+        fa.`service_provider_account_id` as `fa_service_provider_account_id`
     </sql>
 
     <sql id="financialAttributeWhere">
@@ -44,6 +32,9 @@
 
 
     <sql id="selectFinancialAttributes">
+        <if test="last == 1">
+            select f.* from (
+        </if>
         select
         <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeColumns"/>,
         <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.generalWithAddressSPAColumns"/>
@@ -57,11 +48,12 @@
         <include refid="ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.financialAttributeWhere"/>
 
         <if test="last == 1">
-            group by fa.`service_provider_account_id`
+            order by `fa_date_formation` desc) as f
+            group by f.`fa_service_provider_account_id`
         </if>
 
         <if test="sortProperty != null">
-            order by ${sortProperty}
+            order by f.`${sortProperty}`
 
             <if test="asc">
                 ${asc}

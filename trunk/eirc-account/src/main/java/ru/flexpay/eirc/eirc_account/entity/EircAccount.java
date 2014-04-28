@@ -22,6 +22,10 @@ public class EircAccount extends DictionaryTemporalObject {
         this.address = address;
     }
 
+    public EircAccount(String accountNumber) {
+        this.accountNumber = accountNumber;
+    }
+
     public String getAccountNumber() {
         return accountNumber;
     }

@@ -30,12 +30,14 @@ public abstract class FinancialAttributeBean<T extends FinancialAttribute> exten
         if (filter.getSortProperty() != null && StringUtil.equal(filter.getSortProperty(), "id")) {
             filter.setSortProperty("fa_id");
         }
+        FinancialAttributeUtil.addFilterMappingObject(filter);
         return last ?
                 sqlSession().<T>selectList(getNameSpace() + ".selectLastDateFinancialAttributes", filter) :
                 sqlSession().<T>selectList(getNameSpace() + ".selectAllPeriodDateFinancialAttributes", filter);
     }
 
     public int count(FilterWrapper<T> filter, boolean last) {
+        ServiceProviderAccountUtil.addFilterMappingObject(filter, filter.getObject().getServiceProviderAccount());
         return last ?
                 sqlSession().<Integer>selectOne(getNameSpace() + ".countLastDateFinancialAttributes", filter) :
                 sqlSession().<Integer>selectOne(getNameSpace() + ".countAllPeriodDateFinancialAttributes", filter);

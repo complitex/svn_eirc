@@ -311,8 +311,19 @@
 
     <sql id="otherConditions">
         <if test="map.eircAccount != null">
+            <if test="map.eircAccount.id != null">
+                and e.`object_id` = #{map.eircAccount.id}
+            </if>
+
             <if test="map.eircAccount.accountNumber != null">
-                and e.`account_number` like concat('%', #{map.eircAccount.accountNumber}, '%')
+                <choose>
+                    <when test="like">
+                        and e.`account_number` like concat('%', #{map.eircAccount.accountNumber}, '%')
+                    </when>
+                    <otherwise>
+                        and e.`account_number` = #{map.eircAccount.accountNumber}
+                    </otherwise>
+                </choose>
             </if>
 
             <if test="map.eircAccount.person != null">
