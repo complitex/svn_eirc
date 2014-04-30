@@ -16,6 +16,13 @@ public abstract class FinancialAttribute extends DictionaryObject {
 
     private Date dateFormation;
 
+    protected FinancialAttribute() {
+    }
+
+    protected FinancialAttribute(ServiceProviderAccount serviceProviderAccount) {
+        this.serviceProviderAccount = serviceProviderAccount;
+    }
+
     public ServiceProviderAccount getServiceProviderAccount() {
         return serviceProviderAccount;
     }
