@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import ru.flexpay.eirc.payments_communication.util.DateAdapter;
 import ru.flexpay.eirc.payments_communication.util.DateWithTimeAdapter;
 
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * @author Pavel Sknar
  */
-@XmlRootElement(name="quittanceInfo")
+@XmlType(name="quittanceInfo")
 public class QuittanceInfo extends PersonalInfo {
 
     private String quittanceNumber;
@@ -32,7 +32,7 @@ public class QuittanceInfo extends PersonalInfo {
     @XmlJavaTypeAdapter(type = Date.class, value = DateAdapter.class)
     private Date endDate;
 
-    private List<DebInfo> serviceDetails = Lists.newArrayList();
+    private List<ServiceDetails> serviceDetails = Lists.newArrayList();
 
     public String getQuittanceNumber() {
         return quittanceNumber;
@@ -98,11 +98,11 @@ public class QuittanceInfo extends PersonalInfo {
         this.endDate = endDate;
     }
 
-    public List<DebInfo> getServiceDetails() {
+    public List<ServiceDetails> getServiceDetails() {
         return serviceDetails;
     }
 
-    public void setServiceDetails(List<DebInfo> serviceDetails) {
+    public void setServiceDetails(List<ServiceDetails> serviceDetails) {
         this.serviceDetails = serviceDetails;
     }
 }

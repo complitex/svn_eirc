@@ -3,52 +3,51 @@ package ru.flexpay.eirc.payments_communication.service;
 import org.complitex.template.web.security.SecurityRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.flexpay.eirc.payments_communication.entity.ResponseContent;
+import ru.flexpay.eirc.payments_communication.entity.ResponseStatus;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.NotNull;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * @author Pavel Sknar
  */
-public abstract class RestAuthorizationService<T> {
+public abstract class RestAuthorizationService<T extends ResponseContent> {
 
     private static final Logger logger = LoggerFactory.getLogger(RestAuthorizationService.class);
 
     @GET
     @Path("/all")
-    public final List<T> getAll(@Context SecurityContext context) throws ServletException {
+    public final T getAll(@Context SecurityContext context) throws ServletException {
         if (!auth(context)) {
-            return Collections.emptyList();
+            return buildResponseContent(ResponseStatus.INCORRECT_AUTHENTICATION_DATA);
         }
         return getAllAuthorized();
     }
 
-    protected abstract List<T> getAllAuthorized();
+    protected abstract T getAllAuthorized();
 
     @GET
     @Path("/constrain/{searchType: [0-9]+}/{searchCriteria}")
-    public List<T> getConstrained(@Context SecurityContext context, @Context HttpServletRequest request,
-                                    @NotNull @PathParam("searchCriteria") String searchCriteria,
-                                    @NotNull @PathParam("searchType") int searchType) throws ServletException {
+    public T getConstrained(@Context SecurityContext context, @Context HttpServletRequest request,
+                                    @PathParam("searchCriteria") String searchCriteria,
+                                    @PathParam("searchType") int searchType) throws ServletException {
 
 
 
         if (!auth(context)) {
-            return Collections.emptyList();
+            return buildResponseContent(ResponseStatus.INCORRECT_AUTHENTICATION_DATA);
         }
 
         return geConstrainedAuthorized(searchCriteria, searchType);
     }
 
-    protected abstract List<T> geConstrainedAuthorized(String searchCriteria, long searchType);
+    protected abstract T geConstrainedAuthorized(String searchCriteria, long searchType);
 
     protected boolean auth(SecurityContext context) throws ServletException {
         /*
@@ -71,5 +70,7 @@ public abstract class RestAuthorizationService<T> {
         }
         return true;
     }
+
+    protected abstract T buildResponseContent(ResponseStatus responseStatus);
 
 }

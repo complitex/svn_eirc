@@ -76,8 +76,8 @@ INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (6006, 1, UPPER(
 INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (6005, 6000, 0, 6006, 1);
 INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (6005, 6005, UPPER('string'));
 
-INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1011, 1, 'Модуль'), (1011, 2, 'Модуль');
-INSERT INTO `entity`(`id`, `entity_table`, `entity_name_id`, `strategy_factory`) VALUES (1010, 'module_instance', 1011, '');
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1010, 1, 'Модуль'), (1010, 2, 'Модуль');
+INSERT INTO `entity`(`id`, `entity_table`, `entity_name_id`, `strategy_factory`) VALUES (1010, 'module_instance', 1010, '');
 
 INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1011, 1, UPPER('Название')), (1011, 2, UPPER('Назва'));
 INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (1010, 1010, 0, 1011, 1);
