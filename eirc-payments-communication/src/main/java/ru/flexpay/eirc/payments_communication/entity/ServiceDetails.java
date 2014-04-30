@@ -1,13 +1,13 @@
 package ru.flexpay.eirc.payments_communication.entity;
 
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
 import java.math.BigDecimal;
 
 /**
  * @author Pavel Sknar
  */
-@XmlRootElement(name="debInfo")
-public class DebInfo extends PersonalInfo {
+@XmlType(name="serviceDetails")
+public class ServiceDetails extends PersonalInfo {
     private Long serviceId;
     private String serviceName;
     private BigDecimal incomingBalance;
