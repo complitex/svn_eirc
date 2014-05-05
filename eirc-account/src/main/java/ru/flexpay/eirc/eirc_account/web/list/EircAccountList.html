@@ -19,6 +19,7 @@
             <table class="tbColor bookContent" cellpadding="0" cellspacing="0" border="0">
                 <thead>
                 <tr>
+                    <th></th>
                     <th>
                         <span wicket:id="header.eirc_account_number">
                             <wicket:message key="eirc_account_number"/>
@@ -40,6 +41,9 @@
                 </tr>
                 <tr>
                     <td class="filter-td">
+                        <input type="checkbox" wicket:id="selectAll"></input>
+                    </td>
+                    <td class="filter-td">
                         <input type="text" wicket:id="accountNumberFilter"></input>
                     </td>
                     <td class="filter-td">
@@ -55,6 +59,9 @@
                 </thead>
                 <tbody>
                 <tr wicket:id="data">
+                    <td>
+                        <input type="checkbox" wicket:id="select"/>
+                    </td>
                     <td>
                         <span wicket:id="accountNumber"></span>
                     </td>
