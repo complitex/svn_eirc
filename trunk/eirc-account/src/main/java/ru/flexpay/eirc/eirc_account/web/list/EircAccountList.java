@@ -1,12 +1,14 @@
 package ru.flexpay.eirc.eirc_account.web.list;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
+import org.apache.wicket.ajax.markup.html.form.AjaxCheckBox;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxButton;
 import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxLink;
@@ -33,6 +35,7 @@ import org.complitex.dictionary.web.component.search.CollapsibleSearchPanel;
 import org.complitex.dictionary.web.component.search.ISearchCallback;
 import org.complitex.dictionary.web.component.search.IToggleCallback;
 import org.complitex.template.web.component.toolbar.AddItemButton;
+import org.complitex.template.web.component.toolbar.DeleteItemButton;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.search.CollapsibleSearchToolbarButton;
 import org.complitex.template.web.security.SecurityRole;
@@ -69,6 +72,8 @@ public class EircAccountList extends TemplatePage {
     private Address filterAddress;
 
     private Boolean toggle = false;
+
+    private Map<EircAccount, AjaxCheckBox> selected = Maps.newHashMap();
 
     public EircAccountList() {
         init();
@@ -159,12 +164,39 @@ public class EircAccountList extends TemplatePage {
         };
         dataProvider.setSort("eirc_account_number", SortOrder.ASCENDING);
 
+        final AjaxCheckBox selectAll;
+        filterForm.add(selectAll = new AjaxCheckBox("selectAll", new Model<>(false)) {
+            @Override
+            protected void onUpdate(AjaxRequestTarget target) {
+                for (Map.Entry<EircAccount, AjaxCheckBox> entry : selected.entrySet()) {
+                    if (entry.getKey().getEndDate() == null) {
+                        IModel<Boolean> model = entry.getValue().getModel();
+                        model.setObject(getModelObject());
+                        target.add(entry.getValue());
+                    }
+                }
+            }
+        });
+
         //Data View
         dataView = new DataView<EircAccount>("data", dataProvider, 1) {
 
             @Override
             protected void populateItem(Item<EircAccount> item) {
                 final EircAccount eircAccount = item.getModelObject();
+
+                AjaxCheckBox select = new AjaxCheckBox("select", new Model<>(false)) {
+                    @Override
+                    protected void onUpdate(AjaxRequestTarget target) {
+                        if (!getModelObject() && selectAll.getModelObject()) {
+                            selectAll.setModelObject(false);
+                            target.add(selectAll);
+                        }
+                    }
+                };
+                select.setVisible(eircAccount.getEndDate() == null);
+                selected.put(eircAccount, select);
+                item.add(select);
 
                 item.add(new Label("accountNumber", eircAccount.getAccountNumber()));
                 item.add(new Label("person", eircAccount.getPerson() != null? eircAccount.getPerson().toString(): ""));
@@ -254,6 +286,8 @@ public class EircAccountList extends TemplatePage {
                 filterObject.setPerson(null);
                 filterObject.setAccountNumber(null);
 
+                selected.clear();
+
                 target.add(container);
             }
         };
@@ -265,6 +299,7 @@ public class EircAccountList extends TemplatePage {
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
                 filterObject.setAddress(filterAddress);
+                selected.clear();
 
                 target.add(container);
             }
@@ -281,13 +316,28 @@ public class EircAccountList extends TemplatePage {
 
     @Override
     protected List<? extends ToolbarButton> getToolbarButtons(String id) {
-        return ImmutableList.of(new AddItemButton(id) {
+        return ImmutableList.of(
+                new AddItemButton(id) {
 
-            @Override
-            protected void onClick() {
-                this.getPage().setResponsePage(getEditPage(), getEditPageParams(null));
-            }
-        }, new CollapsibleSearchToolbarButton(id, searchPanel));
+                    @Override
+                    protected void onClick() {
+                        this.getPage().setResponsePage(getEditPage(), getEditPageParams(null));
+                    }
+                },
+                new DeleteItemButton(id, true) {
+
+                    @Override
+                    protected void onClick(AjaxRequestTarget target) {
+                        for (Map.Entry<EircAccount, AjaxCheckBox> entry : selected.entrySet()) {
+                            if (entry.getValue().getModelObject()) {
+                                eircAccountBean.archive(entry.getKey());
+                            }
+                        }
+                        selected.clear();
+                        target.add(container);
+                    }
+                },
+                new CollapsibleSearchToolbarButton(id, searchPanel));
     }
 
     private Class<? extends Page> getEditPage() {
