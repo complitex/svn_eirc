@@ -409,11 +409,9 @@
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>,
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressColumns"/>
         from `eirc_account` e
-        <choose>
-            <when test="map.inactive == true or map.all == true">
-                inner join (select max(pk_id) as max_pk_id from eirc_account group by object_id) e2 on e.pk_id=e2.max_pk_id
-            </when>
-        </choose>
+        <if test="map.inactive == true or map.all == true">
+            inner join (select max(pk_id) as max_pk_id from eirc_account group by object_id) e2 on e.pk_id=e2.max_pk_id
+        </if>
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
         where
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.showModeCondition"/>
@@ -445,6 +443,9 @@
 
     <select id="countEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer" flushCache="false" useCache="true">
         select count(distinct e.`object_id`) from `eirc_account` e
+        <if test="map.inactive == true or map.all == true">
+            inner join (select max(pk_id) as max_pk_id from eirc_account group by object_id) e2 on e.pk_id=e2.max_pk_id
+        </if>
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
         where
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.showModeCondition"/>
