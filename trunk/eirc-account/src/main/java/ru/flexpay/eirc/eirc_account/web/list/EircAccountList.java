@@ -51,6 +51,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.complitex.dictionary.util.PageUtil.newSorting;
+import static org.complitex.dictionary.web.component.ShowMode.ACTIVE;
+import static org.complitex.dictionary.web.component.ShowMode.ALL;
 
 /**
  * @author Pavel Sknar
@@ -106,7 +108,7 @@ public class EircAccountList extends TemplatePage {
         add(container);
 
 
-        final IModel<ShowMode> showModeModel = new Model<>(ShowMode.ACTIVE);
+        final IModel<ShowMode> showModeModel = new Model<>(ACTIVE);
         searchPanel = new CollapsibleSearchPanel("searchPanel", getTemplateSession().getGlobalSearchComponentState(),
                 searchFilters, new ISearchCallback() {
             @Override
@@ -128,7 +130,7 @@ public class EircAccountList extends TemplatePage {
                     filterObject.setAddress(null);
                 }
             }
-        }, ShowMode.ALL, true, showModeModel, new IToggleCallback() {
+        }, ALL, true, showModeModel, new IToggleCallback() {
             @Override
             public void visible(boolean newState, AjaxRequestTarget target) {
                 toggle = newState;
@@ -150,8 +152,10 @@ public class EircAccountList extends TemplatePage {
                 FilterWrapper<EircAccount> filterWrapper = FilterWrapper.of(filterObject, first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
-                filterWrapper.getMap().put("address", Boolean.TRUE);
                 filterWrapper.setLocale(localeBean.convert(getLocale()));
+                filterWrapper.getMap().put("address", Boolean.TRUE);
+
+                setShowModel(filterWrapper);
 
                 return eircAccountBean.getEircAccounts(filterWrapper);
             }
@@ -159,7 +163,21 @@ public class EircAccountList extends TemplatePage {
             @Override
             protected int getSize() {
                 FilterWrapper<EircAccount> filterWrapper = FilterWrapper.of(filterObject);
+
+                setShowModel(filterWrapper);
+
                 return eircAccountBean.count(filterWrapper);
+            }
+
+            private void setShowModel(FilterWrapper<EircAccount> filterWrapper) {
+                switch (showModeModel.getObject()) {
+                    case INACTIVE:
+                        filterWrapper.getMap().put("inactive", Boolean.TRUE);
+                        break;
+                    case ALL:
+                        filterWrapper.getMap().put("all", Boolean.TRUE);
+                        break;
+                }
             }
         };
         dataProvider.setSort("eirc_account_number", SortOrder.ASCENDING);
@@ -228,7 +246,7 @@ public class EircAccountList extends TemplatePage {
 
                     @Override
                     public String getObject() {
-                        return getString("edit");
+                        return getString(eircAccount.getEndDate() == null? "edit" : "view");
                     }
                 }));
                 item.add(detailsLink);
