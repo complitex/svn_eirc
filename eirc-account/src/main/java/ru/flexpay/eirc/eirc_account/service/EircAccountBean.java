@@ -12,6 +12,8 @@ import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.service.SequenceBean;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
+import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
+import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -36,6 +38,9 @@ public class EircAccountBean extends AbstractBean {
     @EJB
     private SequenceBean sequenceBean;
 
+    @EJB
+    private ServiceProviderAccountBean serviceProviderAccountBean;
+
     @Transactional
     public String generateEircAccountNumber(String prefix) throws NumberFormatException, CheckDigitException {
         long lPrefix = Long.parseLong(prefix);
@@ -49,6 +54,11 @@ public class EircAccountBean extends AbstractBean {
     public void archive(EircAccount object) {
         if (object.getEndDate() == null) {
             object.setEndDate(new Date());
+        }
+        List<ServiceProviderAccount> serviceProviderAccounts =
+                serviceProviderAccountBean.getServiceProviderAccounts(FilterWrapper.of(new ServiceProviderAccount(new EircAccount(object.getId()))));
+        for (ServiceProviderAccount serviceProviderAccount : serviceProviderAccounts) {
+            serviceProviderAccountBean.archive(serviceProviderAccount);
         }
         sqlSession().update("updateEndDate", object);
     }

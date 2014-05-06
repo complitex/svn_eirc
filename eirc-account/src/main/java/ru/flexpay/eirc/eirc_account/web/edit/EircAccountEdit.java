@@ -123,7 +123,7 @@ public class EircAccountEdit extends TemplatePage {
         accordion.setOutputMarkupPlaceholderTag(true);
         accordion.setHeightStyle(HeightStyleEnum.CONTENT);
         form.add(accordion);
-        accordion.add(new ServiceProviderAccountListPanel("serviceProviderAccounts", eircAccount.getId() == null? 0: eircAccount.getId()).
+        accordion.add(new ServiceProviderAccountListPanel("serviceProviderAccounts", eircAccount.getId() == null? 0: eircAccount.getId(), eircAccount.getEndDate() == null).
                 setVisible(eircAccount.getId() != null && eircAccount.getId() > 0));
 
         // save button
@@ -179,6 +179,7 @@ public class EircAccountEdit extends TemplatePage {
                 target.add(messages);
             }
         };
+        save.setVisible(eircAccount.getEndDate() == null);
         form.add(save);
 
         // cancel button

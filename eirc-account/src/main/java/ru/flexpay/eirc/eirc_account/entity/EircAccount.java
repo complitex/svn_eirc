@@ -18,6 +18,10 @@ public class EircAccount extends DictionaryTemporalObject {
     public EircAccount() {
     }
 
+    public EircAccount(Long objectId) {
+        setId(objectId);
+    }
+
     public EircAccount(Address address) {
         this.address = address;
     }

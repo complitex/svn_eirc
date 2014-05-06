@@ -224,6 +224,20 @@
         </choose>
     </sql>
 
+    <sql id="showModeCondition">
+        <choose>
+            <when test="map.inactive == true">
+                e.`end_date` is not null
+            </when>
+            <when test="map.all == true">
+                1 = 1
+            </when>
+            <otherwise>
+                e.`end_date` is null
+            </otherwise>
+        </choose>
+    </sql>
+
     <sql id="addressCondition">
         <if test="map.eircAccount != null and map.eircAccount.address != null and map.eircAccount.address.entity != null and map.eircAccount.address.id != null">
             and
@@ -395,8 +409,14 @@
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.eircAccountColumns"/>,
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressColumns"/>
         from `eirc_account` e
+        <choose>
+            <when test="map.inactive == true or map.all == true">
+                inner join (select max(pk_id) as max_pk_id from eirc_account group by object_id) e2 on e.pk_id=e2.max_pk_id
+            </when>
+        </choose>
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
-        where e.`end_date` is null
+        where
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.showModeCondition"/>
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressCondition"/>
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.otherConditions"/>
 
@@ -426,7 +446,8 @@
     <select id="countEircAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer" flushCache="false" useCache="true">
         select count(distinct e.`object_id`) from `eirc_account` e
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressJoin"/>
-        where e.`end_date` is null
+        where
+        <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.showModeCondition"/>
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.addressCondition"/>
         <include refid="ru.flexpay.eirc.eirc_account.service.EircAccountBean.otherConditions"/>
     </select>

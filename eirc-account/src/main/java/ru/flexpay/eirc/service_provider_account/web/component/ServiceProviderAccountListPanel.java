@@ -37,6 +37,8 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.entity.Locale;
 import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
+import org.complitex.dictionary.web.component.ShowMode;
+import org.complitex.dictionary.web.component.ShowModePanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
@@ -50,6 +52,8 @@ import ru.flexpay.eirc.service_provider_account.web.edit.ServiceProviderAccountE
 import javax.ejb.EJB;
 import java.util.List;
 import java.util.Map;
+
+import static org.complitex.dictionary.web.component.ShowMode.ACTIVE;
 
 /**
  * @author Pavel Sknar
@@ -78,9 +82,12 @@ public class ServiceProviderAccountListPanel extends Panel {
     private Map<ServiceProviderAccount, Model<Boolean>> selected = Maps.newHashMap();
     private List<CheckBox> checkBoxes = Lists.newArrayList();
 
-    public ServiceProviderAccountListPanel(String id, Long eircAccountId) {
+    private boolean editable = true;
+
+    public ServiceProviderAccountListPanel(String id, Long eircAccountId, boolean editable) {
         super(id);
         filterObject.getEircAccount().setId(eircAccountId);
+        this.editable = editable;
         init();
     }
 
@@ -92,27 +99,34 @@ public class ServiceProviderAccountListPanel extends Panel {
 
         add(container);
 
+        final Model<ShowMode> showModeModel = new Model<>(ACTIVE);
+        container.add(new ShowModePanel("showModelPanel", showModeModel));
+
         final Locale locale = localeBean.convert(getLocale());
 
-        final List<IColumn<ServiceProviderAccount, String>> COLUMNS = ImmutableList.<IColumn<ServiceProviderAccount, String>>of(
-                new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("empty")) {
-                    @Override
-                    public void populateItem(Item<ICellPopulator<ServiceProviderAccount>> cellItem, String componentId,
-                                             IModel<ServiceProviderAccount> rowModel) {
-                        Model<Boolean> model = new Model<>();
-                        selected.put(rowModel.getObject(), model);
-                        CheckBoxPanel checkBoxPanel = new CheckBoxPanel(componentId, model);
-                        checkBoxes.add(checkBoxPanel.getCheckBox());
-                        cellItem.add(checkBoxPanel);
-                    }
+        ImmutableList.Builder<IColumn<ServiceProviderAccount, String>> builder = ImmutableList.builder();
+        if (editable) {
+            builder.add(
+                    new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("empty")) {
+                        @Override
+                        public void populateItem(Item<ICellPopulator<ServiceProviderAccount>> cellItem, String componentId,
+                                                 IModel<ServiceProviderAccount> rowModel) {
+                            Model<Boolean> model = new Model<>();
+                            selected.put(rowModel.getObject(), model);
+                            CheckBoxPanel checkBoxPanel = new CheckBoxPanel(componentId, model);
+                            checkBoxes.add(checkBoxPanel.getCheckBox());
+                            cellItem.add(checkBoxPanel);
+                        }
 
-                    @Override
-                    public Component getFilter(String componentId, FilterForm<?> form) {
-                        CheckBox[] arrayCheckBoxes = new CheckBox[checkBoxes.size()];
-                        checkBoxes.toArray(arrayCheckBoxes);
-                        return new CheckBoxSelectorFilter(componentId, form, arrayCheckBoxes);
-                    }
-                },
+                        @Override
+                        public Component getFilter(String componentId, FilterForm<?> form) {
+                            CheckBox[] arrayCheckBoxes = new CheckBox[checkBoxes.size()];
+                            checkBoxes.toArray(arrayCheckBoxes);
+                            return new CheckBoxSelectorFilter(componentId, form, arrayCheckBoxes);
+                        }
+                    });
+        }
+        builder.add(
                 new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("spa_accountNumber"), "spa_account_number") {
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
@@ -124,7 +138,8 @@ public class ServiceProviderAccountListPanel extends Panel {
                                              IModel<ServiceProviderAccount> serviceProviderAccountIModel) {
                         components.add(new Label(s, serviceProviderAccountIModel.getObject().getAccountNumber()));
                     }
-                },
+                });
+        builder.add(
                 new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("service"), "service_name") {
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
@@ -153,7 +168,8 @@ public class ServiceProviderAccountListPanel extends Panel {
                         ServiceProviderAccount serviceProviderAccount = serviceProviderAccountIModel.getObject();
                         components.add(new Label(s, serviceProviderAccount.getService().getName(locale) + " (" + serviceProviderAccount.getService().getCode() + ")"));
                     }
-                },
+                });
+        builder.add(
                 new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("serviceProvider"), "spa_organization_name") {
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
@@ -204,7 +220,8 @@ public class ServiceProviderAccountListPanel extends Panel {
                         ServiceProviderAccount serviceProviderAccount = serviceProviderAccountIModel.getObject();
                         components.add(new Label(s, serviceProviderAccount.getOrganizationName()));
                     }
-                },
+                });
+        builder.add(
                 new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("person"), "spa_person") {
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
@@ -247,7 +264,8 @@ public class ServiceProviderAccountListPanel extends Panel {
                         ServiceProviderAccount serviceProviderAccount = serviceProviderAccountIModel.getObject();
                         components.add(new Label(s, serviceProviderAccount.getPerson() != null? serviceProviderAccount.getPerson().toString(): ""));
                     }
-                },
+                });
+        builder.add(
                 new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("empty"), "action") {
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
@@ -275,11 +293,13 @@ public class ServiceProviderAccountListPanel extends Panel {
                         ScrollBookmarkablePageLink<WebPage> detailsLink = new ScrollBookmarkablePageLink<>(s,
                                 getEditPage(), getEditPageParams(serviceProviderAccount.getId()),
                                 String.valueOf(serviceProviderAccount.getId()),
-                                new ResourceModel("edit"));
+                                serviceProviderAccount.getEndDate() == null? new ResourceModel("edit") : new ResourceModel("view"));
                         components.add(detailsLink);
                     }
-                }
-        );
+                });
+
+
+        final List<IColumn<ServiceProviderAccount, String>> COLUMNS = builder.build();
 
         DataProvider<ServiceProviderAccount> provider = new DataProvider<ServiceProviderAccount>() {
 
@@ -293,6 +313,8 @@ public class ServiceProviderAccountListPanel extends Panel {
                 filterWrapper.getMap().put("address", Boolean.FALSE);
                 filterWrapper.setLocale(locale);
 
+                setShowModel(filterWrapper);
+
                 selected.clear();
                 checkBoxes.clear();
 
@@ -302,7 +324,21 @@ public class ServiceProviderAccountListPanel extends Panel {
             @Override
             protected int getSize() {
                 FilterWrapper<ServiceProviderAccount> filterWrapper = FilterWrapper.of(filterObject);
+
+                setShowModel(filterWrapper);
+
                 return serviceProviderAccountBean.count(filterWrapper);
+            }
+
+            private void setShowModel(FilterWrapper<ServiceProviderAccount> filterWrapper) {
+                switch (showModeModel.getObject()) {
+                    case INACTIVE:
+                        filterWrapper.getMap().put("inactive", Boolean.TRUE);
+                        break;
+                    case ALL:
+                        filterWrapper.getMap().put("all", Boolean.TRUE);
+                        break;
+                }
             }
         };
 
@@ -357,7 +393,7 @@ public class ServiceProviderAccountListPanel extends Panel {
             protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
                 this.getPage().setResponsePage(getEditPage(), getEditPageParams(null));
             }
-        });
+        }.setVisible(editable));
 
         filterForm.add(new AjaxButton("delete") {
             @Override
@@ -369,7 +405,7 @@ public class ServiceProviderAccountListPanel extends Panel {
                 }
                 target.add(container);
             }
-        });
+        }.setVisible(editable));
     }
 
     private Class<? extends Page> getEditPage() {
