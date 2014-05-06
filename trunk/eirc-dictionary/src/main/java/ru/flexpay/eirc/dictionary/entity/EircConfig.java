@@ -13,6 +13,8 @@ public enum EircConfig implements IComponentConfig {
 
     MODULE_ID("-1", "general"),
 
+    IMPORT_FILE_STORAGE_DIR("/var/tmp/data/import", "import"),
+    SYNC_DATA_SOURCE("jdbc/eircConnectionRemoteResource", "import"),
     TMP_DIR("/tmp", "import"),
     NUMBER_FLUSH_REGISTRY_RECORDS("10000", "import"),
     NUMBER_READ_CHARS("32000", "import");

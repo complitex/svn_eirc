@@ -7,8 +7,10 @@ import org.complitex.admin.web.AdminTemplateMenu;
 import org.complitex.dictionary.strategy.IStrategy;
 import org.complitex.dictionary.strategy.StrategyFactory;
 import org.complitex.dictionary.util.EjbBeanLocator;
+import org.complitex.template.web.pages.ConfigEdit;
 import org.complitex.template.web.template.ITemplateLink;
 import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
+import ru.flexpay.eirc.dictionary.web.admin.EircConfigEdit;
 
 import javax.ejb.EJB;
 import java.util.List;
@@ -29,6 +31,35 @@ public class AdminMenu extends AdminTemplateMenu {
     @Override
     public List<ITemplateLink> getTemplateLinks(Locale locale) {
         List<ITemplateLink> links = super.getTemplateLinks(locale);
+
+        for (ITemplateLink link : links) {
+            if (link.getPage().equals(ConfigEdit.class)) {
+                links.remove(link);
+                links.add(new ITemplateLink() {
+
+                    @Override
+                    public String getLabel(Locale locale) {
+                        return getString(ConfigEdit.class, locale, "title");
+                    }
+
+                    @Override
+                    public Class<? extends Page> getPage() {
+                        return EircConfigEdit.class;
+                    }
+
+                    @Override
+                    public PageParameters getParameters() {
+                        return new PageParameters();
+                    }
+
+                    @Override
+                    public String getTagId() {
+                        return "ConfigEdit";
+                    }
+                });
+                break;
+            }
+        }
 
         links.add(new ITemplateLink() {
 
