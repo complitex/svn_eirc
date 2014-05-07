@@ -8,6 +8,7 @@ import org.apache.wicket.Component;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
+import org.apache.wicket.ajax.markup.html.form.AjaxCheckBox;
 import org.apache.wicket.behavior.AttributeAppender;
 import org.apache.wicket.extensions.ajax.markup.html.repeater.data.sort.AjaxFallbackOrderByBorder;
 import org.apache.wicket.extensions.markup.html.repeater.data.grid.ICellPopulator;
@@ -22,7 +23,6 @@ import org.apache.wicket.extensions.markup.html.repeater.util.SingleSortState;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.markup.html.form.CheckBox;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.panel.Panel;
@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.complitex.dictionary.web.component.ShowMode.ACTIVE;
+import static org.complitex.dictionary.web.component.ShowMode.ALL;
 
 /**
  * @author Pavel Sknar
@@ -80,7 +81,7 @@ public class ServiceProviderAccountListPanel extends Panel {
     private ServiceProviderAccount filterObject = new ServiceProviderAccount(new EircAccount());
 
     private Map<ServiceProviderAccount, Model<Boolean>> selected = Maps.newHashMap();
-    private List<CheckBox> checkBoxes = Lists.newArrayList();
+    private List<AjaxCheckBox> checkBoxes = Lists.newArrayList();
 
     private boolean editable = true;
 
@@ -99,7 +100,7 @@ public class ServiceProviderAccountListPanel extends Panel {
 
         add(container);
 
-        final Model<ShowMode> showModeModel = new Model<>(ACTIVE);
+        final Model<ShowMode> showModeModel = new Model<>(editable ? ACTIVE : ALL);
         container.add(new ShowModePanel("showModelPanel", showModeModel));
 
         final Locale locale = localeBean.convert(getLocale());
@@ -108,21 +109,38 @@ public class ServiceProviderAccountListPanel extends Panel {
         if (editable) {
             builder.add(
                     new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("empty")) {
+                        CheckBoxSelectorFilter filter = null;
+
                         @Override
                         public void populateItem(Item<ICellPopulator<ServiceProviderAccount>> cellItem, String componentId,
                                                  IModel<ServiceProviderAccount> rowModel) {
-                            Model<Boolean> model = new Model<>();
-                            selected.put(rowModel.getObject(), model);
-                            CheckBoxPanel checkBoxPanel = new CheckBoxPanel(componentId, model);
-                            checkBoxes.add(checkBoxPanel.getCheckBox());
-                            cellItem.add(checkBoxPanel);
+                            if (rowModel.getObject().getEndDate() == null) {
+                                final Model<Boolean> model = new Model<>();
+                                selected.put(rowModel.getObject(), model);
+                                if (filter != null) {
+                                    filter.setModelObject(false);
+                                }
+                                AjaxCheckBoxPanel ajaxCheckBoxPanel = new AjaxCheckBoxPanel(componentId, model) {
+                                    @Override
+                                    public void onUpdate(AjaxRequestTarget target) {
+                                        if (!model.getObject() && filter.getModelObject()) {
+                                            filter.setModelObject(false);
+                                            filter.onUpdate(target);
+                                        }
+                                    }
+                                };
+                                checkBoxes.add(ajaxCheckBoxPanel.getCheckBox());
+                                cellItem.add(ajaxCheckBoxPanel);
+                            } else {
+                                cellItem.add(new Label(componentId, new ResourceModel("empty")));
+                            }
                         }
 
                         @Override
                         public Component getFilter(String componentId, FilterForm<?> form) {
-                            CheckBox[] arrayCheckBoxes = new CheckBox[checkBoxes.size()];
-                            checkBoxes.toArray(arrayCheckBoxes);
-                            return new CheckBoxSelectorFilter(componentId, form, arrayCheckBoxes);
+                            //return new CheckBox(componentId, new Model<>(false));
+                            filter = new CheckBoxSelectorFilter(componentId, form, checkBoxes);
+                            return filter;
                         }
                     });
         }
