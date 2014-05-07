@@ -61,6 +61,20 @@
         </if>
     </sql>
 
+    <sql id="showModeCondition">
+        <choose>
+            <when test="map.inactive == true">
+                spa.`end_date` is not null
+            </when>
+            <when test="map.all == true">
+                1 = 1
+            </when>
+            <otherwise>
+                spa.`end_date` is null
+            </otherwise>
+        </choose>
+    </sql>
+
     <sql id="generalSPAColumns">
         <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.serviceProviderAccountColumns"/>,
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceColumns"/>,
@@ -86,7 +100,7 @@
     </sql>
 
     <sql id="generalWithAddressSPACondition">
-        spa.`end_date` is null and oa.`end_date` is null and e.`end_date` is null
+        <include refid="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean.showModeCondition"/>
 
         <include refid="ru.flexpay.eirc.service.service.ServiceBean.serviceCondition"/>
 
@@ -100,13 +114,25 @@
             resultMap="ServiceProviderAccount" flushCache="false" useCache="true">
         select
         <include refid="generalWithAddressSPAColumns"/>
-        
         from `service_provider_account` spa
+        inner join (select distinct spa.`object_id` as `distinct_object_id`
+
+                    from `service_provider_account` spa
+                    <if test="map.inactive == true or map.all == true">
+                        inner join (select max(pk_id) as max_pk_id from `service_provider_account` group by object_id) spa2 on
+                        spa.pk_id=spa2.max_pk_id
+                    </if>
+                    <include refid="generalWithAddressSPAJoin"/>
+
+                    where
+
+                    <include refid="generalWithAddressSPACondition"/>
+                    <if test="count > 0">
+                        limit ${first},${count}
+                    </if>) spa3
+                                    on spa.`object_id` = spa3.`distinct_object_id`
+
         <include refid="generalWithAddressSPAJoin"/>
-
-        where
-
-        <include refid="generalWithAddressSPACondition"/>
 
         <if test="sortProperty != null">
             order by
@@ -137,13 +163,13 @@
                 ${asc}
             </if>
         </if>
-        <if test="count > 0">
-            limit ${first},${count}
-        </if>
     </select>
 
     <select id="countServiceProviderAccounts" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultType="integer" flushCache="false" useCache="true">
         select count(distinct spa.`object_id`) from `service_provider_account` spa
+        <if test="map.inactive == true or map.all == true">
+            inner join (select max(pk_id) as max_pk_id from `service_provider_account` group by object_id) spa2 on spa.pk_id=spa2.max_pk_id
+        </if>
         <include refid="generalWithAddressSPAJoin"/>
         where
         <include refid="generalWithAddressSPACondition"/>

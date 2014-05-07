@@ -306,6 +306,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
                 target.add(container);
             }
         };
+        save.setVisible(serviceProviderAccount.getEndDate() == null);
         form.add(save);
 
         // cancel button
