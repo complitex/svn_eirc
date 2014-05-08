@@ -76,4 +76,9 @@ public class ServicePicker extends FormComponentPanel<Service> {
         choose.setVisibilityAllowed(enabled);
         add(choose);
     }
+
+    @Override
+    protected void convertInput() {
+        setConvertedInput(getModelObject());
+    }
 }
