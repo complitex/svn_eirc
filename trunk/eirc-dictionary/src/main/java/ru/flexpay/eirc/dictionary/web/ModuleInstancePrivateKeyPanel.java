@@ -6,7 +6,10 @@ import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
+import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
+import org.apache.wicket.markup.html.form.IChoiceRenderer;
+import org.apache.wicket.model.Model;
 import org.complitex.dictionary.entity.Attribute;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.description.EntityAttributeType;
@@ -17,6 +20,7 @@ import org.complitex.dictionary.web.component.organization.OrganizationPicker;
 import org.complitex.dictionary.web.model.AttributeStringModel;
 import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
+import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceTypeStrategy;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -33,6 +37,9 @@ public class ModuleInstancePrivateKeyPanel extends AbstractComplexAttributesPane
 
     @EJB
     private ModuleInstanceStrategy moduleInstanceStrategy;
+
+    @EJB
+    private ModuleInstanceTypeStrategy moduleInstanceTypeStrategy;
 
     public ModuleInstancePrivateKeyPanel(String id, boolean disabled) {
         super(id, disabled);
@@ -59,6 +66,8 @@ public class ModuleInstancePrivateKeyPanel extends AbstractComplexAttributesPane
         });
 
         addOrganizationContainer(moduleInstance, "organizationContainer");
+
+        addModuleInstanceTypeContainer(moduleInstance, "typeContainer");
     }
 
     private void addOrganizationContainer(DomainObject moduleInstance, String name) {
@@ -72,6 +81,45 @@ public class ModuleInstancePrivateKeyPanel extends AbstractComplexAttributesPane
 
         final EntityAttributeType attributeType =
                 moduleInstanceStrategy.getEntity().getAttributeType(ModuleInstanceStrategy.ORGANIZATION);
+        container.add(new Label("label",
+                DomainObjectComponentUtil.labelModel(attributeType.getAttributeNames(), getLocale())));
+        container.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));
+    }
+
+    private void addModuleInstanceTypeContainer(DomainObject moduleInstance, String name) {
+        WebMarkupContainer container = new WebMarkupContainer(name);
+        container.setOutputMarkupPlaceholderTag(true);
+        add(container);
+
+        final Attribute attribute = moduleInstance.getAttribute(ModuleInstanceStrategy.MODULE_INSTANCE_TYPE);
+        //final SimpleTypeModel<Integer> model = new SimpleTypeModel<>(attribute, new IntegerConverter());
+        final Model<DomainObject> model = new Model<DomainObject>(new DomainObject(attribute.getObjectId())) {
+            @Override
+            public void setObject(DomainObject object) {
+                super.setObject(object);
+                attribute.setObjectId(object.getId());
+            }
+        };
+        container.add(
+            new DropDownChoice<>("type",
+                    model,
+                    moduleInstanceTypeStrategy.getAll(),
+                    new IChoiceRenderer<DomainObject>() {
+                        @Override
+                        public Object getDisplayValue(DomainObject type) {
+                            return moduleInstanceTypeStrategy.displayDomainObject(type, getLocale());
+                        }
+
+                        @Override
+                        public String getIdValue(DomainObject type, int i) {
+                            return type != null && type.getId() != null ? type.getId().toString(): "-1";
+                        }
+                    }
+            )
+        );
+
+        final EntityAttributeType attributeType =
+                moduleInstanceStrategy.getEntity().getAttributeType(ModuleInstanceStrategy.MODULE_INSTANCE_TYPE);
         container.add(new Label("label",
                 DomainObjectComponentUtil.labelModel(attributeType.getAttributeNames(), getLocale())));
         container.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));

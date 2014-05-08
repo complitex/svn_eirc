@@ -48,8 +48,9 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
     public static final long PRIVATE_KEY = 1011L;
     public static final long UNIQUE_INDEX = 1012L;
     public static final long ORGANIZATION = 1013L;
+    public static final long MODULE_INSTANCE_TYPE = 1014L;
 
-    public static final List<Long> CUSTOM_ATTRIBUTES = ImmutableList.of(PRIVATE_KEY, ORGANIZATION);
+    public static final List<Long> CUSTOM_ATTRIBUTES = ImmutableList.of(PRIVATE_KEY, ORGANIZATION, MODULE_INSTANCE_TYPE);
 
     private static final String MODULE_INSTANCE_NAMESPACE = ModuleInstanceStrategy.class.getName();
 

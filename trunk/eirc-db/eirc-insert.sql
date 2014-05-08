@@ -79,6 +79,12 @@ INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_
 INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1010, 1, 'Модуль'), (1010, 2, 'Модуль');
 INSERT INTO `entity`(`id`, `entity_table`, `entity_name_id`, `strategy_factory`) VALUES (1010, 'module_instance', 1010, '');
 
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1110, 1, 'Тип модуля'), (1110, 2, 'Тип модуля');
+INSERT INTO `entity`(`id`, `entity_table`, `entity_name_id`, `strategy_factory`) VALUES (1110, 'module_instance_type', 1110, '');
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1111, 1, UPPER('Тип модуля')), (1111, 2, UPPER('Тип модуля'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (1110, 1110, 1, 1111, 1);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (1110, 1110, UPPER('string_culture'));
+
 INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1011, 1, UPPER('Название')), (1011, 2, UPPER('Назва'));
 INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (1010, 1010, 0, 1011, 1);
 INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (1010, 1010, UPPER('string'));
@@ -94,6 +100,19 @@ INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_
 INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1014, 1, UPPER('Организация')), (1014, 2, UPPER('Организація'));
 INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (1013, 1010, 1, 1014, 1);
 INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (1013, 1013, UPPER('string'));
+
+INSERT INTO `string_culture`(`id`, `locale_id`, `value`) VALUES (1015, 1, UPPER('Тип модуля')),(1015, 2, UPPER('Тип модуля'));
+INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_type_name_id`, `system`) VALUES (1014, 1010, 1, 1015, 1);
+INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (1014, 1014, 'module_instance_type');
+
+-- ----------------------------------
+-- Module instance type
+-- ----------------------------------
+INSERT INTO `module_instance_type`(`object_id`) VALUES (1), (2);
+INSERT INTO `module_instance_type_string_culture`(`id`, `locale_id`, `value`) VALUES (1, 1, UPPER('Модуль ЕИРЦ')), (1, 2,UPPER('Модуль ЕIРЦ'));
+INSERT INTO `module_instance_type_attribute`(`attribute_id`, `object_id`, `attribute_type_id`, `value_id`, `value_type_id`) VALUES (1,1,1110,1,1110);
+INSERT INTO `module_instance_type_string_culture`(`id`, `locale_id`, `value`) VALUES (2, 1, UPPER('Модуль платежей')), (2, 2,UPPER('Модуль платежів'));
+INSERT INTO `module_instance_type_attribute`(`attribute_id`, `object_id`, `attribute_type_id`, `value_id`, `value_type_id`) VALUES (2,2,1110,2,1110);
 
 INSERT INTO `registry_status` (`code`, `name`) values
     (0, 'Загружается'),
