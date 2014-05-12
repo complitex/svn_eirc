@@ -28,6 +28,7 @@ import ru.flexpay.eirc.dictionary.web.security.SecurityRole;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,7 +51,12 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
     public static final long ORGANIZATION = 1013L;
     public static final long MODULE_INSTANCE_TYPE = 1014L;
 
-    public static final List<Long> CUSTOM_ATTRIBUTES = ImmutableList.of(PRIVATE_KEY, ORGANIZATION, MODULE_INSTANCE_TYPE);
+    /**
+     * Filter parameter to filter out module instances by types.
+     */
+    public static final String MODULE_INSTANCE_TYPE_PARAMETER = "moduleInstanceTypeIds";
+
+    public static final List<Long> CUSTOM_ATTRIBUTES = ImmutableList.of(PRIVATE_KEY, ORGANIZATION);
 
     private static final String MODULE_INSTANCE_NAMESPACE = ModuleInstanceStrategy.class.getName();
 
@@ -134,7 +140,7 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
     }
 
     /**
-     * Найти квартиру в локальной адресной базе.
+     * Найти модуль по уникальному индексу.
      */
     public Long getModuleInstanceObjectId(String uniqueIndex) {
         Map<String, Object> params = Maps.newHashMap();
@@ -144,9 +150,34 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
         return sqlSession().selectOne(MODULE_INSTANCE_NAMESPACE + ".selectModuleInstanceId", params);
     }
 
+    @Transactional
+    @Override
+    public List<? extends DomainObject> find(DomainObjectExample example) {
+        if (example.getId() != null && example.getId() <= 0) {
+            return Collections.emptyList();
+        }
+
+        example.setTable(getEntityTable());
+        if (!example.isAdmin()) {
+            prepareExampleForPermissionCheck(example);
+        }
+        extendOrderBy(example);
+
+        List<DomainObject> organizations = sqlSession().selectList(MODULE_INSTANCE_NAMESPACE + "." + FIND_OPERATION, example);
+
+        for (DomainObject object : organizations) {
+            loadAttributes(object);
+            //load subject ids
+            object.setSubjectIds(loadSubjects(object.getPermissionId()));
+        }
+
+        return organizations;
+    }
+
     @Override
     public boolean isSimpleAttributeType(EntityAttributeType entityAttributeType) {
-        return !CUSTOM_ATTRIBUTES.contains(entityAttributeType.getId()) && super.isSimpleAttributeType(entityAttributeType);
+        return !CUSTOM_ATTRIBUTES.contains(entityAttributeType.getId()) && entityAttributeType.getId() != MODULE_INSTANCE_TYPE &&
+                super.isSimpleAttributeType(entityAttributeType);
     }
 
     @Override

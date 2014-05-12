@@ -33,10 +33,11 @@ import org.odlabs.wiquery.ui.dialog.Dialog;
 import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
 
 import javax.ejb.EJB;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
-import static ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy.NAME;
-import static ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy.UNIQUE_INDEX;
+import static ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy.*;
 
 /**
  *
@@ -67,19 +68,19 @@ public class ModuleInstancePicker extends FormComponentPanel<DomainObject> {
         this(id, null, false, null, true);
     }
 
-    public ModuleInstancePicker(String id, IModel<String> model) {
-        this(id, model, false, null, true);
+    public ModuleInstancePicker(String id, IModel<String> model, Long... type) {
+        this(id, model, false, null, true, type);
     }
 
     public ModuleInstancePicker(String id, IModel<String> model, boolean required,
-                                IModel<String> labelModel, boolean enabled) {
+                                IModel<String> labelModel, boolean enabled, Long... type) {
         super(id);
         setModel(new ModuleInstanceModel(model));
-        init(required, labelModel, enabled);
+        init(required, labelModel, enabled, Arrays.asList(type));
     }
 
     private void init(boolean required,
-                      IModel<String> labelModel, boolean enabled) {
+                      IModel<String> labelModel, boolean enabled, List<Long> types) {
 
         setRequired(required);
         setLabel(labelModel);
@@ -123,7 +124,7 @@ public class ModuleInstancePicker extends FormComponentPanel<DomainObject> {
         final Form<Void> filterForm = new Form<Void>("filterForm");
         content.add(filterForm);
 
-        example = newExample();
+        example = newExample(types);
 
         final DataProvider<DomainObject> dataProvider = new DataProvider<DomainObject>() {
 
@@ -279,10 +280,14 @@ public class ModuleInstancePicker extends FormComponentPanel<DomainObject> {
         lookupDialog.close(target);
     }
 
-    private DomainObjectExample newExample() {
+    private DomainObjectExample newExample(List<Long> types) {
         DomainObjectExample e = new DomainObjectExample();
         e.addAttributeExample(new AttributeExample(NAME));
         e.addAttributeExample(new AttributeExample(UNIQUE_INDEX));
+
+        if (types != null && !types.isEmpty()) {
+            e.addAdditionalParam(MODULE_INSTANCE_TYPE_PARAMETER, types);
+        }
         return e;
     }
 
@@ -299,9 +304,11 @@ public class ModuleInstancePicker extends FormComponentPanel<DomainObject> {
     private class ModuleInstanceModel extends Model<DomainObject> {
 
         private IModel<String> model;
+        private Long[] types;
 
-        public ModuleInstanceModel(IModel<String> model) {
+        public ModuleInstanceModel(IModel<String> model, Long... type) {
             this.model = model;
+            this.types = type;
         }
 
         @Override

@@ -3,6 +3,54 @@
 
 <mapper namespace="ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy">
 
+    <select id="find" resultMap="org.complitex.dictionary.entity.DomainObject.DomainObject" parameterType="DomainObjectExample">
+        SELECT e.* FROM `module_instance` e WHERE
+        <include refid="org.complitex.dictionary.entity.DomainObject.statusFilter"/>
+        <include refid="org.complitex.dictionary.entity.DomainObject.permissionFilter"/>
+        <include refid="ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy.filter"/>
+        <include refid="org.complitex.dictionary.entity.DomainObject.orderBy"/>
+        <include refid="org.complitex.dictionary.entity.DomainObject.limit"/>
+    </select>
+
+    <sql id="filter">
+        <if test="id != null">
+            AND e.`object_id` = #{id}
+        </if>
+        <foreach item="attrExample" collection="attributeExamples">
+            <if test="attrExample.value != null">
+                AND EXISTS(SELECT 1 FROM `module_instance_attribute` attr WHERE attr.`object_id` = e.`object_id`
+                AND attr.`status` = 'ACTIVE' AND attr.`attribute_type_id` = #{attrExample.attributeTypeId}
+                AND attr.`value_id` IN (SELECT sc.`id` FROM `${table}_string_culture` sc WHERE sc.`value`
+                <choose>
+                    <when test="comparisonType == 'LIKE'">
+                        LIKE CONCAT('%', #{attrExample.value}, '%')
+                    </when>
+                    <when test="comparisonType == 'EQUALITY'">
+                        = #{attrExample.value}
+                    </when>
+                </choose>
+                )
+                )
+            </if>
+        </foreach>
+        <if test="additionalParams != null and additionalParams['moduleInstanceTypeIds'] != null">
+            AND EXISTS(SELECT 1 FROM `module_instance_attribute` attr WHERE attr.`object_id` = e.`object_id`
+            AND attr.`status` = 'ACTIVE' AND attr.`attribute_type_id` = 1014
+            AND attr.`value_id` IN
+            <foreach open="(" close=")" separator="," item="id" collection="additionalParams['moduleInstanceTypeIds']">
+                #{id}
+            </foreach>
+            )
+        </if>
+    </sql>
+
+    <select id="count" resultType="integer" parameterType="DomainObjectExample">
+        SELECT COUNT(1) FROM `module_instance` e WHERE
+        <include refid="org.complitex.dictionary.entity.DomainObject.statusFilter"/>
+        <include refid="org.complitex.dictionary.entity.DomainObject.permissionFilter"/>
+        <include refid="ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy.filter"/>
+    </select>
+
     <select id="selectModuleInstanceId" parameterType="map" resultType="long">
         select distinct a.`object_id` from `module_instance` a
 

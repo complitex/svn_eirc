@@ -86,18 +86,18 @@ public class ModuleInstancePrivateKeyPanel extends AbstractComplexAttributesPane
         container.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));
     }
 
-    private void addModuleInstanceTypeContainer(DomainObject moduleInstance, String name) {
+    private void addModuleInstanceTypeContainer(final DomainObject moduleInstance, String name) {
         WebMarkupContainer container = new WebMarkupContainer(name);
         container.setOutputMarkupPlaceholderTag(true);
         add(container);
 
         final Attribute attribute = moduleInstance.getAttribute(ModuleInstanceStrategy.MODULE_INSTANCE_TYPE);
         //final SimpleTypeModel<Integer> model = new SimpleTypeModel<>(attribute, new IntegerConverter());
-        final Model<DomainObject> model = new Model<DomainObject>(new DomainObject(attribute.getObjectId())) {
+        final Model<DomainObject> model = new Model<DomainObject>(new DomainObject(attribute.getValueId())) {
             @Override
             public void setObject(DomainObject object) {
                 super.setObject(object);
-                attribute.setObjectId(object.getId());
+                attribute.setValueId(object.getId());
             }
         };
         container.add(
