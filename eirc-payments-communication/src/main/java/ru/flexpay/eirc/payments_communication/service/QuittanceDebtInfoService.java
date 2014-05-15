@@ -28,12 +28,12 @@ import java.util.Date;
 public class QuittanceDebtInfoService extends RestAuthorizationService<QuittanceDebtInfo> {
 
     @Override
-    protected QuittanceDebtInfo getAllAuthorized() {
+    protected QuittanceDebtInfo getAllAuthorized(String moduleUniqueIndex) {
         return buildResponseContent(ResponseStatus.OK);
     }
 
     @Override
-    protected QuittanceDebtInfo geConstrainedAuthorized(String searchCriteria, long searchType) {
+    protected QuittanceDebtInfo geConstrainedAuthorized(String searchCriteria, long searchType, String moduleUniqueIndex) {
         QuittanceInfo quittanceInfo1 = new QuittanceInfo();
         quittanceInfo1.setQuittanceNumber("111");
         quittanceInfo1.setTotalToPay(BigDecimal.TEN);

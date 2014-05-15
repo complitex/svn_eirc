@@ -29,6 +29,8 @@ import ru.flexpay.eirc.payments_communication.entity.DebtInfo;
 import ru.flexpay.eirc.payments_communication.entity.ResponseStatus;
 import ru.flexpay.eirc.payments_communication.entity.SearchType;
 import ru.flexpay.eirc.payments_communication.entity.ServiceDetails;
+import ru.flexpay.eirc.service.correction.entity.ServiceCorrection;
+import ru.flexpay.eirc.service.correction.service.ServiceCorrectionBean;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service_provider_account.entity.SaldoOut;
@@ -76,6 +78,9 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
     private ServiceBean serviceBean;
 
     @EJB
+    private ServiceCorrectionBean serviceCorrectionBean;
+
+    @EJB
     private ModuleInstanceStrategy moduleInstanceStrategy;
 
     @EJB
@@ -93,12 +98,12 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
     private Logger logger = LoggerFactory.getLogger(DebtInfoService.class);
 
     @Override
-    protected DebtInfo getAllAuthorized() {
+    protected DebtInfo getAllAuthorized(String moduleUniqueIndex) {
         return buildResponseContent(ResponseStatus.OK);
     }
 
     @Override
-    protected DebtInfo geConstrainedAuthorized(String searchCriteria, long searchType) {
+    protected DebtInfo geConstrainedAuthorized(String searchCriteria, long searchType, String moduleUniqueIndex) {
         Integer eircModuleId = configBean.getInteger(EircConfig.MODULE_ID, true);
         if (eircModuleId == null || eircModuleId < 0) {
             logger.error("Inner error: EIRC module did not configure");
@@ -116,6 +121,16 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
         if (attribute == null ||
                 (eircOrganizationId = Long.parseLong(attribute.getStringCulture(EjbBeanLocator.getBean(LocaleBean.class).getSystemLocaleId()).getValue())) == null) {
             logger.error("Inner error: EIRC module '{}' did not content own organization", eircModuleId);
+            return buildResponseContent(ResponseStatus.INTERNAL_ERROR);
+        }
+
+        Long moduleId = moduleInstanceStrategy.getModuleInstanceObjectId(moduleUniqueIndex);
+        if (moduleId == null) {
+            logger.error("Inner error: module instance not found by index '{}'", moduleUniqueIndex);
+            return buildResponseContent(ResponseStatus.INTERNAL_ERROR);
+        }
+        Long moduleOrganizationId = getOrganizationId(moduleId);
+        if (moduleOrganizationId == null) {
             return buildResponseContent(ResponseStatus.INTERNAL_ERROR);
         }
 
@@ -151,7 +166,7 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
                         }
                         return new Address(id, AddressEntity.BUILDING);
                     }
-                });
+                }, moduleOrganizationId, eircOrganizationId);
             case TYPE_APARTMENT_NUMBER:
                 return getByAddressMasterIndex(searchString, service, new AddressDataProvider<ApartmentCorrection>() {
                     @Override
@@ -167,7 +182,7 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
                         }
                         return new Address(id, AddressEntity.APARTMENT);
                     }
-                });
+                }, moduleOrganizationId, eircOrganizationId);
             case TYPE_ROOM_NUMBER:
                 return getByAddressMasterIndex(searchString, service, new AddressDataProvider<RoomCorrection>() {
                     @Override
@@ -183,13 +198,13 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
                         }
                         return new Address(id, AddressEntity.ROOM);
                     }
-                });
+                }, moduleOrganizationId, eircOrganizationId);
             case TYPE_ACCOUNT_NUMBER:
-                return getByEircAccountNumber(searchString, service);
+                return getByEircAccountNumber(searchString, service, moduleOrganizationId, eircOrganizationId);
             case TYPE_SERVICE_PROVIDER_ACCOUNT_NUMBER:
-                return getBySPAAccountNumber(searchString, service);
+                return getBySPAAccountNumber(searchString, service, moduleOrganizationId, eircOrganizationId);
             case TYPE_ADDRESS:
-                return getByAddressInSPAAccount(searchString, service);
+                return getByAddressInSPAAccount(searchString, service, moduleOrganizationId, eircOrganizationId);
             case UNKNOWN_TYPE:
                 break;
         }
@@ -201,7 +216,9 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
         return new DebtInfo(responseStatus);
     }
 
-    private <T extends Correction> DebtInfo getByAddressMasterIndex(String searchString, Service service, AddressDataProvider<T> dataProvider) {
+    private <T extends Correction> DebtInfo getByAddressMasterIndex(String searchString, Service service,
+                                                                    AddressDataProvider<T> dataProvider,
+                                                                    Long moduleOrganizationId, Long eircOrganizationId) {
         String[] moduleData = searchString.split("-", 2);
         String addressId = moduleData.length > 1 ? moduleData[1] : moduleData[0];
 
@@ -221,19 +238,8 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
         }
 
         Long organizationId = null;
-        if (moduleId != null) {
-            DomainObject module = moduleInstanceStrategy.findById(moduleId, true);
-            Attribute attribute = module.getAttribute(ModuleInstanceStrategy.ORGANIZATION);
-            if (attribute == null) {
-                logger.error("Inner error: Module '{}' did not content organization", moduleId);
-                return buildResponseContent(ResponseStatus.INTERNAL_ERROR);
-            }
-            organizationId = Long.parseLong(attribute.getStringCulture(EjbBeanLocator.getBean(LocaleBean.class).getSystemLocaleId()).getValue());
-            Organization organization = organizationStrategy.findById(organizationId, true);
-            if (organization == null) {
-                logger.error("Inner error: organization not found by id {}", organizationId);
-                return buildResponseContent(ResponseStatus.INTERNAL_ERROR);
-            }
+        if (moduleId != null && (organizationId = getOrganizationId(moduleId)) == null) {
+            return buildResponseContent(ResponseStatus.INTERNAL_ERROR);
         }
 
         Address address = dataProvider.getAddress(addressId, organizationId);
@@ -245,10 +251,10 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
         filterObject.setServiceProviderAccount(new ServiceProviderAccount(new EircAccount(address), service));
         FilterWrapper<SaldoOut> filterWrapper = FilterWrapper.of(filterObject);
 
-        return new DebtInfo(ResponseStatus.OK, getServiceDetails(filterWrapper));
+        return new DebtInfo(ResponseStatus.OK, getServiceDetails(filterWrapper, moduleOrganizationId, eircOrganizationId));
     }
 
-    private DebtInfo getByEircAccountNumber(String searchString, Service service) {
+    private DebtInfo getByEircAccountNumber(String searchString, Service service, Long moduleOrganizationId, Long eircOrganizationId) {
 
         if (!eircAccountBean.eircAccountExists(null, searchString)) {
             return buildResponseContent(ResponseStatus.ACCOUNT_NOT_FOUND);
@@ -259,10 +265,10 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
         FilterWrapper<SaldoOut> filterWrapper = FilterWrapper.of(filterObject);
         filterWrapper.setLike(false);
 
-        return new DebtInfo(ResponseStatus.OK, getServiceDetails(filterWrapper));
+        return new DebtInfo(ResponseStatus.OK, getServiceDetails(filterWrapper, moduleOrganizationId, eircOrganizationId));
     }
 
-    private DebtInfo getBySPAAccountNumber(String searchString, Service service) {
+    private DebtInfo getBySPAAccountNumber(String searchString, Service service, Long moduleOrganizationId, Long eircOrganizationId) {
 
         ServiceProviderAccount spa = new ServiceProviderAccount(searchString, null, service);
         if (serviceProviderAccountBean.getServiceProviderAccounts(FilterWrapper.of(spa)).isEmpty()) {
@@ -272,10 +278,11 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
         FilterWrapper<SaldoOut> filterWrapper = FilterWrapper.of(new SaldoOut(spa));
         filterWrapper.setLike(false);
 
-        return new DebtInfo(ResponseStatus.OK, getServiceDetails(filterWrapper));
+        return new DebtInfo(ResponseStatus.OK, getServiceDetails(filterWrapper, moduleOrganizationId, eircOrganizationId));
     }
 
-    private DebtInfo getByAddressInSPAAccount(String searchString, Service service) {
+    private DebtInfo getByAddressInSPAAccount(String searchString, Service service,
+                                              Long moduleOrganizationId, Long eircOrganizationId) {
 
         ServiceProviderAccount spa = new ServiceProviderAccount(searchString, null, service);
         List<ServiceProviderAccount> serviceProviderAccounts = serviceProviderAccountBean.getServiceProviderAccounts(FilterWrapper.of(spa));
@@ -289,13 +296,31 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
         filterWrapper.setLike(false);
         for (ServiceProviderAccount serviceProviderAccount : serviceProviderAccounts) {
             filterWrapper.getObject().setServiceProviderAccount(new ServiceProviderAccount(new EircAccount(serviceProviderAccount.getEircAccount().getAddress())));
-            result.addAll(getServiceDetails(filterWrapper));
+            result.addAll(getServiceDetails(filterWrapper, moduleOrganizationId, eircOrganizationId));
         }
 
         return new DebtInfo(ResponseStatus.OK, result);
     }
 
-    private List<ServiceDetails> getServiceDetails(FilterWrapper<SaldoOut> filterWrapper) {
+    private Long getOrganizationId(Long moduleId) {
+        DomainObject module = moduleInstanceStrategy.findById(moduleId, true);
+        Attribute attribute = module.getAttribute(ModuleInstanceStrategy.ORGANIZATION);
+        if (attribute == null) {
+            logger.error("Inner error: Module '{}' did not content organization", moduleId);
+            return null;
+        }
+        Long organizationId = Long.parseLong(attribute.getStringCulture(EjbBeanLocator.getBean(LocaleBean.class).getSystemLocaleId()).getValue());
+        Organization organization = organizationStrategy.findById(organizationId, true);
+        if (organization == null) {
+            logger.error("Inner error: organization not found by id {}", organizationId);
+            return null;
+        }
+        return organizationId;
+
+    }
+
+    private List<ServiceDetails> getServiceDetails(FilterWrapper<SaldoOut> filterWrapper,
+                                                   Long moduleOrganizationId, Long eircOrganizationId) {
         Service service;
         List<SaldoOut> saldoOuts = saldoOutBean.getFinancialAttributes(filterWrapper, true);
         if (saldoOuts.isEmpty()) {
@@ -305,12 +330,28 @@ public class DebtInfoService extends RestAuthorizationService<DebtInfo> {
         for (SaldoOut saldoOut : saldoOuts) {
             ServiceProviderAccount serviceProviderAccount = saldoOut.getServiceProviderAccount();
             service = serviceProviderAccount.getService();
+            List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(FilterWrapper.of(
+                    new ServiceCorrection(null, service.getId(), null, moduleOrganizationId, eircOrganizationId, null)
+            ));
+
+            String serviceMasterIndex = null;
+            if (serviceCorrections.size() == 0) {
+                logger.warn("Service correction not found for service by id {}: organization={}, userOrganization={}",
+                        service.getId(), moduleOrganizationId, eircOrganizationId);
+            } else if (serviceCorrections.size() > 1) {
+                logger.warn("Multiply service corrections for service by id {}: organization={}, userOrganization={}",
+                        service.getId(), moduleOrganizationId, eircOrganizationId);
+            } else {
+                serviceMasterIndex = serviceCorrections.get(0).getExternalId();
+            }
 
             ServiceDetails serviceDetails = new ServiceDetails();
 
             serviceDetails.setAmount(saldoOut.getAmount());
+            serviceDetails.setOutgoingBalance(saldoOut.getAmount());
             serviceDetails.setServiceCode(service.getCode());
             serviceDetails.setServiceId(service.getId());
+            serviceDetails.setServiceMasterIndex(serviceMasterIndex);
             serviceDetails.setServiceName(service.getName());
             serviceDetails.setEircAccount(serviceProviderAccount.getEircAccount().getAccountNumber());
             serviceDetails.setServiceProviderAccount(serviceProviderAccount.getAccountNumber());

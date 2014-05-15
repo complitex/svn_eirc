@@ -27,10 +27,10 @@ public abstract class RestAuthorizationService<T extends ResponseContent> {
         if (!auth(context)) {
             return buildResponseContent(ResponseStatus.INCORRECT_AUTHENTICATION_DATA);
         }
-        return getAllAuthorized();
+        return getAllAuthorized(context.getUserPrincipal().getName());
     }
 
-    protected abstract T getAllAuthorized();
+    protected abstract T getAllAuthorized(String moduleUniqueIndex);
 
     @GET
     @Path("/constrain/{searchType: [0-9]+}/{searchCriteria}")
@@ -44,10 +44,10 @@ public abstract class RestAuthorizationService<T extends ResponseContent> {
             return buildResponseContent(ResponseStatus.INCORRECT_AUTHENTICATION_DATA);
         }
 
-        return geConstrainedAuthorized(searchCriteria, searchType);
+        return geConstrainedAuthorized(searchCriteria, searchType, context.getUserPrincipal().getName());
     }
 
-    protected abstract T geConstrainedAuthorized(String searchCriteria, long searchType);
+    protected abstract T geConstrainedAuthorized(String searchCriteria, long searchType, String moduleUniqueIndex);
 
     protected boolean auth(SecurityContext context) throws ServletException {
         /*
