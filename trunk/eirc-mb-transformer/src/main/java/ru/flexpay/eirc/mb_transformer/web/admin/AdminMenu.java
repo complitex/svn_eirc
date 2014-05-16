@@ -23,6 +23,29 @@ public class AdminMenu extends AdminTemplateMenu {
 
             @Override
             public String getLabel(Locale locale) {
+                return getString(AdminTemplateMenu.class, locale, "template_menu.user_list");
+            }
+
+            @Override
+            public Class<? extends Page> getPage() {
+                return UserList.class;
+            }
+
+            @Override
+            public PageParameters getParameters() {
+                return new PageParameters();
+            }
+
+            @Override
+            public String getTagId() {
+                return "UserList";
+            }
+        });
+
+        links.add(new ITemplateLink() {
+
+            @Override
+            public String getLabel(Locale locale) {
                 return getString(ConfigEdit.class, locale, "title");
             }
 
