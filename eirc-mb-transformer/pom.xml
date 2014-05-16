@@ -52,6 +52,10 @@
         </dependency>
         <dependency>
             <groupId>org.complitex</groupId>
+            <artifactId>complitex-address</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.complitex</groupId>
             <artifactId>complitex-organization-type</artifactId>
         </dependency>
         <dependency>
