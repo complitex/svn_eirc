@@ -181,8 +181,8 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
     }
 
     @Override
-    protected void fillAttributes(DomainObject object) {
-        super.fillAttributes(object);
+    protected void fillAttributes(String dataSource, DomainObject object) {
+        super.fillAttributes(dataSource, object);
 
         for (long attributeTypeId : CUSTOM_ATTRIBUTES) {
             if (object.getAttribute(attributeTypeId).getLocalizedValues() == null) {

@@ -5,12 +5,10 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
-import org.apache.ibatis.session.SqlSessionManager;
 import org.apache.wicket.util.io.IOUtils;
 import org.complitex.correction.entity.OrganizationCorrection;
 import org.complitex.correction.service.OrganizationCorrectionBean;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
 import org.complitex.dictionary.service.exception.AbstractException;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.util.DateUtil;
@@ -37,10 +35,7 @@ import ru.flexpay.eirc.service.correction.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.correction.service.ServiceCorrectionBean;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
-import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
-import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountCorrectionBean;
 
-import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
 import javax.ejb.Singleton;
 import javax.ejb.TransactionAttribute;
@@ -134,12 +129,6 @@ public class EircPaymentsRegistryConverter {
     private ServiceBean serviceBean;
 
     @EJB
-    private ServiceProviderAccountCorrectionBean serviceProviderAccountCorrection;
-
-    @EJB
-    private ServiceProviderAccountBean serviceProviderAccountBean;
-
-    @EJB
     private MbConverterQueueProcessor mbConverterQueueProcessor;
 
     @EJB(name = "MbTransformerConfigBean")
@@ -155,27 +144,6 @@ public class EircPaymentsRegistryConverter {
             expireAfterWrite(10, TimeUnit.MINUTES).
             build();
 
-    @PostConstruct
-    public void init2() {
-        SqlSessionFactoryBean sqlSessionFactoryBean = configBean == null ? new SqlSessionFactoryBean() :
-                new SqlSessionFactoryBean() {
-                    @Override
-                    public SqlSessionManager getSqlSessionManager() {
-                        return getSqlSessionManager(configBean.getString(MbTransformerConfig.EIRC_DATA_SOURCE), "remote");
-                    }
-                };
-        eircOrganizationStrategy.setSqlSessionFactoryBean(sqlSessionFactoryBean);
-
-        organizationCorrectionBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
-
-        serviceCorrectionBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
-
-        serviceBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
-
-        serviceProviderAccountCorrection.setSqlSessionFactoryBean(sqlSessionFactoryBean);
-
-        serviceProviderAccountBean.setSqlSessionFactoryBean(sqlSessionFactoryBean);
-    }
 
     public void exportToMegaBank(final FileReader reader, final String dir, final String mbFileName,
                                  final Long mbOrganizationId, final Long eircOrganizationId,
@@ -298,11 +266,17 @@ public class EircPaymentsRegistryConverter {
                 return;
             }
 
-            Organization serviceProvider = eircOrganizationStrategy.findById(registry.getRecipientOrganizationId(), true);
-
+            Organization serviceProvider = eircOrganizationStrategy.findById(getDataSource(), registry.getRecipientOrganizationId(), true);
             if (serviceProvider == null) {
                 fileMessenger.addMessageError("eirc_payments_recipient_not_found", registry.getRecipientOrganizationId());
                 log.error("Service provider {} not found", registry.getRecipientOrganizationId());
+                return;
+            }
+
+            Organization sender = eircOrganizationStrategy.findById(getDataSource(), registry.getSenderOrganizationId(), true);
+            if (sender == null) {
+                fileMessenger.addMessageError("eirc_payments_sender_not_found", registry.getSenderOrganizationId());
+                log.error("Sender {} not found", registry.getSenderOrganizationId());
                 return;
             }
 
@@ -340,6 +314,8 @@ public class EircPaymentsRegistryConverter {
         
 		try {
 
+            String eircDataSource = getDataSource();
+
             Container detailsPaymentsDocument = registry.getContainer(ContainerType.DETAILS_PAYMENTS_DOCUMENT);
             if (detailsPaymentsDocument == null) {
                 imessenger.addMessageError("eirc_payments_not_found_details");
@@ -354,7 +330,7 @@ public class EircPaymentsRegistryConverter {
             if (StringUtils.isEmpty(mbFileName)) {
 
                 String externalServiceProviderId = getExternalServiceProviderId(registry, serviceProviderOrganization,
-                        mbOrganizationId, eircOrganizationId);
+                        mbOrganizationId, eircOrganizationId, eircDataSource);
 
                 if (externalServiceProviderId.length() > 5) {
                     throw new IllegalArgumentException("Service provider code '" + externalServiceProviderId + "' have length more 5");
@@ -415,7 +391,7 @@ public class EircPaymentsRegistryConverter {
 
             RegistryRecordData registryRecord;
             while ((registryRecord = dataSource.getNextRecord()) != null){
-                writeInfoLine(buffer, registryRecord, serviceProviderOrganization.getId(), eircOrganizationId, mbOrganizationId);
+                writeInfoLine(buffer, registryRecord, serviceProviderOrganization.getId(), eircOrganizationId, mbOrganizationId, eircDataSource);
 			}
 
             outChannel.truncate(buffer.position());
@@ -435,28 +411,30 @@ public class EircPaymentsRegistryConverter {
 	}
 
 	private String getExternalServiceProviderId(Registry registry, Organization serviceProviderOrganization,
-                                                Long mbOrganizationId, Long eircOrganizationId) throws MbConverterException {
+                                                Long mbOrganizationId, Long eircOrganizationId, String dataSource) throws MbConverterException {
 
-        List<OrganizationCorrection> organizationCorrections = organizationCorrectionBean.getOrganizationCorrections(
+        List<OrganizationCorrection> organizationCorrections = organizationCorrectionBean.getOrganizationCorrections(dataSource,
             FilterWrapper.of(new OrganizationCorrection(null, serviceProviderOrganization.getId(), null,
-                    mbOrganizationId, eircOrganizationId, null)));
+                    registry.getSenderOrganizationId(), eircOrganizationId, null)));
         if (organizationCorrections.size() <= 0) {
-            throw new MbConverterException("No service provider correction with id {0}", serviceProviderOrganization.getId());
+            throw new MbConverterException("No service provider correction with id {0}: organizationId={1}, userOrganizationId={2}",
+                    serviceProviderOrganization.getId(), registry.getSenderOrganizationId(), eircOrganizationId);
         }
         if (organizationCorrections.size() > 1) {
-            throw new MbConverterException("Found several correction for service provider {0}", serviceProviderOrganization.getId());
+            throw new MbConverterException("Found several correction for service provider {0}: organizationId={1}, userOrganizationId={2}",
+                    serviceProviderOrganization.getId(), registry.getSenderOrganizationId(), eircOrganizationId);
         }
         return organizationCorrections.get(0).getCorrection();
 	}
 
-    public String getOutServiceCode(String innerServiceCode, Long mbOrganizationId, Long eircOrganizationId) throws MbConverterException {
+    public String getOutServiceCode(String innerServiceCode, Long mbOrganizationId, Long eircOrganizationId, String dataSource) throws MbConverterException {
         String serviceCode = serviceCorrectionCache.getIfPresent(innerServiceCode);
         if (serviceCode != null) {
             return serviceCode;
         }
 
-        Service service = getService(innerServiceCode);
-        List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(
+        Service service = getService(innerServiceCode, dataSource);
+        List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(dataSource,
                 FilterWrapper.of(new ServiceCorrection(null, service.getId(), null, mbOrganizationId,
                         eircOrganizationId, null))
         );
@@ -473,12 +451,12 @@ public class EircPaymentsRegistryConverter {
         return serviceCode;
     }
 
-    public Service getService(String innerServiceCode) throws MbConverterException {
+    public Service getService(String innerServiceCode, String dataSource) throws MbConverterException {
         Service service = serviceCache.getIfPresent(innerServiceCode);
         if (service != null) {
             return service;
         }
-        List<Service> services = serviceBean.getServices(FilterWrapper.of(new Service(innerServiceCode)));
+        List<Service> services = serviceBean.getServices(dataSource, FilterWrapper.of(new Service(innerServiceCode)));
         if (services.size() == 0) {
             throw new MbConverterException(
                     "No found service with code {0}", innerServiceCode);
@@ -492,7 +470,8 @@ public class EircPaymentsRegistryConverter {
     }
 
     private void writeInfoLine(ByteBuffer buffer, RegistryRecordData record,
-                               Long serviceProviderId, Long eircOrganizationId, Long mbOrganizationId)
+                               Long serviceProviderId, Long eircOrganizationId, Long mbOrganizationId,
+                               String dataSource)
             throws ExecutionException, MbConverterException, IOException {
 
 		//граница таблицы
@@ -551,7 +530,7 @@ public class EircPaymentsRegistryConverter {
 		if (serviceCode == null) {
 			throw new MbConverterException("Registry record`s service code is null. Registry record Id: " + record.getId());
 		}
-		serviceCode = getOutServiceCode(serviceCode, mbOrganizationId, eircOrganizationId);
+		serviceCode = getOutServiceCode(serviceCode, mbOrganizationId, eircOrganizationId, dataSource);
 		if (serviceCode == null) {
 			return;
 		}
@@ -731,6 +710,10 @@ public class EircPaymentsRegistryConverter {
         protected String getResourceBundle() {
             return null;
         }
+    }
+
+    private String getDataSource() {
+        return configBean.getString(MbTransformerConfig.EIRC_DATA_SOURCE);
     }
 
 }
