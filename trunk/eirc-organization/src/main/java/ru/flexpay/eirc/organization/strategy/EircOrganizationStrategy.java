@@ -207,8 +207,8 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
     }
 
     @Override
-    protected void fillAttributes(DomainObject object) {
-        super.fillAttributes(object);
+    protected void fillAttributes(String dataSource, DomainObject object) {
+        super.fillAttributes(dataSource, object);
 
         for (long attributeTypeId : ALL_ATTRIBUTE_TYPES) {
             if (object.getAttribute(attributeTypeId).getLocalizedValues() == null) {
@@ -235,6 +235,12 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
     @Transactional
     @Override
     public Organization findById(Long id, boolean runAsAdmin) {
+        return findById(null, id, runAsAdmin);
+    }
+
+    @Transactional
+    @Override
+    public Organization findById(String dataSource, Long id, boolean runAsAdmin) {
         /*if (log.isDebugEnabled()) {
             log.debug("Session manager: id={}",
                     getSqlSessionManager().getConfiguration().getEnvironment().getId());
@@ -245,7 +251,7 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
                 //
             }
         }*/
-        DomainObject object = super.findById(id, runAsAdmin);
+        DomainObject object = super.findById(dataSource, id, runAsAdmin);
         if (object == null) {
             return null;
         }
