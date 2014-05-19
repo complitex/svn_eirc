@@ -24,7 +24,6 @@ import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
-import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.model.IModel;
@@ -40,11 +39,14 @@ import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.ShowMode;
 import org.complitex.dictionary.web.component.ShowModePanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
+import org.complitex.dictionary.web.component.organization.OrganizationPicker;
+import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
+import ru.flexpay.eirc.service.web.component.ServicePicker;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 import ru.flexpay.eirc.service_provider_account.web.edit.ServiceProviderAccountEdit;
@@ -161,23 +163,12 @@ public class ServiceProviderAccountListPanel extends Panel {
                 new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("service"), "service_name") {
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
-                        return new ChoiceFilter<>(s,
-                                new PropertyModel<Service>(filterObject, "service"),
-                                components,
-                                serviceBean.getServices(FilterWrapper.of(new Service())),
-                                new IChoiceRenderer<Service>() {
-                                    @Override
-                                    public Object getDisplayValue(Service service) {
-                                        return service.getName(locale) + " (" + service.getCode() + ")";
-                                    }
-
-                                    @Override
-                                    public String getIdValue(Service service, int i) {
-                                        return service.getId().toString();
-                                    }
-                                },
-                                false
-                        );
+                        return new AbstractFilter<Service>(s, components, new PropertyModel<Service>(filterObject, "service")) {
+                            @Override
+                            protected Component createFilterComponent(String id, IModel<Service> model) {
+                                return new ServicePicker(id, model);
+                            }
+                        };
                     }
 
                     @Override
@@ -191,45 +182,34 @@ public class ServiceProviderAccountListPanel extends Panel {
                 new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("serviceProvider"), "spa_organization_name") {
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
-                        return new ChoiceFilter<>(s,
-                                new IModel<DomainObject>() {
+                        return new AbstractFilter<DomainObject>(s, components, new IModel<DomainObject>() {
 
-                                    @Override
-                                    public DomainObject getObject() {
-                                        return filterObject.getOrganizationId() != null ?
-                                                organizationStrategy.findById(filterObject.getOrganizationId(), false) :
-                                                null;
-                                    }
+                            @Override
+                            public DomainObject getObject() {
+                                return filterObject.getOrganizationId() != null ?
+                                        organizationStrategy.findById(filterObject.getOrganizationId(), false) :
+                                        null;
+                            }
 
-                                    @Override
-                                    public void setObject(DomainObject domainObject) {
-                                        if (domainObject != null) {
-                                            filterObject.setOrganizationId(domainObject.getId());
-                                        } else {
-                                            filterObject.setOrganizationId(null);
-                                        }
-                                    }
+                            @Override
+                            public void setObject(DomainObject domainObject) {
+                                if (domainObject != null) {
+                                    filterObject.setOrganizationId(domainObject.getId());
+                                } else {
+                                    filterObject.setOrganizationId(null);
+                                }
+                            }
 
-                                    @Override
-                                    public void detach() {
+                            @Override
+                            public void detach() {
 
-                                    }
-                                },
-                                components,
-                                organizationStrategy.getAllServiceProviders(getLocale()),
-                                new IChoiceRenderer<DomainObject>() {
-                                    @Override
-                                    public Object getDisplayValue(DomainObject serviceProvider) {
-                                        return organizationStrategy.displayDomainObject(serviceProvider, getLocale());
-                                    }
-
-                                    @Override
-                                    public String getIdValue(DomainObject serviceProvider, int i) {
-                                        return serviceProvider.getId().toString();
-                                    }
-                                },
-                                false
-                        );
+                            }
+                        }) {
+                            @Override
+                            protected Component createFilterComponent(String id, IModel<DomainObject> model) {
+                                return new OrganizationPicker(id, model, OrganizationType.SERVICE_PROVIDER.getId());
+                            }
+                        };
                     }
 
                     @Override
