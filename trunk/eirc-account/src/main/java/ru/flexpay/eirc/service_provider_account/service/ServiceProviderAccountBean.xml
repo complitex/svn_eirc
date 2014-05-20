@@ -115,7 +115,7 @@
         select
         <include refid="generalWithAddressSPAColumns"/>
         from `service_provider_account` spa
-        inner join (select distinct spa.`object_id` as `distinct_object_id`
+        inner join (select spa.`pk_id` as `max_pk_id`
 
                     from `service_provider_account` spa
                     <if test="map.inactive == true or map.all == true">
@@ -130,7 +130,7 @@
                     <if test="count > 0">
                         limit ${first},${count}
                     </if>) spa3
-                                    on spa.`object_id` = spa3.`distinct_object_id`
+                                    on spa.`pk_id` = spa3.`max_pk_id`
 
         <include refid="generalWithAddressSPAJoin"/>
 
