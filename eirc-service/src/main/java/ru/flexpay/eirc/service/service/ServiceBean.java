@@ -41,7 +41,11 @@ public class ServiceBean extends AbstractBean {
         return sqlSession().selectList(NS + ".selectServicesByIds", ids);
     }
 
+    @SuppressWarnings("unchecked")
     public List<Service> getServices(FilterWrapper<Service> filter) {
+        if (filter != null && filter.getMap().containsKey("ids")) {
+            return getServices((List<Long>)filter.getMap().get("ids"));
+        }
         ServiceUtil.addFilterMappingObject(filter);
         if (filter != null && StringUtils.equals(filter.getSortProperty(), "id")) {
             filter.setSortProperty("service_id");
