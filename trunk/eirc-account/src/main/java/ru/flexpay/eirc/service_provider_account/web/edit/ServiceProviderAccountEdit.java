@@ -4,18 +4,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.ajax.form.AjaxFormComponentUpdatingBehavior;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
-import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.model.IModel;
-import org.apache.wicket.model.Model;
 import org.apache.wicket.model.PropertyModel;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
@@ -23,17 +19,20 @@ import org.apache.wicket.util.string.StringValue;
 import org.complitex.address.entity.AddressEntity;
 import org.complitex.dictionary.entity.Attribute;
 import org.complitex.dictionary.entity.DomainObject;
+import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.entity.Locale;
 import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.ShowMode;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
+import org.complitex.dictionary.web.component.organization.OrganizationPicker;
 import org.complitex.dictionary.web.component.search.SearchComponentState;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.search.CollapsibleInputSearchToolbarButton;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.FormTemplatePage;
 import ru.flexpay.eirc.dictionary.entity.Address;
+import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.dictionary.web.CollapsibleInputSearchComponent;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
@@ -43,6 +42,7 @@ import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
+import ru.flexpay.eirc.service.web.component.ServicePicker;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceNotAllowableException;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
@@ -71,6 +71,8 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
     @EJB(name = IOrganizationStrategy.BEAN_NAME, beanInterface = IOrganizationStrategy.class)
     private EircOrganizationStrategy organizationStrategy;
+
+    private static final List<Long> EMPTY_ALLOWABLE_SERVICES = ImmutableList.of(-1L);
 
     private SearchComponentState componentState;
 
@@ -165,21 +167,8 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
         form.add(new TextField<>("middleName", new PropertyModel<String>(serviceProviderAccount.getPerson(), "middleName")));
 
         // service
-        final IModel<List<? extends Service>> services = Model.ofList(Collections.<Service>emptyList());
-        final DropDownChoice<Service> service = new DropDownChoice<>("service",
-                new PropertyModel<Service>(serviceProviderAccount, "service"),
-                services,
-                new IChoiceRenderer<Service>() {
-                    @Override
-                    public Object getDisplayValue(Service service) {
-                        return service.getName(locale) + " (" + service.getCode() + ")";
-                    }
-
-                    @Override
-                    public String getIdValue(Service service, int i) {
-                        return service.getId().toString();
-                    }
-                });
+        final FilterWrapper<Service> servicesFilter = FilterWrapper.of(new Service());
+        final ServicePicker service = new ServicePicker("service", new PropertyModel<Service>(serviceProviderAccount, "service"), servicesFilter);
         service.setRequired(true);
         service.setOutputMarkupId(true);
         form.add(service);
@@ -196,20 +185,23 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
             @Override
             public void setObject(DomainObject domainObject) {
+                List<Long> allowableServices;
                 if (domainObject != null) {
                     serviceProviderAccount.setOrganizationId(domainObject.getId());
                     organization = organizationStrategy.findById(domainObject.getId(), false);
-
-                    List<Service> allowableServices = getAllowableServices();
-                    services.setObject(allowableServices);
+                    allowableServices = getAllowableServices();
                 } else {
                     serviceProviderAccount.setOrganizationId(null);
                     organization = null;
-                    services.setObject(Collections.<Service>emptyList());
+                    allowableServices = EMPTY_ALLOWABLE_SERVICES;
                 }
+                if (serviceProviderAccount.getService() != null && !allowableServices.contains(serviceProviderAccount.getService().getId())) {
+                    serviceProviderAccount.setService(null);
+                }
+                servicesFilter.getMap().put("ids", allowableServices);
             }
 
-            public List<Service> getAllowableServices() {
+            public List<Long> getAllowableServices() {
                 if (organization == null) {
                     return Collections.emptyList();
                 }
@@ -221,7 +213,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
                 for (Attribute allowableService : allowableServices) {
                     ids.add(allowableService.getValueId());
                 }
-                return serviceBean.getServices(ids);
+                return ids;
             }
 
             @Override
@@ -230,26 +222,12 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
             }
         };
         serviceProviderModel.setObject(new DomainObject(serviceProviderAccount.getOrganizationId()));
-        form.add(new DropDownChoice<>("serviceProvider",
-                serviceProviderModel,
-                organizationStrategy.getAllServiceProviders(getLocale()),
-                new IChoiceRenderer<DomainObject>() {
-                    @Override
-                    public Object getDisplayValue(DomainObject serviceProvider) {
-                        return organizationStrategy.displayDomainObject(serviceProvider, getLocale());
-                    }
-
-                    @Override
-                    public String getIdValue(DomainObject serviceProvider, int i) {
-                        return serviceProvider.getId().toString();
-                    }
-                }
-        ).setRequired(true).add(new AjaxFormComponentUpdatingBehavior("onchange") {
+        form.add(new OrganizationPicker("serviceProvider", serviceProviderModel, true, null, true, OrganizationType.SERVICE_PROVIDER.getId()) {
             @Override
             protected void onUpdate(AjaxRequestTarget target) {
                 target.add(service);
             }
-        }));
+        });
 
         // save button
         AjaxButton save = new AjaxButton("save") {

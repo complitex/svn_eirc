@@ -47,7 +47,14 @@ public class ServiceDialog extends FormComponentPanel<Service> {
     private final Dialog lookupDialog;
 
     public ServiceDialog(String id, IModel<Service> model, boolean enabled, final Component ...refreshComponents) {
+        this(id, model, FilterWrapper.of(new Service()), enabled, refreshComponents);
+    }
+
+    public ServiceDialog(String id, IModel<Service> model, FilterWrapper<Service> filter, boolean enabled, final Component ...refreshComponents) {
         super(id, model);
+
+        this.filterWrapper = filter;
+
         lookupDialog = new Dialog("lookupDialog") {
 
             {
@@ -68,8 +75,6 @@ public class ServiceDialog extends FormComponentPanel<Service> {
 
         final Form<Void> filterForm = new Form<Void>("filterForm");
         content.add(filterForm);
-
-        this.filterWrapper = FilterWrapper.of(new Service());
 
         final DataProvider<Service> dataProvider = new DataProvider<Service>() {
 

@@ -10,9 +10,9 @@ import org.apache.wicket.markup.html.form.FormComponentPanel;
 import org.apache.wicket.model.AbstractReadOnlyModel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.request.resource.PackageResourceReference;
+import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.LocaleBean;
 import ru.flexpay.eirc.service.entity.Service;
-import ru.flexpay.eirc.service.service.ServiceBean;
 
 import javax.ejb.EJB;
 
@@ -24,9 +24,6 @@ public class ServicePicker extends FormComponentPanel<Service> {
 
     @EJB
     private LocaleBean localeBean;
-
-    @EJB
-    private ServiceBean serviceBean;
 
     @Override
     public void renderHead(IHeaderResponse response) {
@@ -40,7 +37,16 @@ public class ServicePicker extends FormComponentPanel<Service> {
         this(id, model, false, null, true);
     }
 
+    public ServicePicker(String id, IModel<Service> model, FilterWrapper<Service> filter) {
+        this(id, model, filter, false, null, true);
+    }
+
     public ServicePicker(String id, IModel<Service> model, boolean required,
+                         IModel<String> labelModel, boolean enabled) {
+        this(id, model, FilterWrapper.of(new Service()), required, labelModel, enabled);
+    }
+
+    public ServicePicker(String id, IModel<Service> model, FilterWrapper<Service> filter, boolean required,
                          IModel<String> labelModel, boolean enabled) {
         super(id, model);
 
@@ -63,7 +69,7 @@ public class ServicePicker extends FormComponentPanel<Service> {
         serviceLabel.setOutputMarkupId(true);
         add(serviceLabel);
 
-        final ServiceDialog lookupDialog = new ServiceDialog("lookupDialog", model, enabled, serviceLabel);
+        final ServiceDialog lookupDialog = new ServiceDialog("lookupDialog", model, filter, enabled, serviceLabel);
         add(lookupDialog);
 
         AjaxLink<Void> choose = new AjaxLink<Void>("choose") {
