@@ -46,6 +46,7 @@ import ru.flexpay.eirc.service.web.component.ServicePicker;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceNotAllowableException;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
+import ru.flexpay.eirc.service_provider_account.web.list.ServiceProviderAccountList;
 
 import javax.ejb.EJB;
 import java.util.Collections;
@@ -311,7 +312,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
         if (revertToEircAccount) {
             return EircAccountEdit.class;
         }
-        return ServiceProviderAccountEdit.class;
+        return ServiceProviderAccountList.class;
     }
 
     private PageParameters getRevertPageParams(Long eircAccountId) {
