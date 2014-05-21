@@ -1,11 +1,13 @@
 package ru.flexpay.eirc.eirc_account.web.edit;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.wicket.ajax.AjaxEventBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
+import org.apache.wicket.markup.html.form.FormComponent;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.model.IModel;
@@ -26,7 +28,6 @@ import org.complitex.template.web.component.toolbar.search.CollapsibleInputSearc
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
 import org.odlabs.wiquery.ui.accordion.Accordion;
-import org.odlabs.wiquery.ui.options.HeightStyleEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.dictionary.entity.Address;
@@ -117,11 +118,27 @@ public class EircAccountEdit extends TemplatePage {
         form.add(new TextField<>("middleName", new PropertyModel<String>(eircAccount.getPerson(), "middleName")));
 
         // service provider accounts
-        Accordion accordion = new Accordion("accordionSPA");
+        final Accordion accordion = new Accordion("accordionSPA");
+        final Integer active = (Integer)getSession().getAttribute("service_provider_accounts_accordion_active");
+        if (active != null && active < 0) {
+            accordion.setActive(active);
+        } else {
+            accordion.setActive(false);
+        }
         accordion.setCollapsible(true);
-        accordion.setActive(false);
         accordion.setOutputMarkupPlaceholderTag(true);
-        accordion.setHeightStyle(HeightStyleEnum.CONTENT);
+        accordion.add(new FormComponent("accordionSPAHeader") {
+
+        }.add(new AjaxEventBehavior("click") {
+            Integer state = accordion.getActive();
+
+            protected void onEvent(AjaxRequestTarget target) {
+                synchronized (accordion) {
+                    state = state >= 0 ? -1 : 0;
+                    getSession().setAttribute("service_provider_accounts_accordion_active", state);
+                }
+            }
+        }));
         form.add(accordion);
         accordion.add(new ServiceProviderAccountListPanel("serviceProviderAccounts", eircAccount.getId() == null? 0: eircAccount.getId(), eircAccount.getEndDate() == null).
                 setVisible(eircAccount.getId() != null && eircAccount.getId() > 0));
