@@ -6,7 +6,6 @@ import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
-import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.TextField;
@@ -20,8 +19,6 @@ import org.complitex.address.entity.AddressEntity;
 import org.complitex.dictionary.entity.Attribute;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.entity.Locale;
-import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.ShowMode;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
@@ -30,7 +27,7 @@ import org.complitex.dictionary.web.component.search.SearchComponentState;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.search.CollapsibleInputSearchToolbarButton;
 import org.complitex.template.web.security.SecurityRole;
-import org.complitex.template.web.template.FormTemplatePage;
+import org.complitex.template.web.template.TemplatePage;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 import ru.flexpay.eirc.dictionary.entity.Person;
@@ -56,7 +53,7 @@ import java.util.List;
  * @author Pavel Sknar
  */
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
-public class ServiceProviderAccountEdit extends FormTemplatePage {
+public class ServiceProviderAccountEdit extends TemplatePage {
 
     @EJB
     private ServiceProviderAccountBean serviceProviderAccountBean;
@@ -66,9 +63,6 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
     @EJB
     private ServiceBean serviceBean;
-
-    @EJB
-    private LocaleBean localeBean;
 
     @EJB(name = IOrganizationStrategy.BEAN_NAME, beanInterface = IOrganizationStrategy.class)
     private EircOrganizationStrategy organizationStrategy;
@@ -124,8 +118,6 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
             }
         }
 
-        final Locale locale = localeBean.convert(getLocale());
-
         IModel<String> labelModel = new ResourceModel("label");
 
         add(new Label("title", labelModel));
@@ -133,12 +125,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
         final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
         messages.setOutputMarkupId(true);
-
-        final WebMarkupContainer container = new WebMarkupContainer("container");
-        container.setOutputMarkupPlaceholderTag(true);
-        container.setVisible(true);
-        add(container);
-        container.add(messages);
+        add(messages);
 
         Form form = new Form("form");
         add(form);
@@ -151,7 +138,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
         }
 
         CollapsibleInputSearchComponent searchComponent = new CollapsibleInputSearchComponent("searchComponent",
-                 componentState, null, ShowMode.ACTIVE, true) {
+                 componentState, null, ShowMode.ACTIVE, serviceProviderAccount.getEircAccount().getId() == null) {
             @Override
             protected Address getAddress() {
                 return serviceProviderAccount.getEircAccount().getAddress();
@@ -251,8 +238,8 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
                 }
 
                 if (isNullAddressInput(addressInput)) {
-                    container.error(getString("failed_address"));
-                    target.add(container);
+                    error(getString("failed_address"));
+                    target.add(messages);
                     return;
                 } else if (address == null) {
                     address = new Address(addressInput.getId(), AddressEntity.BUILDING);
@@ -260,8 +247,8 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
                 EircAccount eircAccount = eircAccountBean.getEircAccount(address);
                 if (eircAccount == null) {
-                    container.error(getString("eirc_account_not_found_by_address"));
-                    target.add(container);
+                    error(getString("eirc_account_not_found_by_address"));
+                    target.add(messages);
                     return;
                 }
 
@@ -270,8 +257,8 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
                 try {
                     serviceProviderAccountBean.save(serviceProviderAccount);
                 } catch (ServiceNotAllowableException e) {
-                    container.error(getString("eirc_account_service_not_allowable"));
-                    target.add(container);
+                    error(getString("eirc_account_service_not_allowable"));
+                    target.add(messages);
                     return;
                 }
 
@@ -282,7 +269,7 @@ public class ServiceProviderAccountEdit extends FormTemplatePage {
 
             @Override
             protected void onError(AjaxRequestTarget target, Form<?> form) {
-                target.add(container);
+                target.add(messages);
             }
         };
         save.setVisible(serviceProviderAccount.getEndDate() == null);
