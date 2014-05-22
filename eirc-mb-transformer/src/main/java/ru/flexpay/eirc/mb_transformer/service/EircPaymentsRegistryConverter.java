@@ -65,7 +65,8 @@ public class EircPaymentsRegistryConverter {
     private static final int NUMBER_READ_CHARS = 10000;
 
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("dd.MM.yyyy");
-	private static final DateTimeFormatter PAYMENT_DATE_FORMATTER = DateTimeFormat.forPattern("ddMMyyyy");
+	private static final DateTimeFormatter EIRC_PAYMENT_DATE_FORMATTER = DateTimeFormat.forPattern("ddMMyyyy");
+	private static final DateTimeFormatter MB_OPERATION_DATE_FORMATTER = DateTimeFormat.forPattern("yyyyMMdd");
 	private static final DateTimeFormatter PAYMENT_PERIOD_DATE_FORMATTER = DateTimeFormat.forPattern("yyyyMM");
 
     private static final String FORMAT_FILE_NAME = "00001001.YMD";
@@ -324,7 +325,7 @@ public class EircPaymentsRegistryConverter {
             }
             String[] detailsData = detailsPaymentsDocument.getData().split(":");
 
-            Date paymentDate = PAYMENT_DATE_FORMATTER.parseDateTime(detailsData[2]).toDate();
+            Date paymentDate = EIRC_PAYMENT_DATE_FORMATTER.parseDateTime(detailsData[2]).toDate();
             Date creationDate = registry.getCreationDate();
 
             if (StringUtils.isEmpty(mbFileName)) {
@@ -550,7 +551,7 @@ public class EircPaymentsRegistryConverter {
 
 		// дата платежа
 		Date operationDate = record.getOperationDate();
-		String paymentDate = operationDate != null ? PAYMENT_DATE_FORMATTER.print(operationDate.getTime()) : null;
+		String paymentDate = operationDate != null ? MB_OPERATION_DATE_FORMATTER.print(operationDate.getTime()) : null;
 		writeCellData(buffer, DELIMITER, paymentDate, TABLE_HEADERS[12].length(), ' ');
 
 		// с какого месяца оплачена услуга
