@@ -12,9 +12,7 @@ import org.apache.wicket.extensions.markup.html.repeater.data.sort.SortOrder;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
-import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.markup.repeater.Item;
@@ -30,6 +28,7 @@ import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.ShowMode;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
+import org.complitex.dictionary.web.component.organization.OrganizationPicker;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
 import org.complitex.dictionary.web.component.scroll.ScrollBookmarkablePageLink;
 import org.complitex.dictionary.web.component.search.CollapsibleSearchPanel;
@@ -41,11 +40,13 @@ import org.complitex.template.web.component.toolbar.search.CollapsibleSearchTool
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
 import ru.flexpay.eirc.dictionary.entity.Address;
+import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
+import ru.flexpay.eirc.service.web.component.ServicePicker;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 import ru.flexpay.eirc.service_provider_account.web.edit.ServiceProviderAccountEdit;
@@ -262,58 +263,31 @@ public class ServiceProviderAccountList extends TemplatePage {
 
         filterForm.add(new TextField<>("addressFilter", new Model<String>()));
 
-        filterForm.add(new DropDownChoice<>("serviceFilter",
-                new PropertyModel<Service>(filterObject, "service"),
-                serviceBean.getServices(FilterWrapper.of(new Service())),
-                new IChoiceRenderer<Service>() {
-                    @Override
-                    public Object getDisplayValue(Service service) {
-                        return service.getName(locale) + " (" + service.getCode() + ")";
-                    }
+        filterForm.add(new ServicePicker("serviceFilter", new PropertyModel<Service>(filterObject, "service")));
 
-                    @Override
-                    public String getIdValue(Service service, int i) {
-                        return service.getId().toString();
-                    }
-                }).setNullValid(true));
+        filterForm.add(new OrganizationPicker("serviceProviderFilter", new IModel<DomainObject>() {
 
-        filterForm.add(new DropDownChoice<>("serviceProviderFilter",
-                new IModel<DomainObject>() {
+            @Override
+            public DomainObject getObject() {
+                return filterObject.getOrganizationId() != null ?
+                        organizationStrategy.findById(filterObject.getOrganizationId(), false) :
+                        null;
+            }
 
-                    @Override
-                    public DomainObject getObject() {
-                        return filterObject.getOrganizationId() != null ?
-                                organizationStrategy.findById(filterObject.getOrganizationId(), false) :
-                                null;
-                    }
-
-                    @Override
-                    public void setObject(DomainObject domainObject) {
-                        if (domainObject != null) {
-                            filterObject.setOrganizationId(domainObject.getId());
-                        } else {
-                            filterObject.setOrganizationId(null);
-                        }
-                    }
-
-                    @Override
-                    public void detach() {
-
-                    }
-                },
-                organizationStrategy.getAllServiceProviders(getLocale()),
-                new IChoiceRenderer<DomainObject>() {
-                    @Override
-                    public Object getDisplayValue(DomainObject serviceProvider) {
-                        return organizationStrategy.displayDomainObject(serviceProvider, getLocale());
-                    }
-
-                    @Override
-                    public String getIdValue(DomainObject serviceProvider, int i) {
-                        return serviceProvider.getId().toString();
-                    }
+            @Override
+            public void setObject(DomainObject domainObject) {
+                if (domainObject != null) {
+                    filterObject.setOrganizationId(domainObject.getId());
+                } else {
+                    filterObject.setOrganizationId(null);
                 }
-        ).setNullValid(true));
+            }
+
+            @Override
+            public void detach() {
+
+            }
+        }, OrganizationType.SERVICE_PROVIDER.getId()));
 
         //Reset Action
         AjaxLink reset = new AjaxLink("reset") {
