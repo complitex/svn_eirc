@@ -27,7 +27,7 @@ import org.complitex.dictionary.web.component.search.SearchComponentState;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.search.CollapsibleInputSearchToolbarButton;
 import org.complitex.template.web.security.SecurityRole;
-import org.complitex.template.web.template.TemplatePage;
+import org.complitex.template.web.template.FormTemplatePage;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 import ru.flexpay.eirc.dictionary.entity.Person;
@@ -53,7 +53,7 @@ import java.util.List;
  * @author Pavel Sknar
  */
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
-public class ServiceProviderAccountEdit extends TemplatePage {
+public class ServiceProviderAccountEdit extends FormTemplatePage {
 
     @EJB
     private ServiceProviderAccountBean serviceProviderAccountBean;
