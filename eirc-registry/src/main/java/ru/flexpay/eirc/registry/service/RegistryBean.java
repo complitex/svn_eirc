@@ -16,6 +16,9 @@ import java.util.List;
 public class RegistryBean extends AbstractBean {
     private static final String NS = RegistryBean.class.getName();
 
+    public static final String CREATION_DATE_RANGE = "creationDateRange";
+    public static final String LOAD_DATE_RANGE = "loadDateRange";
+
     public List<Registry> getRegistries(FilterWrapper<Registry> filter) {
         return sqlSession().selectList(NS + ".selectRegistries", filter);
     }

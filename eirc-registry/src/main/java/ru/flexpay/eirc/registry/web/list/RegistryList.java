@@ -1,6 +1,8 @@
 package ru.flexpay.eirc.registry.web.list;
 
 import com.google.common.collect.ImmutableList;
+import com.googlecode.wicket.jquery.ui.plugins.datepicker.DateRange;
+import com.googlecode.wicket.jquery.ui.plugins.datepicker.RangeDatePickerTextField;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
@@ -15,10 +17,7 @@ import org.apache.wicket.markup.html.form.IChoiceRenderer;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
-import org.apache.wicket.model.AbstractReadOnlyModel;
-import org.apache.wicket.model.CompoundPropertyModel;
-import org.apache.wicket.model.IModel;
-import org.apache.wicket.model.ResourceModel;
+import org.apache.wicket.model.*;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.request.resource.SharedResourceReference;
 import org.complitex.dictionary.entity.DomainObject;
@@ -26,7 +25,7 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
-import org.complitex.dictionary.web.component.DatePicker;
+import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.image.StaticImage;
@@ -55,7 +54,6 @@ import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 import javax.ejb.EJB;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -101,8 +99,6 @@ public class RegistryList extends TemplatePage {
 
     private AbstractFinishCallback finishCallback;
 
-    private IModel<Registry> filterModel = new CompoundPropertyModel<>(new Registry());
-
     @EJB
     private RegistryWorkflowManager registryWorkflowManager;
 
@@ -128,9 +124,15 @@ public class RegistryList extends TemplatePage {
         add(container);
         container.add(messages);
 
+        //models
+        final IModel<Registry> filterModel = new CompoundPropertyModel<>(new Registry());
+        final IModel<DateRange> creationDateModel = new Model<>(getAllDateRange());
+        final IModel<DateRange> loadDateModel = new Model<>(getAllDateRange());
+
         //Form
         final Form<Registry> filterForm = new Form<>("filterForm", filterModel);
         container.add(filterForm);
+
 
         //Data Provider
         final DataProvider<Registry> dataProvider = new DataProvider<Registry>() {
@@ -141,6 +143,8 @@ public class RegistryList extends TemplatePage {
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
                 filterWrapper.setLike(true);
+                filterWrapper.getMap().put(RegistryBean.CREATION_DATE_RANGE, prepareDateRange(creationDateModel.getObject()));
+                filterWrapper.getMap().put(RegistryBean.LOAD_DATE_RANGE, prepareDateRange(loadDateModel.getObject()));
 
                 return registryBean.getRegistries(filterWrapper);
             }
@@ -149,6 +153,13 @@ public class RegistryList extends TemplatePage {
             protected int getSize() {
                 FilterWrapper<Registry> filterWrapper = FilterWrapper.of(new Registry());
                 return registryBean.count(filterWrapper);
+            }
+
+            private DateRange prepareDateRange(DateRange dateRange) {
+                return new DateRange(
+                        DateUtil.getBeginOfDay(dateRange.getStart()),
+                        DateUtil.getEndOfDay(dateRange.getEnd())
+                );
             }
         };
         dataProvider.setSort("creation_date", SortOrder.ASCENDING);
@@ -164,8 +175,8 @@ public class RegistryList extends TemplatePage {
                 Organization recipientOrganization = organizationStrategy.findById(registry.getRecipientOrganizationId(), false);
 
                 item.add(new Label("creationDate", registry.getCreationDate() != null ? CREATE_DATE_FORMAT.format(registry.getCreationDate()) : ""));
-                item.add(new Label("sender", organizationStrategy.displayDomainObject(senderOrganization, getLocale())));
-                item.add(new Label("recipient", organizationStrategy.displayDomainObject(recipientOrganization, getLocale())));
+                item.add(new Label("sender", senderOrganization == null ? "" : organizationStrategy.displayDomainObject(senderOrganization, getLocale())));
+                item.add(new Label("recipient", recipientOrganization == null ? "" : organizationStrategy.displayDomainObject(recipientOrganization, getLocale())));
                 item.add(new Label("type", registry.getType().getLabel(getLocale())));
                 item.add(new Label("loadDate", registry.getLoadDate() != null ? LOAD_DATE_FORMAT.format(registry.getLoadDate()) : ""));
                 item.add(new Label("recordsCount", String.valueOf(registry.getRecordsCount())));
@@ -247,7 +258,8 @@ public class RegistryList extends TemplatePage {
                 "registryLoadDate", "registryRecordsCount", "registryStatus"));
 
         //Filters
-        filterForm.add(new DatePicker<Date>("creationDate"));
+
+        filterForm.add(new RangeDatePickerTextField("creationDate", creationDateModel));
         filterForm.add(new TextField<>("registryNumber"));
         filterForm.add(new DropDownChoice<>("senderOrganization",
                 new IModel<DomainObject>() {
@@ -342,7 +354,7 @@ public class RegistryList extends TemplatePage {
                 }
         ).setNullValid(true));
 
-        filterForm.add(new DatePicker<Date>("loadDate"));
+        filterForm.add(new RangeDatePickerTextField("loadDate", loadDateModel));
 
         filterForm.add(new DropDownChoice<>("status",
                 Arrays.asList(RegistryStatus.values()),
@@ -366,6 +378,8 @@ public class RegistryList extends TemplatePage {
             public void onClick(AjaxRequestTarget target) {
                 filterForm.clearInput();
                 filterModel.setObject(new Registry());
+                creationDateModel.setObject(getAllDateRange());
+                loadDateModel.setObject(getAllDateRange());
 
                 target.add(container);
             }
@@ -432,6 +446,10 @@ public class RegistryList extends TemplatePage {
 
     private void showIMessages(AjaxRequestTarget target) {
         container.showIMessages(target);
+    }
+
+    private static DateRange getAllDateRange() {
+        return new DateRange(DateUtil.MIN_BEGIN_DATE, DateUtil.getCurrentDate());
     }
 
 }
