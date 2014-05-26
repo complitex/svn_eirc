@@ -14,7 +14,7 @@ import java.util.Set;
 public class StringUtil {
     public static String format(String str, Set<Character> delimiter, char escapeChar) {
         if (str == null) {
-            return str;
+            return null;
         }
 
         StringBuilder buf = new StringBuilder(str.length());

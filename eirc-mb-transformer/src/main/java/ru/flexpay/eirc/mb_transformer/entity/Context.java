@@ -3,6 +3,7 @@ package ru.flexpay.eirc.mb_transformer.entity;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
 import org.complitex.dictionary.entity.FilterWrapper;
 import ru.flexpay.eirc.mb_transformer.service.MbConverterException;
 import ru.flexpay.eirc.registry.entity.Registry;
@@ -82,11 +83,18 @@ public abstract class Context {
         return registryRecord;
     }
 
+    public boolean isValid() {
+        return true;
+    }
+
     public abstract String[] parseLine(String line);
 
     public abstract String getServiceCodes(String[] fields);
 
     public String getInnerServiceCode(String outServiceCode) throws MbConverterException {
+        if (StringUtils.isEmpty(outServiceCode) || "0".equals(outServiceCode)) {
+            return "0";
+        }
         String serviceCode = serviceCache.getIfPresent(outServiceCode);
         if (serviceCode == null) {
             List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(

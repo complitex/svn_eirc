@@ -1,8 +1,7 @@
 package ru.flexpay.eirc.mb_transformer.service;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.io.PatternFilenameFilter;
@@ -54,7 +53,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Stateless
@@ -250,6 +248,7 @@ public class MbCorrectionsFileConverter {
         final AtomicInteger recordNum = new AtomicInteger(0);
 
         final Map<String, int[]> chargesContainers = Maps.newHashMapWithExpectedSize(((int)chargesFile.getFileLength())/30);
+        final Map<String, List<String>> chargesServices = Maps.newHashMapWithExpectedSize(((int)chargesFile.getFileLength())/30);
 
 		try {
 
@@ -349,23 +348,35 @@ public class MbCorrectionsFileConverter {
 
                 RegistryRecordData record;
                 while ((record = dataSource.getNextRecord()) != null) {
+                    // containers
                     int start = chargesBuffer.position();
                     record.writeContainers(chargesBuffer);
                     int end = chargesBuffer.position();
                     chargesContainers.put(getChargesContainerKey(record), new int[]{start, end});
+
+                    // services
+                    if (chargesServices.containsKey(record.getPersonalAccountExt())) {
+                        chargesServices.get(record.getPersonalAccountExt()).add(record.getServiceCode());
+                    } else {
+                        chargesServices.put(record.getPersonalAccountExt(), Lists.newArrayList(record.getServiceCode()));
+                    }
                 }
                 IOUtils.closeQuietly(reader);
 
                 //Corrections file
                 reader = getBufferedReader(correctionsFile);
                 dataSource.initContextDataSource(new CorrectionsContext(imessenger, mbOrganizationId, eircOrganizationId,
-                        "ХАРЬКОВ", true, registry, chargesContainers, chargesBuffer), reader, correctionsFile.getFileName());
+                        "ХАРЬКОВ", true, registry, chargesContainers, chargesServices, chargesBuffer), reader, correctionsFile.getFileName());
 
                 //  Create a read-write corrections memory-mapped file
                 rwChannel = new RandomAccessFile(tmpFile, "rw").getChannel();
                 ByteBuffer buffer = rwChannel.map(FileChannel.MapMode.READ_WRITE, 0, correctionsFile.getFileLength()*2);
 
                 registryFPFileService.writeRecordsAndFooter(dataSource, buffer);
+
+                if (!dataSource.getContext().isValid()) {
+                    throw new MbConverterException("Failed convert {0} and {1} to {2}", correctionsFile.getShortName(), chargesFile.getShortName(), eircFileName);
+                }
 
                 if (eircFileName == null) {
                     eircFileName = registryFPFileService.fileName(registry);
@@ -477,9 +488,6 @@ public class MbCorrectionsFileConverter {
 
 		int count = 0;
 		for (String serviceCode : serviceCodes) {
-			if (StringUtils.isEmpty(serviceCode) || "0".equals(serviceCode)) {
-				return 0;
-			}
 			RegistryRecordData record = context.getRegistryRecord(fields, serviceCode);
 
             recordStack.add(record);
@@ -511,21 +519,19 @@ public class MbCorrectionsFileConverter {
         private Date fromDate;
         private Date tillDate;
         private Map<String, int[]> charges;
+        private Map<String, List<String>> services;
         private ByteBuffer chargesBuffer;
+        private boolean valid = true;
 
         private byte[] readBuffer = new byte[16*1024];
 
-        private Cache<String, String> serviceCache = CacheBuilder.newBuilder().
-                maximumSize(1000).
-                expireAfterWrite(10, TimeUnit.MINUTES).
-                build();
-
         public CorrectionsContext(AbstractMessenger imessenger, Long mbOrganizationId, Long eircOrganizationId, String city,
                                   boolean skipHeader, Registry registry,
-                                  Map<String, int[]> charges, ByteBuffer chargesBuffer) {
+                                  Map<String, int[]> charges, Map<String, List<String>> services, ByteBuffer chargesBuffer) {
             super(imessenger, serviceCorrectionBean, serviceBean, mbOrganizationId,eircOrganizationId, skipHeader, registry);
             this.city = city;
             this.charges = charges;
+            this.services = services;
             this.chargesBuffer = chargesBuffer;
         }
 
@@ -562,7 +568,15 @@ public class MbCorrectionsFileConverter {
 
         @Override
         public String getServiceCodes(String[] fields) {
-            return fields[20];
+            String serviceCodes = fields[20];
+            if (StringUtils.isEmpty(serviceCodes) || "0".equals(serviceCodes)) {
+                String personalAccountExt = fields[1];
+                List<String> currentServices = services.get(personalAccountExt);
+                if (currentServices != null && currentServices.size() > 0) {
+                    return StringUtils.join(currentServices, ';');
+                }
+            }
+            return serviceCodes;
         }
 
         @Override
@@ -570,10 +584,12 @@ public class MbCorrectionsFileConverter {
             return new CorrectionMapped(fields, serviceCode);
         }
 
-        public void writeChargeContainers(ByteBuffer writeByteBuffer, RegistryRecordData recordData) {
+        public boolean writeChargeContainers(ByteBuffer writeByteBuffer, RegistryRecordData recordData) {
             int[] idx = charges.get(getChargesContainerKey(recordData));
             if (idx == null) {
-                return;
+                getIMessenger().addMessageError("mb_registries_fail_not_charges", recordData.getPersonalAccountExt(), recordData.getServiceCode());
+                log.error("Can not find account {} in MB charges (service code - {})", recordData.getPersonalAccountExt(), recordData.getServiceCode());
+                return false;
             }
             write(writeByteBuffer, FPRegistryConstants.CONTAINER_SEPARATOR);
             int length = idx[1] - idx[0];
@@ -582,11 +598,18 @@ public class MbCorrectionsFileConverter {
                 readBuffer[i] = chargesBuffer.get();
             }
             writeByteBuffer.put(readBuffer, 0, length);
+            return true;
+        }
+
+        @Override
+        public boolean isValid() {
+            return valid;
         }
 
         private class CorrectionMapped extends RegistryRecordMapped {
 
             private String[] buildingFields;
+            private String[] nameFields;
 
             private CorrectionMapped(String[] fields, String serviceCode) throws MbConverterException {
                 super(fields, serviceCode);
@@ -609,6 +632,7 @@ public class MbCorrectionsFileConverter {
                     tillDate = modificationDate;
                 }
                 buildingFields = parseBuildingAddress(fields[8]);
+                nameFields = StringUtils.split(fields[2], " ", 3);
             }
 
 
@@ -629,17 +653,17 @@ public class MbCorrectionsFileConverter {
 
             @Override
             public String getFirstName() {
-                return "";
+                return ArrayUtils.getLength(nameFields) > 1? nameFields[1] : "";
             }
 
             @Override
             public String getMiddleName() {
-                return "";
+                return ArrayUtils.getLength(nameFields) > 2? nameFields[2] : "";
             }
 
             @Override
             public String getLastName() {
-                return getField(2);
+                return ArrayUtils.getLength(nameFields) > 0? nameFields[0] : "";
             }
 
             @Override
@@ -735,14 +759,14 @@ public class MbCorrectionsFileConverter {
             @Override
             public void writeContainers(ByteBuffer buffer) {
                 String operationDate = MbParsingConstants.OPERATION_DATE_FORMAT.print(getModificationDate().getTime());
-
+                /*
                 write(buffer, ContainerType.OPEN_ACCOUNT.getId());
                 write(buffer, ":");
                 write(buffer, operationDate);
                 write(buffer, "::");
 
                 write(buffer, FPRegistryConstants.CONTAINER_SEPARATOR);
-
+                */
                 write(buffer, ContainerType.EXTERNAL_ORGANIZATION_ACCOUNT.getId());
                 write(buffer, ":");
                 write(buffer, operationDate);
@@ -752,7 +776,7 @@ public class MbCorrectionsFileConverter {
                 write(buffer, getMbOrganizationId());
 
                 write(buffer, FPRegistryConstants.CONTAINER_SEPARATOR);
-
+                /*
                 // ФИО
                 write(buffer, ContainerType.SET_RESPONSIBLE_PERSON.getId());
                 write(buffer, ":");
@@ -761,7 +785,7 @@ public class MbCorrectionsFileConverter {
                 write(buffer, getField(2));
 
                 write(buffer, FPRegistryConstants.CONTAINER_SEPARATOR);
-
+                */
                 // Количество проживающих
                 String containerValue = StringUtils.isEmpty(getField(15))? "0": getField(15);
                 write(buffer, ContainerType.SET_NUMBER_ON_HABITANTS.getId());
@@ -780,7 +804,7 @@ public class MbCorrectionsFileConverter {
                 write(buffer, "::");
                 write(buffer, containerValue);
 
-                writeChargeContainers(buffer, this);
+                valid &= writeChargeContainers(buffer, this);
             }
 
             @Override
