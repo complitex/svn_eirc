@@ -176,6 +176,12 @@
                 <scope>provided</scope>
             </dependency>
 
+            <dependency>
+                <artifactId>wicket-jquery-ui-plugins</artifactId>
+                <groupId>com.googlecode.wicket-jquery-ui</groupId>
+                <version>6.15.0</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 </project>

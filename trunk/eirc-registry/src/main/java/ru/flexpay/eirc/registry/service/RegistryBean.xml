@@ -113,6 +113,14 @@
             </if>
 
         </if>
+
+        <if test="map.loadDateRange != null">
+            and (r.`load_date` between #{map.loadDateRange.start} and #{map.loadDateRange.end})
+        </if>
+
+        <if test="map.creationDateRange != null">
+            and (r.`creation_date` between #{map.creationDateRange.start} and #{map.creationDateRange.end})
+        </if>
     </sql>
 
     <select id="selectRegistries" parameterType="org.complitex.dictionary.entity.FilterWrapper" resultMap="Registry">
