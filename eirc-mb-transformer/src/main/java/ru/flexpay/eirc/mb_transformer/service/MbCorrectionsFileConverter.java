@@ -42,7 +42,6 @@ import ru.flexpay.eirc.registry.util.StringUtil;
 import ru.flexpay.eirc.service.correction.service.ServiceCorrectionBean;
 import ru.flexpay.eirc.service.service.ServiceBean;
 
-import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
@@ -79,7 +78,6 @@ public class MbCorrectionsFileConverter {
     @EJB
     private MbConverterQueueProcessor mbConverterQueueProcessor;
 
-    @PostConstruct
     public void init2() {
         SqlSessionFactoryBean sqlSessionFactoryBean = configBean == null ? new SqlSessionFactoryBean() :
                 new SqlSessionFactoryBean() {
@@ -335,10 +333,12 @@ public class MbCorrectionsFileConverter {
             FileChannel rwChannel = null;
             FileChannel outChannel = null;
             try {
+                String eircDataSource = getDataSource();
+
                 //Charges file
                 reader = getBufferedReader(chargesFile);
 
-                dataSource.initContextDataSource(new ChargesContext(imessenger, mbOrganizationId, eircOrganizationId,
+                dataSource.initContextDataSource(new ChargesContext(imessenger, eircDataSource, mbOrganizationId, eircOrganizationId,
                         false, registry),
                         reader, chargesFile.getFileName());
 
@@ -365,7 +365,7 @@ public class MbCorrectionsFileConverter {
 
                 //Corrections file
                 reader = getBufferedReader(correctionsFile);
-                dataSource.initContextDataSource(new CorrectionsContext(imessenger, mbOrganizationId, eircOrganizationId,
+                dataSource.initContextDataSource(new CorrectionsContext(imessenger, eircDataSource, mbOrganizationId, eircOrganizationId,
                         "ХАРЬКОВ", true, registry, chargesContainers, chargesServices, chargesBuffer), reader, correctionsFile.getFileName());
 
                 //  Create a read-write corrections memory-mapped file
@@ -374,9 +374,7 @@ public class MbCorrectionsFileConverter {
 
                 registryFPFileService.writeRecordsAndFooter(dataSource, buffer);
 
-                if (!dataSource.getContext().isValid()) {
-                    throw new MbConverterException("Failed convert {0} and {1} to {2}", correctionsFile.getShortName(), chargesFile.getShortName(), eircFileName);
-                }
+                chargesBuffer.clear();
 
                 if (eircFileName == null) {
                     eircFileName = registryFPFileService.fileName(registry);
@@ -396,7 +394,11 @@ public class MbCorrectionsFileConverter {
                 outChannel.write(buffer);
                 buffer.clear();
 
-                imessenger.addMessageInfo("total_lines", lineNum.get(), correctionsFile.getShortName(), eircFileName);
+                if (dataSource.getContext().isValid()) {
+                    imessenger.addMessageInfo("total_lines", lineNum.get(), correctionsFile.getShortName(), eircFileName);
+                } else {
+                    imessenger.addMessageError("total_lines", lineNum.get(), correctionsFile.getShortName(), eircFileName);
+                }
 
             } finally {
                 IOUtils.closeQuietly(outChannel);
@@ -438,7 +440,7 @@ public class MbCorrectionsFileConverter {
         FilterWrapper<OrganizationCorrection> filter = FilterWrapper.of(new OrganizationCorrection(null, null, "[0]*" + fields[1],
                 context.getMbOrganizationId(), context.getEircOrganizationId(), null));
         filter.setRegexp(true);
-		List<OrganizationCorrection> organizationCorrections = organizationCorrectionBean.getOrganizationCorrections(
+		List<OrganizationCorrection> organizationCorrections = organizationCorrectionBean.getOrganizationCorrections(getDataSource(),
                 filter);
 		if (organizationCorrections.size() <= 0) {
 			throw new MbConverterException("No service provider correction with id {0}", fields[1]);
@@ -525,10 +527,10 @@ public class MbCorrectionsFileConverter {
 
         private byte[] readBuffer = new byte[16*1024];
 
-        public CorrectionsContext(AbstractMessenger imessenger, Long mbOrganizationId, Long eircOrganizationId, String city,
-                                  boolean skipHeader, Registry registry,
+        public CorrectionsContext(AbstractMessenger imessenger, String dataSource, Long mbOrganizationId, Long eircOrganizationId,
+                                  String city, boolean skipHeader, Registry registry,
                                   Map<String, int[]> charges, Map<String, List<String>> services, ByteBuffer chargesBuffer) {
-            super(imessenger, serviceCorrectionBean, serviceBean, mbOrganizationId,eircOrganizationId, skipHeader, registry);
+            super(imessenger, serviceCorrectionBean, serviceBean, dataSource, mbOrganizationId,eircOrganizationId, skipHeader, registry);
             this.city = city;
             this.charges = charges;
             this.services = services;
@@ -585,7 +587,7 @@ public class MbCorrectionsFileConverter {
         }
 
         public boolean writeChargeContainers(ByteBuffer writeByteBuffer, RegistryRecordData recordData) {
-            int[] idx = charges.get(getChargesContainerKey(recordData));
+            int[] idx = charges.remove(getChargesContainerKey(recordData));
             if (idx == null) {
                 getIMessenger().addMessageError("mb_registries_fail_not_charges", recordData.getPersonalAccountExt(), recordData.getServiceCode());
                 log.error("Can not find account {} in MB charges (service code - {})", recordData.getPersonalAccountExt(), recordData.getServiceCode());
@@ -603,6 +605,14 @@ public class MbCorrectionsFileConverter {
 
         @Override
         public boolean isValid() {
+            if (charges != null && charges.size() > 0) {
+                valid = false;
+                for (String key : charges.keySet()) {
+                    String[] account = StringUtils.split(key, "_", 2);
+                    getIMessenger().addMessageError("mb_registries_fail_not_charges", account);
+                    log.error("Can not find account {} in MB corrections (service code - {})", account);
+                }
+            }
             return valid;
         }
 
@@ -920,9 +930,9 @@ public class MbCorrectionsFileConverter {
 
     private class ChargesContext extends Context {
 
-        public ChargesContext(AbstractMessenger imessenger, Long mbOrganizationId, Long eircOrganizationId, boolean skipHeader,
+        public ChargesContext(AbstractMessenger imessenger, String dataSource, Long mbOrganizationId, Long eircOrganizationId, boolean skipHeader,
                               Registry registry) {
-            super(imessenger, serviceCorrectionBean, serviceBean, mbOrganizationId, eircOrganizationId, skipHeader, registry);
+            super(imessenger, serviceCorrectionBean, serviceBean, dataSource, mbOrganizationId, eircOrganizationId, skipHeader, registry);
         }
 
         @Override
@@ -1194,6 +1204,10 @@ public class MbCorrectionsFileConverter {
                 return null;
             }
         }
+    }
+
+    private String getDataSource() {
+        return configBean.getString(MbTransformerConfig.EIRC_DATA_SOURCE);
     }
 
 }
