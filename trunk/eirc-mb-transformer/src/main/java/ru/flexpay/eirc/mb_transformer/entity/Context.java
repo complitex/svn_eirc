@@ -27,6 +27,7 @@ public abstract class Context {
     private ServiceCorrectionBean serviceCorrectionBean;
     private ServiceBean serviceBean;
     private List<RegistryRecordData> registryRecords = Lists.newLinkedList();
+    private String dataSource;
 
     private Long mbOrganizationId;
     private Long eircOrganizationId;
@@ -40,6 +41,7 @@ public abstract class Context {
             build();
 
     public Context(AbstractMessenger imessenger, ServiceCorrectionBean serviceCorrectionBean, ServiceBean serviceBean,
+                   String dataSource,
                    Long mbOrganizationId, Long eircOrganizationId, boolean skipHeader, Registry registry) {
         this.imessenger = imessenger;
         this.mbOrganizationId = mbOrganizationId;
@@ -47,6 +49,7 @@ public abstract class Context {
         this.skipHeader = skipHeader;
         this.serviceCorrectionBean = serviceCorrectionBean;
         this.serviceBean = serviceBean;
+        this.dataSource = dataSource;
         this.registry = registry;
     }
 
@@ -97,7 +100,7 @@ public abstract class Context {
         }
         String serviceCode = serviceCache.getIfPresent(outServiceCode);
         if (serviceCode == null) {
-            List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(
+            List<ServiceCorrection> serviceCorrections = serviceCorrectionBean.getServiceCorrections(dataSource,
                     FilterWrapper.of(new ServiceCorrection(null, null, outServiceCode, mbOrganizationId,
                             eircOrganizationId, null))
             );
@@ -108,7 +111,7 @@ public abstract class Context {
             if (serviceCorrections.size() > 1) {
                 throw new MbConverterException("Found several correction for service with code {0}", outServiceCode);
             }
-            Service service = serviceBean.getService(serviceCorrections.get(0).getObjectId());
+            Service service = serviceBean.getService(dataSource, serviceCorrections.get(0).getObjectId());
             serviceCode = service.getCode();
             serviceCache.put(outServiceCode, serviceCode);
         }

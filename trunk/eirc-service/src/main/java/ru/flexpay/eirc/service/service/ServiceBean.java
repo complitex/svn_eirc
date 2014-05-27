@@ -30,7 +30,11 @@ public class ServiceBean extends AbstractBean {
     }
 
     public Service getService(long id) {
-        List<Service> resultOrderByDescData = sqlSession().selectList(NS + ".selectService", id);
+        return getService(null, id);
+    }
+
+    public Service getService(String dataSource, long id) {
+        List<Service> resultOrderByDescData = (dataSource == null? sqlSession() : sqlSession(dataSource)).selectList(NS + ".selectService", id);
         return resultOrderByDescData.size() > 0? resultOrderByDescData.get(0): null;
     }
 
