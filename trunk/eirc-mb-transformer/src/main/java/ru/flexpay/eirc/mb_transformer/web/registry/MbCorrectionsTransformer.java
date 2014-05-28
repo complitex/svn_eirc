@@ -18,11 +18,11 @@ import ru.flexpay.eirc.mb_transformer.entity.MbTransformerConfig;
 import ru.flexpay.eirc.mb_transformer.service.FileService;
 import ru.flexpay.eirc.mb_transformer.service.MbCorrectionsFileConverter;
 import ru.flexpay.eirc.mb_transformer.service.MbTransformerConfigBean;
-import ru.flexpay.eirc.mb_transformer.web.component.BrowserFilesDialog;
 import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
 import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
+import ru.flexpay.eirc.registry.web.component.BrowserFilesDialog;
 import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 import ru.flexpay.eirc.service.entity.Service;
 
@@ -88,10 +88,12 @@ public class MbCorrectionsTransformer extends TemplatePage {
         Form<Service> form = new Form<>("form");
         container.add(form);
 
-        final BrowserFilesDialog chargesDialog = new BrowserFilesDialog("chargesDialog", container, chargesFile);
+        final BrowserFilesDialog chargesDialog = new BrowserFilesDialog("chargesDialog", container, chargesFile,
+                fileService.getWorkDir());
         add(chargesDialog);
 
-        final BrowserFilesDialog correctionsDialog = new BrowserFilesDialog("correctionsDialog", container, correctionsFile);
+        final BrowserFilesDialog correctionsDialog = new BrowserFilesDialog("correctionsDialog", container, correctionsFile,
+                fileService.getWorkDir());
         add(correctionsDialog);
 
         AjaxButton chargesButton = new AjaxButton("chargesButton") {

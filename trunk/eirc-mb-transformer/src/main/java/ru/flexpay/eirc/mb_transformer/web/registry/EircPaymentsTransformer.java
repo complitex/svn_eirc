@@ -16,12 +16,12 @@ import ru.flexpay.eirc.mb_transformer.entity.MbTransformerConfig;
 import ru.flexpay.eirc.mb_transformer.service.EircPaymentsRegistryConverter;
 import ru.flexpay.eirc.mb_transformer.service.FileService;
 import ru.flexpay.eirc.mb_transformer.service.MbTransformerConfigBean;
-import ru.flexpay.eirc.mb_transformer.web.component.BrowserFilesDialog;
 import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
 import ru.flexpay.eirc.registry.service.RegistryMessenger;
 import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.parse.FileReader;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
+import ru.flexpay.eirc.registry.web.component.BrowserFilesDialog;
 import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 import ru.flexpay.eirc.service.entity.Service;
 
@@ -82,7 +82,8 @@ public class EircPaymentsTransformer extends TemplatePage {
         add(container);
         container.add(messages);
 
-        final BrowserFilesDialog paymentsDialog = new BrowserFilesDialog("paymentsDialog", container, paymentsFileName);
+        final BrowserFilesDialog paymentsDialog = new BrowserFilesDialog("paymentsDialog", container, paymentsFileName,
+                fileService.getWorkDir());
         add(paymentsDialog);
 
         Form<Service> form = new Form<>("form");

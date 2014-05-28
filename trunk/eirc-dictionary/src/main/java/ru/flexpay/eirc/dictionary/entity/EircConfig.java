@@ -41,7 +41,7 @@ public enum EircConfig implements IComponentConfig {
     @Override
     public WebMarkupContainer getComponent(String id, IModel<String> model) {
         if (this.equals(MODULE_ID)) {
-            return new ModuleInstancePicker(id, model, ModuleInstanceTypeStrategy.EIRC_TYPE);
+            return new ModuleInstancePicker(id, model, true, null, true, ModuleInstanceTypeStrategy.EIRC_TYPE);
         } else {
             return new InputPanel<>("config", model, String.class, false, null, true, 40);
         }

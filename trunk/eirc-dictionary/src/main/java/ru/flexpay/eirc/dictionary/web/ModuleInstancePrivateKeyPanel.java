@@ -76,11 +76,14 @@ public class ModuleInstancePrivateKeyPanel extends AbstractComplexAttributesPane
         add(container);
 
         Attribute attribute = moduleInstance.getAttribute(ModuleInstanceStrategy.ORGANIZATION);
-        final AttributeStringModel model = new AttributeStringModel(attribute);
-        container.add(new OrganizationPicker("organization", model, OrganizationType.USER_ORGANIZATION.getId()));
 
         final EntityAttributeType attributeType =
                 moduleInstanceStrategy.getEntity().getAttributeType(ModuleInstanceStrategy.ORGANIZATION);
+
+        final AttributeStringModel model = new AttributeStringModel(attribute);
+        container.add(new OrganizationPicker("organization", model, attributeType.isMandatory(), new Model<>(getString("organization")),
+                true, OrganizationType.USER_ORGANIZATION.getId()));
+
         container.add(new Label("label",
                 DomainObjectComponentUtil.labelModel(attributeType.getAttributeNames(), getLocale())));
         container.add(new WebMarkupContainer("required").setVisible(attributeType.isMandatory()));
