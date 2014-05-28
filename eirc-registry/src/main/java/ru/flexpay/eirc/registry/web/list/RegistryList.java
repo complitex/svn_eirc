@@ -20,10 +20,10 @@ import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.model.*;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.request.resource.SharedResourceReference;
+import org.complitex.dictionary.entity.DictionaryConfig;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
-import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
@@ -49,9 +49,11 @@ import ru.flexpay.eirc.registry.service.link.RegistryLinker;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryParser;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
+import ru.flexpay.eirc.registry.web.component.BrowserFilesDialog;
 import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 
 import javax.ejb.EJB;
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
@@ -102,6 +104,8 @@ public class RegistryList extends TemplatePage {
     @EJB
     private RegistryWorkflowManager registryWorkflowManager;
 
+    BrowserFilesDialog fileDialog;
+
     public RegistryList() throws ExecutionException, InterruptedException {
         imessenger = imessengerService.getInstance();
         finishCallback = finishCallbackService.getInstance();
@@ -123,6 +127,22 @@ public class RegistryList extends TemplatePage {
         container.setVisible(true);
         add(container);
         container.add(messages);
+
+        fileDialog = new BrowserFilesDialog("fileDialog", container, new Model<File>(), configBean.getString(DictionaryConfig.IMPORT_FILE_STORAGE_DIR, true)) {
+            @Override
+            public void onSelected(AjaxRequestTarget target) {
+                super.onSelected(target);
+
+                initTimerBehavior();
+
+                try {
+                    parser.parse(imessenger, finishCallback, getSelectedFile().getParent(), getSelectedFile().getName(), null);
+                } finally {
+                    showIMessages(target);
+                }
+            }
+        };
+        add(fileDialog);
 
         //models
         final IModel<Registry> filterModel = new CompoundPropertyModel<>(new Registry());
@@ -425,16 +445,7 @@ public class RegistryList extends TemplatePage {
 
                     @Override
                     protected void onClick(final AjaxRequestTarget target) {
-
-                        RegistryList.this.initTimerBehavior();
-
-                        try {
-                            parser.parse(imessenger, finishCallback);
-                        } catch (ExecuteException e) {
-                            log().error("Failed parse", e);
-                        } finally {
-                            showIMessages(target);
-                        }
+                        fileDialog.open(target);
                     }
                 }
         );

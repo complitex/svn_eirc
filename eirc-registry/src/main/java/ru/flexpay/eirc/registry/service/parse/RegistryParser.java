@@ -95,33 +95,42 @@ public class RegistryParser implements Serializable {
         final AtomicInteger recordCounter = new AtomicInteger(fileNames.length);
 
         for (final String fileName : fileNames) {
-            parserQueueProcessor.execute(new AbstractJob<Void>() {
-                @Override
-                public Void execute() throws ExecuteException {
+            parse(imessenger, finishUpload, dir, fileName, recordCounter);
+        }
+    }
 
-                    try {
-                        InputStream is = new FileInputStream(new File(dir, fileName));
-                        Registry registry = EjbBeanLocator.getBean(RegistryParser.class).parse(imessenger, is, fileName);
+    public void parse(final AbstractMessenger imessenger, final AbstractFinishCallback finishUpload, final String dir,
+                      final String fileName, final AtomicInteger recordCounter) {
+        imessenger.addMessageInfo("starting_upload_registry", fileName);
+        if (recordCounter == null) {
+            finishUpload.init();
+        }
 
-                        if (registry != null) {
-                            imessenger.addMessageInfo("registry_created", registry.getRegistryNumber(), fileName);
-                        } else {
-                            imessenger.addMessageError("registry_failed_upload", fileName);
-                        }
+        parserQueueProcessor.execute(new AbstractJob<Void>() {
+            @Override
+            public Void execute() throws ExecuteException {
+                try {
+                    InputStream is = new FileInputStream(new File(dir, fileName));
+                    Registry registry = EjbBeanLocator.getBean(RegistryParser.class).parse(imessenger, is, fileName);
 
-                        return null;
-                    } catch (Throwable th) {
+                    if (registry != null) {
+                        imessenger.addMessageInfo("registry_created", registry.getRegistryNumber(), fileName);
+                    } else {
                         imessenger.addMessageError("registry_failed_upload", fileName);
-                        throw new ExecuteException(th, "Failed upload registry file by file name: " + fileName);
-                    } finally {
-                        if (recordCounter.decrementAndGet() == 0) {
-                            imessenger.addMessageInfo("registry_finish_upload");
-                            finishUpload.complete();
-                        }
+                    }
+
+                    return null;
+                } catch (Throwable th) {
+                    imessenger.addMessageError("registry_failed_upload", fileName);
+                    throw new ExecuteException(th, "Failed upload registry file by file name: " + fileName);
+                } finally {
+                    if (recordCounter == null || recordCounter.decrementAndGet() == 0) {
+                        imessenger.addMessageInfo("registry_finish_upload");
+                        finishUpload.complete();
                     }
                 }
-            });
-        }
+            }
+        });
     }
 
     public Registry parse(AbstractMessenger imessenger, InputStream is, String fileName) throws ExecuteException {

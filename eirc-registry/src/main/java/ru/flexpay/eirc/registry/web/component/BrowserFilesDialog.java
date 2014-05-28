@@ -1,4 +1,4 @@
-package ru.flexpay.eirc.mb_transformer.web.component;
+package ru.flexpay.eirc.registry.web.component;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -36,15 +36,10 @@ import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.resource.PackageResourceReference;
-import org.apache.wicket.util.template.PackageTextTemplate;
-import org.apache.wicket.util.template.TextTemplate;
 import org.odlabs.wiquery.core.javascript.JsStatement;
 import org.odlabs.wiquery.ui.core.JsScopeUiEvent;
 import org.odlabs.wiquery.ui.dialog.Dialog;
-import ru.flexpay.eirc.mb_transformer.service.FileService;
-import ru.flexpay.eirc.service.web.component.ServicePicker;
 
-import javax.ejb.EJB;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -61,15 +56,9 @@ import java.util.List;
  */
 public class BrowserFilesDialog extends Panel {
 
-    private static final TextTemplate CENTER_DIALOG_JS =
-            new PackageTextTemplate(ServicePicker.class, "CenterDialog.js");
-
     private static final RegexMatcher MATCHER = new SimpleRegexMatcher();
 
     private Dialog lookupDialog;
-
-    @EJB
-    private FileService fileService;
 
     private final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm");
 
@@ -82,6 +71,7 @@ public class BrowserFilesDialog extends Panel {
 
     private Component refreshComponent;
     private IModel<File> selectedModel;
+    private String workDir;
 
     private WebMarkupContainer container;
 
@@ -111,9 +101,10 @@ public class BrowserFilesDialog extends Panel {
             }, "date", "dateColumn")
     );
 
-    public BrowserFilesDialog(String id, Component refreshComponent, IModel<File> selectedModel) {
+    public BrowserFilesDialog(String id, Component refreshComponent, IModel<File> selectedModel, String workDir) {
         super(id);
 
+        this.workDir = workDir;
         this.refreshComponent = refreshComponent;
         this.selectedModel = selectedModel;
 
@@ -169,6 +160,7 @@ public class BrowserFilesDialog extends Panel {
                 if (isFile()) {
                     selectedModel.setObject(selected.getModelObject());
                     target.add(refreshComponent);
+                    onSelected(target);
                 }
             }
         };
@@ -182,10 +174,6 @@ public class BrowserFilesDialog extends Panel {
             @Override
             public void onClick(AjaxRequestTarget target) {
                 lookupDialog.close(target);
-                if (isFile()) {
-                    selectedModel.setObject(selected.getModelObject());
-                    target.add(refreshComponent);
-                }
             }
         };
         form.add(cancelButton);
@@ -342,7 +330,6 @@ public class BrowserFilesDialog extends Panel {
     }
     
     private String getWorkDir() {
-        String workDir = fileService.getWorkDir();
         if (workDir == null || !Files.isDirectory(FileSystems.getDefault().getPath(workDir))) {
             parent = null;
             container.error(getString("failed_work_dir"));
@@ -420,6 +407,10 @@ public class BrowserFilesDialog extends Panel {
     public void open(AjaxRequestTarget target) {
         target.add(container);
         lookupDialog.open(target);
+    }
+
+    public void onSelected(AjaxRequestTarget target) {
+
     }
 
     private class IFileColumn extends AbstractColumn<File, String> {
