@@ -395,9 +395,11 @@ public class MbCorrectionsFileConverter {
                 buffer.clear();
 
                 if (dataSource.getContext().isValid()) {
-                    imessenger.addMessageInfo("total_lines", lineNum.get(), correctionsFile.getShortName(), eircFileName);
+                    imessenger.addMessageInfo("eirc_saldo_simple_created",
+                            chargesFile.getFileName(), correctionsFile.getFileName(), eircFileName, registry.getRecordsCount());
                 } else {
-                    imessenger.addMessageError("total_lines", lineNum.get(), correctionsFile.getShortName(), eircFileName);
+                    imessenger.addMessageError("eirc_saldo_simple_created",
+                            chargesFile.getFileName(), correctionsFile.getFileName(), eircFileName, registry.getRecordsCount());
                 }
 
             } finally {
@@ -609,7 +611,7 @@ public class MbCorrectionsFileConverter {
                 valid = false;
                 for (String key : charges.keySet()) {
                     String[] account = StringUtils.split(key, "_", 2);
-                    getIMessenger().addMessageError("mb_registries_fail_not_charges", account);
+                    getIMessenger().addMessageError("mb_registries_fail_not_correction", account);
                     log.error("Can not find account {} in MB corrections (service code - {})", account);
                 }
             }
