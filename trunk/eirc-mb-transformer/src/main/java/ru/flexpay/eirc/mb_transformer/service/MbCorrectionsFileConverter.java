@@ -15,6 +15,7 @@ import org.complitex.correction.entity.OrganizationCorrection;
 import org.complitex.correction.service.OrganizationCorrectionBean;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
+import org.complitex.dictionary.service.SequenceBean;
 import org.complitex.dictionary.service.exception.AbstractException;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.util.DateUtil;
@@ -77,6 +78,11 @@ public class MbCorrectionsFileConverter {
 
     @EJB
     private MbConverterQueueProcessor mbConverterQueueProcessor;
+
+    @EJB
+    private SequenceBean sequenceBean;
+
+    private static final String REGISTRY_NUMBER = "registry_number";
 
     public void init2() {
         SqlSessionFactoryBean sqlSessionFactoryBean = configBean == null ? new SqlSessionFactoryBean() :
@@ -429,7 +435,7 @@ public class MbCorrectionsFileConverter {
 
     private void initRegistry(Registry registry) {
 		registry.setCreationDate(DateUtil.getCurrentDate());
-        registry.setRegistryNumber(DateUtil.getCurrentDate().getTime());
+        registry.setRegistryNumber(sequenceBean.nextId(REGISTRY_NUMBER));
 		registry.setType(RegistryType.SALDO_SIMPLE);
 	}
 
@@ -457,11 +463,6 @@ public class MbCorrectionsFileConverter {
 
         int idx = 2;
         if (fields.length > 3) {
-            try {
-                registry.setRegistryNumber(Long.parseLong(fields[1] + fields[idx]));
-            } catch (Exception e) {
-                //
-            }
             try {
                 Date operationMonth = MbParsingConstants.OPERATION_MONTH_DATE_FORMAT.parseDateTime(fields[idx]).toDate();
                 registry.setFromDate(operationMonth);
