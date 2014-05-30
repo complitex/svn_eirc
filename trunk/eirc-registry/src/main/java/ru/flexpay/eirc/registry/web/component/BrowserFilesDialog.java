@@ -62,11 +62,13 @@ public class BrowserFilesDialog extends Panel {
 
     private final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm");
 
+    private File oldParent;
     private File parent;
 
     private AttributeModifier styleDisable = new AttributeModifier("class", "btnMiddleDisable");
     private AttributeModifier styleEnable = new AttributeModifier("class", "btnMiddle");
 
+    private Item<File> oldSelected = null;
     private Item<File> selected = null;
 
     private Component refreshComponent;
@@ -75,8 +77,13 @@ public class BrowserFilesDialog extends Panel {
 
     private WebMarkupContainer container;
 
+    private SingleSortState<String> oldState = new SingleSortState<>();
     private SingleSortState<String> state = new SingleSortState<>();
+
+    private String oldSortProperty = "name";
     private String sortProperty = "name";
+
+    private Model<String> oldFileNameModel = new Model<>("*");
     private Model<String> fileNameModel = new Model<>("*");
 
     private final List<IColumn<File, String>> COLUMNS = ImmutableList.<IColumn<File, String>>of(
@@ -119,7 +126,7 @@ public class BrowserFilesDialog extends Panel {
     }
 
     public File getSelectedFile() {
-        return isFile() ? selected.getModelObject() : null;
+        return isFile() ? selectedModel.getObject() : null;
     }
 
     private void init() {
@@ -174,6 +181,14 @@ public class BrowserFilesDialog extends Panel {
             @Override
             public void onClick(AjaxRequestTarget target) {
                 lookupDialog.close(target);
+
+                fileNameModel.setObject(oldFileNameModel.getObject());
+                parent = oldParent;
+                selected = oldSelected;
+                sortProperty = oldSortProperty;
+
+                state.setSort(oldState.getSort());
+                state.setPropertySortOrder(sortProperty, oldState.getPropertySortOrder(sortProperty));
             }
         };
         form.add(cancelButton);
@@ -218,6 +233,13 @@ public class BrowserFilesDialog extends Panel {
             @Override
             protected Item<File> newRowItem(String id, int index, final IModel<File> model) {
                 final Item<File> rowItem = super.newRowItem(id, index, model);
+
+                if (selected != null && !selected.equals(rowItem) &&
+                        StringUtils.equals(rowItem.getModelObject().getPath(), selected.getModelObject().getPath())) {
+                    rowItem.add(style);
+                    selected = rowItem;
+                }
+
                 rowItem.add(new AjaxEventBehavior("ondblclick") {
                     @Override
                     protected void onEvent(AjaxRequestTarget target) {
@@ -405,6 +427,14 @@ public class BrowserFilesDialog extends Panel {
     }
 
     public void open(AjaxRequestTarget target) {
+        oldFileNameModel.setObject(fileNameModel.getObject());
+        oldParent = parent;
+        oldSelected = selected;
+        oldSortProperty = sortProperty;
+
+        oldState.setSort(state.getSort());
+        oldState.setPropertySortOrder(oldSortProperty, state.getPropertySortOrder(oldSortProperty));
+
         target.add(container);
         lookupDialog.open(target);
     }

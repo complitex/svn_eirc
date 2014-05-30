@@ -29,6 +29,7 @@ import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.image.StaticImage;
+import org.complitex.dictionary.web.component.organization.OrganizationPicker;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
 import org.complitex.dictionary.web.component.scroll.ScrollBookmarkablePageLink;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
@@ -281,83 +282,8 @@ public class RegistryList extends TemplatePage {
 
         filterForm.add(new RangeDatePickerTextField("creationDate", creationDateModel));
         filterForm.add(new TextField<>("registryNumber"));
-        filterForm.add(new DropDownChoice<>("senderOrganization",
-                new IModel<DomainObject>() {
-
-                    @Override
-                    public DomainObject getObject() {
-                        Long organizationId = filterModel.getObject().getSenderOrganizationId();
-                        return organizationId != null ?
-                                organizationStrategy.findById(organizationId, false) :
-                                null;
-                    }
-
-                    @Override
-                    public void setObject(DomainObject domainObject) {
-                        if (domainObject != null) {
-                            filterModel.getObject().setSenderOrganizationId(domainObject.getId());
-                        } else {
-                            filterModel.getObject().setSenderOrganizationId(null);
-                        }
-                    }
-
-                    @Override
-                    public void detach() {
-
-                    }
-                },
-                organizationStrategy.getAllOuterOrganizations(getLocale()),
-                new IChoiceRenderer<DomainObject>() {
-                    @Override
-                    public Object getDisplayValue(DomainObject organization) {
-                        return organizationStrategy.displayDomainObject(organization, getLocale());
-                    }
-
-                    @Override
-                    public String getIdValue(DomainObject organization, int i) {
-                        return organization.getId().toString();
-                    }
-                }
-        ).setNullValid(true));
-
-        filterForm.add(new DropDownChoice<>("recipientOrganization",
-                new IModel<DomainObject>() {
-
-                    @Override
-                    public DomainObject getObject() {
-                        Long organizationId = filterModel.getObject().getRecipientOrganizationId();
-                        return organizationId != null ?
-                                organizationStrategy.findById(organizationId, false) :
-                                null;
-                    }
-
-                    @Override
-                    public void setObject(DomainObject domainObject) {
-                        if (domainObject != null) {
-                            filterModel.getObject().setRecipientOrganizationId(domainObject.getId());
-                        } else {
-                            filterModel.getObject().setRecipientOrganizationId(null);
-                        }
-                    }
-
-                    @Override
-                    public void detach() {
-
-                    }
-                },
-                organizationStrategy.getAllOuterOrganizations(getLocale()),
-                new IChoiceRenderer<DomainObject>() {
-                    @Override
-                    public Object getDisplayValue(DomainObject organization) {
-                        return organizationStrategy.displayDomainObject(organization, getLocale());
-                    }
-
-                    @Override
-                    public String getIdValue(DomainObject organization, int i) {
-                        return organization.getId().toString();
-                    }
-                }
-        ).setNullValid(true));
+        filterForm.add(new OrganizationPicker("senderOrganization", new PropertyModel<DomainObject>(filterModel.getObject(), "senderOrganizationId")));
+        filterForm.add(new OrganizationPicker("recipientOrganization", new PropertyModel<DomainObject>(filterModel.getObject(), "recipientOrganizationId")));
 
         filterForm.add(new DropDownChoice<>("type",
                 Arrays.asList(RegistryType.values()),
