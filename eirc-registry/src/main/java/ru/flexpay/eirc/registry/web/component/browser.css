@@ -1,24 +1,25 @@
 .selected {
-    background-color:#87939D;
+    background-color:#87939D !important;
     color: whitesmoke !important;
 }
 
-.tbColor > tbody {
-    width: auto;
-    height: 350px;
-    overflow-y: scroll;
-    display: block;
-    border-bottom: 1px groove #667584;
-    border-left: 1px dotted #667584;
+.tbColor2 > tbody {
+    width: auto !important;
+    height: 350px !important;
+    overflow-y: scroll !important;
+    display: block !important;
+    border-bottom: 1px groove #667584 !important;
+    border-left: 1px dotted #667584 !important;
+    cursor: default !important;
 }
 
-.tbColor > thead {
-    width: auto;
-    display: block;
+.tbColor2 > thead {
+    width: auto !important;
+    display: block !important;
 }
 
-.tbColor th {
-    border-top: 1px solid #667584;
+.tbColor2 th {
+    border-top: 1px solid #667584 !important;
 }
 
 .nameColumn {

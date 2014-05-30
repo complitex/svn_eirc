@@ -8,7 +8,6 @@
 </head>
 <body>
 <wicket:extend>
-    <div wicket:id="fileDialog"></div>
 
     <h2 wicket:id="label"></h2>
 
@@ -72,10 +71,10 @@
                         <input type="text" wicket:id="registryNumber"/>
                     </td>
                     <td class="filter-td">
-                        <select wicket:id="senderOrganization"></select>
+                        <div wicket:id="senderOrganization"></div>
                     </td>
                     <td class="filter-td">
-                        <select wicket:id="recipientOrganization"></select>
+                        <div wicket:id="recipientOrganization"></div>
                     </td>
                     <td class="filter-td">
                         <select wicket:id="type"></select>
@@ -144,6 +143,8 @@
         </form>
         <div wicket:id="navigator"></div>
     </div>
+
+    <div wicket:id="fileDialog"></div>
 
 </wicket:extend>
 </body>
