@@ -3,7 +3,7 @@
 
 <mapper namespace="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean">
 
-    <cache type="org.mybatis.caches.ehcache.EhcacheCache"/>
+    <cache type="org.complitex.dictionary.mybatis.caches.EhcacheCache"/>
 
     <resultMap id="ServiceProviderAccount" type="ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount">
         <id column="spa_pk_id" property="pkId"/>
