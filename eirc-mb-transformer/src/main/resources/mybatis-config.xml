@@ -57,5 +57,7 @@
         <mapper resource="ru/flexpay/eirc/dictionary/service/PersonBean.xml"/>
         <mapper resource="ru/flexpay/eirc/eirc_account/service/EircAccountBean.xml"/>
         <mapper resource="ru/flexpay/eirc/service_provider_account/service/ServiceProviderAccountBean.xml"/>
+        
+        <mapper resource="ru/flexpay/eirc/mb_transformer/service/MbTransformerRegistryBean.xml"/>
     </mappers>
 </configuration>

@@ -15,7 +15,6 @@ import org.complitex.correction.entity.OrganizationCorrection;
 import org.complitex.correction.service.OrganizationCorrectionBean;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
-import org.complitex.dictionary.service.SequenceBean;
 import org.complitex.dictionary.service.exception.AbstractException;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.util.DateUtil;
@@ -80,7 +79,7 @@ public class MbCorrectionsFileConverter {
     private MbConverterQueueProcessor mbConverterQueueProcessor;
 
     @EJB
-    private SequenceBean sequenceBean;
+    private MbTransformerRegistryBean mbTransformerRegistryBean;
 
     private static final String REGISTRY_NUMBER = "registry_number";
 
@@ -435,7 +434,7 @@ public class MbCorrectionsFileConverter {
 
     private void initRegistry(Registry registry) {
 		registry.setCreationDate(DateUtil.getCurrentDate());
-        registry.setRegistryNumber(sequenceBean.nextId(REGISTRY_NUMBER));
+        registry.setRegistryNumber(mbTransformerRegistryBean.generateRegistryNumber());
 		registry.setType(RegistryType.SALDO_SIMPLE);
 	}
 
