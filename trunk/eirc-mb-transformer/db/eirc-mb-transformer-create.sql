@@ -354,4 +354,16 @@ CREATE TABLE `last_name` (
   UNIQUE KEY `key_name` (`name`)
 ) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Фамилия';
 
+-- ------------------------------
+-- Registry number
+-- ------------------------------
+
+DROP TABLE IF EXISTS `registry_number`;
+
+CREATE TABLE `registry_number` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT 'Автоинкремент',
+  `value` INTEGER NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT 'Используется для генерации номера реестра';
+
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

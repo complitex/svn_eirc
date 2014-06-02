@@ -13,8 +13,7 @@ INSERT INTO `sequence` (`sequence_name`, `sequence_value`) VALUES
 ('string_culture',1),
 ('organization',1), ('organization_string_culture',1),
 ('organization_type',1), ('organization_type_string_culture',1),
-('user_info', 3), ('user_info_string_culture', 1),
-('registry_number', 1);
+('user_info', 3), ('user_info_string_culture', 1);
 
 -- Permission
 INSERT INTO `permission` (`permission_id`, `table`, `entity`, `object_id`) VALUES (0, 'ALL', 'ALL', 0);
@@ -94,4 +93,4 @@ INSERT INTO `entity_attribute_type`(`id`, `entity_id`, `mandatory`, `attribute_t
 INSERT INTO `entity_attribute_value_type`(`id`, `attribute_type_id`, `attribute_value_type`) VALUES (906, 906, UPPER('string_culture'));
 
 -- Current database version
-INSERT INTO `update` (`version`) VALUE ('20140529_184_0.0.1');
+INSERT INTO `update` (`version`) VALUE ('20140602_187_0.0.2');

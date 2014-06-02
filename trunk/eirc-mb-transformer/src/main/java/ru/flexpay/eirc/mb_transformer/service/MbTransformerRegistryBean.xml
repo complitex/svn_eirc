@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ru.flexpay.eirc.mb_transformer.service.MbTransformerRegistryBean">
+
+    <insert id="insertRegistryNumber" parameterType="map">
+        insert into `registry_number` (`value`) values (1)
+
+        <selectKey resultType="long" order="AFTER" keyProperty="id">
+            SELECT LAST_INSERT_ID() as id
+        </selectKey>
+    </insert>
+
+    <delete id="deleteRegistryNumber" parameterType="long">
+        delete from `registry_number` where id = #{id}
+    </delete>
+
+</mapper>
