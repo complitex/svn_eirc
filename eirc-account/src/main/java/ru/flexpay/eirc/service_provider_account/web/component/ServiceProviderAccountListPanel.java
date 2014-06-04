@@ -31,11 +31,9 @@ import org.apache.wicket.model.Model;
 import org.apache.wicket.model.PropertyModel;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
-import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.entity.Locale;
 import org.complitex.dictionary.service.LocaleBean;
-import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.web.component.ShowMode;
 import org.complitex.dictionary.web.component.ShowModePanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
@@ -43,7 +41,6 @@ import org.complitex.dictionary.web.component.organization.OrganizationPicker;
 import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
-import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service.service.ServiceBean;
 import ru.flexpay.eirc.service.web.component.ServicePicker;
@@ -71,9 +68,6 @@ public class ServiceProviderAccountListPanel extends Panel {
 
     @EJB
     private ServiceBean serviceBean;
-
-    @EJB(name = IOrganizationStrategy.BEAN_NAME, beanInterface = IOrganizationStrategy.class)
-    private EircOrganizationStrategy organizationStrategy;
 
     private WebMarkupContainer container;
 
@@ -182,31 +176,9 @@ public class ServiceProviderAccountListPanel extends Panel {
                 new FilteredAbstractColumn<ServiceProviderAccount, String>(new ResourceModel("serviceProvider"), "spa_organization_name") {
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
-                        return new AbstractFilter<DomainObject>(s, components, new IModel<DomainObject>() {
-
+                        return new AbstractFilter<Long>(s, components, new PropertyModel<Long>(filterObject, "organizationId")) {
                             @Override
-                            public DomainObject getObject() {
-                                return filterObject.getOrganizationId() != null ?
-                                        organizationStrategy.findById(filterObject.getOrganizationId(), false) :
-                                        null;
-                            }
-
-                            @Override
-                            public void setObject(DomainObject domainObject) {
-                                if (domainObject != null) {
-                                    filterObject.setOrganizationId(domainObject.getId());
-                                } else {
-                                    filterObject.setOrganizationId(null);
-                                }
-                            }
-
-                            @Override
-                            public void detach() {
-
-                            }
-                        }) {
-                            @Override
-                            protected Component createFilterComponent(String id, IModel<DomainObject> model) {
+                            protected Component createFilterComponent(String id, IModel<Long> model) {
                                 return new OrganizationPicker(id, model, OrganizationType.SERVICE_PROVIDER.getId());
                             }
                         };

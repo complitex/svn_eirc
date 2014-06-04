@@ -304,11 +304,9 @@ public class ModuleInstancePicker extends FormComponentPanel<DomainObject> {
     private class ModuleInstanceModel extends Model<DomainObject> {
 
         private IModel<String> model;
-        private Long[] types;
 
-        public ModuleInstanceModel(IModel<String> model, Long... type) {
+        public ModuleInstanceModel(IModel<String> model) {
             this.model = model;
-            this.types = type;
         }
 
         @Override

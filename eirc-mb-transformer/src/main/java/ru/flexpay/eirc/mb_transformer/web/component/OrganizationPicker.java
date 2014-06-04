@@ -16,7 +16,7 @@ public class OrganizationPicker extends org.complitex.dictionary.web.component.o
     @EJB
     private ConfigBean configBean;
 
-    public OrganizationPicker(String id, IModel<String> model, Long organizationTypeId) {
+    public OrganizationPicker(String id, IModel<Long> model, Long organizationTypeId) {
         super(id, model, organizationTypeId);
 
         SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean() {

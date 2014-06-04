@@ -18,6 +18,7 @@ import org.complitex.dictionary.strategy.web.AbstractComplexAttributesPanel;
 import org.complitex.dictionary.web.component.DomainObjectComponentUtil;
 import org.complitex.dictionary.web.component.organization.OrganizationPicker;
 import org.complitex.dictionary.web.model.AttributeStringModel;
+import org.complitex.dictionary.web.model.LongModel;
 import ru.flexpay.eirc.dictionary.entity.OrganizationType;
 import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
 import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceTypeStrategy;
@@ -80,8 +81,8 @@ public class ModuleInstancePrivateKeyPanel extends AbstractComplexAttributesPane
         final EntityAttributeType attributeType =
                 moduleInstanceStrategy.getEntity().getAttributeType(ModuleInstanceStrategy.ORGANIZATION);
 
-        final AttributeStringModel model = new AttributeStringModel(attribute);
-        container.add(new OrganizationPicker("organization", model, attributeType.isMandatory(), new Model<>(getString("organization")),
+        container.add(new OrganizationPicker("organization", new LongModel(new AttributeStringModel(attribute)),
+                attributeType.isMandatory(), new Model<>(getString("organization")),
                 true, OrganizationType.USER_ORGANIZATION.getId()));
 
         container.add(new Label("label",
