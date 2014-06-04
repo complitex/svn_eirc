@@ -787,8 +787,9 @@ public class MbCorrectionsFileConverter {
                 write(buffer, ":");
                 write(buffer, getMbOrganizationId());
 
-                write(buffer, FPRegistryConstants.CONTAINER_SEPARATOR);
                 /*
+                write(buffer, FPRegistryConstants.CONTAINER_SEPARATOR);
+
                 // ФИО
                 write(buffer, ContainerType.SET_RESPONSIBLE_PERSON.getId());
                 write(buffer, ":");
@@ -797,7 +798,7 @@ public class MbCorrectionsFileConverter {
                 write(buffer, getField(2));
 
                 write(buffer, FPRegistryConstants.CONTAINER_SEPARATOR);
-                */
+
                 // Количество проживающих
                 String containerValue = StringUtils.isEmpty(getField(15))? "0": getField(15);
                 write(buffer, ContainerType.SET_NUMBER_ON_HABITANTS.getId());
@@ -815,7 +816,7 @@ public class MbCorrectionsFileConverter {
                 write(buffer, operationDate);
                 write(buffer, "::");
                 write(buffer, containerValue);
-
+                */
                 valid &= writeChargeContainers(buffer, this);
             }
 
