@@ -21,7 +21,6 @@ import org.apache.wicket.model.*;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.request.resource.SharedResourceReference;
 import org.complitex.dictionary.entity.DictionaryConfig;
-import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
@@ -282,8 +281,8 @@ public class RegistryList extends TemplatePage {
 
         filterForm.add(new RangeDatePickerTextField("creationDate", creationDateModel));
         filterForm.add(new TextField<>("registryNumber"));
-        filterForm.add(new OrganizationPicker("senderOrganization", new PropertyModel<DomainObject>(filterModel.getObject(), "senderOrganizationId")));
-        filterForm.add(new OrganizationPicker("recipientOrganization", new PropertyModel<DomainObject>(filterModel.getObject(), "recipientOrganizationId")));
+        filterForm.add(new OrganizationPicker("senderOrganizationId", filterModel));
+        filterForm.add(new OrganizationPicker("recipientOrganizationId", filterModel));
 
         filterForm.add(new DropDownChoice<>("type",
                 Arrays.asList(RegistryType.values()),
