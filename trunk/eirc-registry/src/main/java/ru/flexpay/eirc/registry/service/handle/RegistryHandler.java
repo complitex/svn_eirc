@@ -107,16 +107,16 @@ public class RegistryHandler {
                         }
 
                         // change registry status
-                        if (!setHandlingStatus(registry)) {
+                        if (!EjbBeanLocator.getBean(RegistryHandler.class).setHandlingStatus(registry)) {
                             imessenger.addMessageError("registry_status_inner_error", registryId);
                             return null;
                         }
                     }
 
                     // check registry records status
-                    if (!registryRecordBean.hasRecordsToProcessing(registry)) {
+                    if (!EjbBeanLocator.getBean(RegistryHandler.class).registryRecordBean.hasRecordsToProcessing(registry)) {
                         imessenger.addMessageInfo("not_found_handle_registry_records", registryId);
-                        setHandlingStatus(registry);
+                        EjbBeanLocator.getBean(RegistryHandler.class).setHandlingStatus(registry);
                         return null;
                     }
 
@@ -176,7 +176,7 @@ public class RegistryHandler {
                             } else if (recordHandlingCounter.get() == 0) {
                                 imessenger.addMessageInfo("registry_finish_handle", registryId);
                                 finishHandle.complete();
-                                setHandledStatus(registry);
+                                EjbBeanLocator.getBean(RegistryHandler.class).setHandledStatus(registry);
                             }
                             registryRecords = recordsToProcessing;
                         } while (registryRecords.size() >= numberFlushRegistryRecords);
@@ -185,7 +185,7 @@ public class RegistryHandler {
 
                         log.error("Can not handle registry " + registryId, th);
 
-                        setErrorStatus(registry);
+                        EjbBeanLocator.getBean(RegistryHandler.class).setErrorStatus(registry);
 
                     }
 

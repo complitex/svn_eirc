@@ -179,7 +179,7 @@ public class RegistryParser implements Serializable {
                         if (registry == null) {
                             return null;
                         }
-                        saveRegistry(registry);
+                        EjbBeanLocator.getBean(RegistryParser.class).saveRegistry(registry);
 
                         processLog = getProcessLogger(registry.getRegistryNumber());
 
@@ -204,7 +204,7 @@ public class RegistryParser implements Serializable {
         } catch(Exception e) {
             log.error("Processing error", e);
             processLog.error("Inner error");
-            setErrorStatus(context.getRegistry());
+            EjbBeanLocator.getBean(RegistryParser.class).setErrorStatus(context.getRegistry());
         } finally {
             try {
                 reader.close();
@@ -289,9 +289,9 @@ public class RegistryParser implements Serializable {
         }
 
         if (failed) {
-            setNextErrorStatus(context);
+            EjbBeanLocator.getBean(RegistryParser.class).setNextErrorStatus(context);
         } else {
-            setLoadedStatus(context);
+            EjbBeanLocator.getBean(RegistryParser.class).setLoadedStatus(context);
         }
     }
 
@@ -319,6 +319,7 @@ public class RegistryParser implements Serializable {
         }
     }
 
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public boolean setErrorStatus(Registry registry) {
         if (registry == null) {
             return false;
@@ -382,7 +383,7 @@ public class RegistryParser implements Serializable {
                 return null;
             }
 
-            if (!validateRegistry(newRegistry, iMessenger, processLog)) {
+            if (!EjbBeanLocator.getBean(RegistryParser.class).validateRegistry(newRegistry, iMessenger, processLog)) {
                 return null;
             }
 
@@ -541,13 +542,13 @@ public class RegistryParser implements Serializable {
             // setup record status
             recordWorkflowManager.setInitialStatus(record, failed);
             if (failed) {
-                setErrorStatus(registry);
+                EjbBeanLocator.getBean(RegistryParser.class).setErrorStatus(registry);
             }
 
             return record;
         } catch (Exception e) {
             log.error("Record parse error. Message fields: " + messageFieldList, e);
-            setErrorStatus(registry);
+            EjbBeanLocator.getBean(RegistryParser.class).setErrorStatus(registry);
         }
         processLog.error("Record number parse error");
         return null;
@@ -555,7 +556,7 @@ public class RegistryParser implements Serializable {
 
     public void processFooter(List<String> messageFieldList, Context context, Logger processLog) throws ExecuteException {
         if (messageFieldList.size() < 2) {
-            setNextErrorStatus(context);
+            EjbBeanLocator.getBean(RegistryParser.class).setNextErrorStatus(context);
             processLog.error("Message footer error, invalid number of fields");
             context.addMessageError("footer_invalid_number_fields", context.getRegistry().getRegistryNumber());
         }

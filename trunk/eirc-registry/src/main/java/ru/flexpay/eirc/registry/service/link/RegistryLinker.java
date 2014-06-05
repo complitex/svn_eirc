@@ -132,7 +132,7 @@ public class RegistryLinker {
                         }
 
                         // change registry status
-                        if (!setLinkingStatus(registry)) {
+                        if (!EjbBeanLocator.getBean(RegistryLinker.class).setLinkingStatus(registry)) {
                             imessenger.addMessageError("registry_status_inner_error", registry.getRegistryNumber());
                             return null;
                         }
@@ -141,7 +141,7 @@ public class RegistryLinker {
                     // check registry records status
                     if (!registryRecordBean.hasRecordsToLinking(registry)) {
                         imessenger.addMessageInfo("not_found_linking_registry_records", registry.getRegistryNumber());
-                        setLinkingStatus(registry);
+                        EjbBeanLocator.getBean(RegistryLinker.class).setLinkingStatus(registry);
                         return null;
                     }
 
@@ -202,9 +202,9 @@ public class RegistryLinker {
                                 finishLink.complete();
                                 if (afterCorrection &&
                                         registryRecordBean.getRecordsToLinking(FilterWrapper.of(filter.getObject(), 0, 1)).size() > 0) {
-                                    setErrorStatus(registry);
+                                    EjbBeanLocator.getBean(RegistryLinker.class).setErrorStatus(registry);
                                 }
-                                setLinkedStatus(registry);
+                                EjbBeanLocator.getBean(RegistryLinker.class).setLinkedStatus(registry);
                             }
                             registryRecords = recordsToLinking;
                         } while (registryRecords.size() >= numberFlushRegistryRecords);
@@ -213,7 +213,7 @@ public class RegistryLinker {
 
                         log.error("Can not link registry " + registryId, th);
 
-                        setErrorStatus(registry);
+                        EjbBeanLocator.getBean(RegistryLinker.class).setErrorStatus(registry);
 
                     }
                 } finally {
