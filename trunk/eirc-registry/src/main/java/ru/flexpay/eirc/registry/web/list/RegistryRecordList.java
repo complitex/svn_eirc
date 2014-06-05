@@ -66,7 +66,7 @@ import static org.complitex.dictionary.util.PageUtil.newSorting;
  */
 public class RegistryRecordList extends TemplatePage {
 
-    private static final SimpleDateFormat OPERATION_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd");
+    private static final SimpleDateFormat OPERATION_DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
 
     @EJB
     private RegistryRecordBean registryRecordBean;

@@ -203,4 +203,20 @@
         update `registry` set `status`= #{status.id}, `records_count`=#{recordsCount}, `errors_count`=#{errorsCount} where `id`=#{id}
     </update>
 
+    <delete id="deleteRegistryRecordContainers" parameterType="long">
+        delete rrc.* from `registry_record_container` rrc inner join `registry_record` rr on rr.`id` = rrc.`record_id` where rr.`registry_id`=#{id}
+    </delete>
+
+    <delete id="deleteRegistryRecords" parameterType="long">
+        delete from `registry_record` where `registry_id`=#{id}
+    </delete>
+
+    <delete id="deleteRegistryContainers" parameterType="long">
+        delete from `registry_container` where `registry_id`=#{id};
+    </delete>
+
+    <delete id="deleteRegistry" parameterType="long">
+        delete from `registry` where id=#{id};
+    </delete>
+
 </mapper>
