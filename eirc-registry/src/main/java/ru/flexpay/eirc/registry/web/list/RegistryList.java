@@ -67,8 +67,8 @@ import static org.complitex.dictionary.util.PageUtil.newSorting;
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
 public class RegistryList extends TemplatePage {
 
-    private static final SimpleDateFormat CREATE_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd");
-    private static final SimpleDateFormat LOAD_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+    private static final SimpleDateFormat CREATE_DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
+    private static final SimpleDateFormat LOAD_DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static final String IMAGE_AJAX_LOADER = "images/ajax-loader2.gif";
 
     @EJB
@@ -220,8 +220,9 @@ public class RegistryList extends TemplatePage {
                     @Override
                     public boolean isVisible() {
                         return !finishCallback.isCompleted() &&
-                                registryWorkflowManager.isLinking(registry) ||
-                                registryWorkflowManager.isProcessing(registry);
+                                (registryWorkflowManager.isLinking(registry) ||
+                                registryWorkflowManager.isLoading(registry) ||
+                                registryWorkflowManager.isProcessing(registry));
                     }
                 });
 
