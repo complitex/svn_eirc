@@ -1,12 +1,14 @@
 package ru.flexpay.eirc.registry.web.list;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import com.googlecode.wicket.jquery.ui.plugins.datepicker.DateRange;
 import com.googlecode.wicket.jquery.ui.plugins.datepicker.RangeDatePickerTextField;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
+import org.apache.wicket.ajax.markup.html.form.AjaxCheckBox;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.extensions.markup.html.repeater.data.sort.SortOrder;
 import org.apache.wicket.markup.html.WebPage;
@@ -31,6 +33,7 @@ import org.complitex.dictionary.web.component.image.StaticImage;
 import org.complitex.dictionary.web.component.organization.OrganizationPicker;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
 import org.complitex.dictionary.web.component.scroll.ScrollBookmarkablePageLink;
+import org.complitex.template.web.component.toolbar.DeleteItemButton;
 import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.UploadButton;
 import org.complitex.template.web.security.SecurityRole;
@@ -54,9 +57,12 @@ import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 
 import javax.ejb.EJB;
 import java.io.File;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static org.complitex.dictionary.util.PageUtil.newSorting;
@@ -105,6 +111,8 @@ public class RegistryList extends TemplatePage {
     private RegistryWorkflowManager registryWorkflowManager;
 
     BrowserFilesDialog fileDialog;
+
+    private Map<Registry, AjaxCheckBox> selected = Maps.newHashMap();
 
     public RegistryList() throws ExecutionException, InterruptedException {
         imessenger = imessengerService.getInstance();
@@ -184,12 +192,39 @@ public class RegistryList extends TemplatePage {
         };
         dataProvider.setSort("creation_date", SortOrder.ASCENDING);
 
+        final AjaxCheckBox selectAll;
+        filterForm.add(selectAll = new AjaxCheckBox("selectAll", new Model<>(false)) {
+            @Override
+            protected void onUpdate(AjaxRequestTarget target) {
+                for (Map.Entry<Registry, AjaxCheckBox> entry : selected.entrySet()) {
+                    if (!isExecuting(entry.getKey())) {
+                        IModel<Boolean> model = entry.getValue().getModel();
+                        model.setObject(getModelObject());
+                        target.add(entry.getValue());
+                    }
+                }
+            }
+        });
+
         //Data View
         DataView<Registry> dataView = new DataView<Registry>("data", dataProvider, 1) {
 
             @Override
             protected void populateItem(Item<Registry> item) {
                 final Registry registry = item.getModelObject();
+
+                AjaxCheckBox select = new AjaxCheckBox("select", new Model<>(false)) {
+                    @Override
+                    protected void onUpdate(AjaxRequestTarget target) {
+                        if (!getModelObject() && selectAll.getModelObject()) {
+                            selectAll.setModelObject(false);
+                            target.add(selectAll);
+                        }
+                    }
+                };
+                select.setVisible(!isExecuting(registry));
+                selected.put(registry, select);
+                item.add(select);
 
                 Organization senderOrganization = organizationStrategy.findById(registry.getSenderOrganizationId(), false);
                 Organization recipientOrganization = organizationStrategy.findById(registry.getRecipientOrganizationId(), false);
@@ -219,10 +254,7 @@ public class RegistryList extends TemplatePage {
 
                     @Override
                     public boolean isVisible() {
-                        return !finishCallback.isCompleted() &&
-                                (registryWorkflowManager.isLinking(registry) ||
-                                registryWorkflowManager.isLoading(registry) ||
-                                registryWorkflowManager.isProcessing(registry));
+                        return isExecuting(registry);
                     }
                 });
 
@@ -280,7 +312,15 @@ public class RegistryList extends TemplatePage {
 
         //Filters
 
-        filterForm.add(new RangeDatePickerTextField("creationDate", creationDateModel));
+        filterForm.add(new RangeDatePickerTextField("creationDate", creationDateModel) {
+            @Override
+            protected DateFormat newDateFormat(Locale locale) {
+                DateFormat df = new SimpleDateFormat("dd/MM/yyyy", locale);
+                df.setTimeZone(DateRange.UTC);
+
+                return df;
+            }
+        });
         filterForm.add(new TextField<>("registryNumber"));
         filterForm.add(new OrganizationPicker("senderOrganizationId", filterModel));
         filterForm.add(new OrganizationPicker("recipientOrganizationId", filterModel));
@@ -300,7 +340,15 @@ public class RegistryList extends TemplatePage {
                 }
         ).setNullValid(true));
 
-        filterForm.add(new RangeDatePickerTextField("loadDate", loadDateModel));
+        filterForm.add(new RangeDatePickerTextField("loadDate", loadDateModel) {
+            @Override
+            protected DateFormat newDateFormat(Locale locale) {
+                DateFormat df = new SimpleDateFormat("dd/MM/yyyy", locale);
+                df.setTimeZone(DateRange.UTC);
+
+                return df;
+            }
+        });
 
         filterForm.add(new DropDownChoice<>("status",
                 Arrays.asList(RegistryStatus.values()),
@@ -327,6 +375,8 @@ public class RegistryList extends TemplatePage {
                 creationDateModel.setObject(getAllDateRange());
                 loadDateModel.setObject(getAllDateRange());
 
+                selected.clear();
+
                 target.add(container);
             }
         };
@@ -337,6 +387,7 @@ public class RegistryList extends TemplatePage {
 
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
+                selected.clear();
 
                 target.add(container);
             }
@@ -349,6 +400,13 @@ public class RegistryList extends TemplatePage {
 
         //Navigator
         container.add(new PagingNavigator("navigator", dataView, getPreferencesPage(), container));
+    }
+
+    public boolean isExecuting(Registry registry) {
+        return !finishCallback.isCompleted() &&
+                (registryWorkflowManager.isLinking(registry) ||
+                registryWorkflowManager.isLoading(registry) ||
+                registryWorkflowManager.isProcessing(registry));
     }
 
     private Class<? extends Page> getViewPage() {
@@ -372,6 +430,19 @@ public class RegistryList extends TemplatePage {
                     @Override
                     protected void onClick(final AjaxRequestTarget target) {
                         fileDialog.open(target);
+                    }
+                },
+                new DeleteItemButton(id, true) {
+
+                    @Override
+                    protected void onClick(AjaxRequestTarget target) {
+                        for (Map.Entry<Registry, AjaxCheckBox> entry : selected.entrySet()) {
+                            if (entry.getValue().getModelObject()) {
+                                registryBean.delete(entry.getKey());
+                            }
+                        }
+                        selected.clear();
+                        target.add(container);
                     }
                 }
         );
