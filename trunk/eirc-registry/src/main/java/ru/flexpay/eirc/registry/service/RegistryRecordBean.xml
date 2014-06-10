@@ -38,6 +38,32 @@
 
     </resultMap>
 
+    <resultMap id="StatusDetailInfo" type="ru.flexpay.eirc.registry.entity.StatusDetailInfo">
+        <result column="count" property="count"/>
+        <result column="status" property="status" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
+        <result column="import_error_exist" property="importErrorExist"/>
+    </resultMap>
+
+    <resultMap id="ImportErrorDetailInfo" type="ru.flexpay.eirc.registry.entity.ImportErrorDetailInfo">
+        <result column="count" property="count"/>
+        <result column="import_error_type" property="importErrorType" typeHandler="org.complitex.dictionary.mybatis.FixedIdBaseTypeHandler"/>
+    </resultMap>
+
+    <resultMap id="ImportErrorDetail" type="ru.flexpay.eirc.registry.entity.ImportErrorDetail">
+        <result column="value" property="id"/>
+        <result column="count" property="count"/>
+
+        <association property="details" javaType="map">
+            <result column="city" property="city"/>
+            <result column="street_type" property="streetType"/>
+            <result column="street" property="street"/>
+            <result column="building_number" property="buildingNumber"/>
+            <result column="bulk_number" property="buildingCorp"/>
+            <result column="apartment_number" property="apartment"/>
+            <result column="room_number" property="room"/>
+        </association>
+    </resultMap>
+
     <sql id="registryRecordColumns">
         rr.`id`                       as `registry_record_id`,
         rr.`service_code`             as `registry_record_service_code`,
@@ -384,5 +410,71 @@
         </choose>
         where `id`=#{id}
     </update>
+
+    <select id="selectStatusStatistics" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecordData" resultMap="StatusDetailInfo">
+        select count(1) `count`, `status`, IF (max(`import_error_type`) is null,FALSE,TRUE) `import_error_exist`
+                from `registry_record` where `registry_id`=#{registryId} group by `status` order by `count` desc
+    </select>
+
+    <select id="selectImportErrorStatistics" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecordData" resultMap="ImportErrorDetailInfo">
+        select count(1) `count`, `import_error_type` from `registry_record` where `registry_id` = #{registryId} and `status` = #{status.id}
+                group by `import_error_type` order by `count` desc;
+    </select>
+
+    <select id="selectAddressErrorStatistics" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecordData" resultMap="ImportErrorDetail">
+        select count(1) `count`,
+                <choose>
+                    <when test="importErrorType.id == 1 or importErrorType.id == 7 or importErrorType.id == 12">
+                        `city` as `value`,
+                        `city_type`,
+                        `city`
+                    </when>
+                    <when test="importErrorType.id == 2 or importErrorType.id == 8 or importErrorType.id == 13">
+                        `street_type` as `value`,
+                        street_type
+                    </when>
+                    <when test="importErrorType.id == 3 or importErrorType.id == 9 or importErrorType.id == 14">
+                        CONCAT(`city`, `street_type`, `street`) as `value`,
+                        `city_type`,
+                        `city`,
+                        `street_type`,
+                        `street`
+                    </when>
+                    <when test="importErrorType.id == 4 or importErrorType.id == 5 or importErrorType.id == 10 or importErrorType.id == 15">
+                        CONCAT(`city`, `street_type`, `street`, `building_number`, `bulk_number`) as `value`,
+                        `city_type`,
+                        `city`,
+                        `street_type`,
+                        `street`,
+                        `building_number`,
+                        `bulk_number`
+                    </when>
+                    <when test="importErrorType.id == 6 or importErrorType.id == 11 or importErrorType.id == 16">
+                        CONCAT(`city`, `street_type`, `street`, `building_number`, `bulk_number`, `apartment_number`) as `value`,
+                        `city_type`,
+                        `city`,
+                        `street_type`,
+                        `street`,
+                        `building_number`,
+                        `bulk_number`,
+                        `apartment_number`
+                    </when>
+                    <when test="importErrorType.id == 19 or importErrorType.id == 20 or importErrorType.id == 21">
+                        CONCAT(`city`, `street_type`, `street`, `building_number`, `bulk_number`, `apartment_number`, `room_number`) as `value`,
+                        `city_type`,
+                        `city`,
+                        `street_type`,
+                        `street`,
+                        `building_number`,
+                        `bulk_number`,
+                        `apartment_number`,
+                        `room_number`
+                    </when>
+                </choose>
+
+                from registry_record
+                where `registry_id` = #{registryId} and `status` = #{status.id} and `import_error_type`= #{importErrorType.id}
+                group by `value` order by `count` desc;
+    </select>
 
 </mapper>

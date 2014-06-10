@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:wicket="http://wicket.apache.org/dtds.data/wicket-xhtml1.4-strict.dtd">
+    <head>
+        <title></title>
+    </head>
+    <body>
+        <wicket:panel>
+            <div wicket:id="container">
+                <ul>
+                    <li wicket:id="statusDetailsInfo">
+                        <a wicket:id="expand">
+                            <span wicket:id="info"></span>
+                        </a>
+                        <ul wicket:id="importErrorsContainer">
+                            <li wicket:id="importErrors">
+                                <a wicket:id="expand">
+                                    <span wicket:id="name"></span>
+                                </a>
+                                <ul wicket:id="addressErrorsContainer">
+                                    <li wicket:id="addressErrors">
+                                        <a wicket:id="expand">
+                                            <span wicket:id="name"></span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </wicket:panel>
+    </body>
+</html>

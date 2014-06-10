@@ -1,7 +1,6 @@
 package ru.flexpay.eirc.registry.web.list;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
@@ -35,7 +34,6 @@ import org.complitex.dictionary.web.component.DatePicker;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
-import org.complitex.template.web.template.FormTemplatePage;
 import org.complitex.template.web.template.TemplatePage;
 import org.odlabs.wiquery.ui.accordion.Accordion;
 import org.odlabs.wiquery.ui.options.HeightStyleEnum;
@@ -51,6 +49,7 @@ import ru.flexpay.eirc.registry.service.link.RegistryLinker;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
+import ru.flexpay.eirc.registry.web.component.StatusDetailPanel;
 
 import javax.ejb.EJB;
 import java.text.SimpleDateFormat;
@@ -143,7 +142,10 @@ public class RegistryRecordList extends TemplatePage {
 
         //Form
         final Form<RegistryRecordData> filterForm = new Form<>("filterForm", filterModel);
+        filterForm.setOutputMarkupId(true);
         container.add(filterForm);
+
+        container.add(new StatusDetailPanel("statusDetailPanel", filterModel, filterForm));
 
         Long moduleId = null;
         try {
@@ -413,10 +415,7 @@ public class RegistryRecordList extends TemplatePage {
                 filterForm.clearInput();
                 Long registryId = filterModel.getObject().getRegistryId();
 
-                RegistryRecord filterObject = new RegistryRecord();
-                filterObject.setRegistryId(registryId);
-
-                filterModel.setObject(filterObject);
+                filterModel.setObject(new RegistryRecord(registryId));
 
                 target.add(container);
             }
@@ -447,18 +446,6 @@ public class RegistryRecordList extends TemplatePage {
                 setResponsePage(RegistryList.class);
             }
         });
-    }
-
-    private Class<? extends Page> getEditPage() {
-        return FormTemplatePage.class;
-    }
-
-    private PageParameters getEditPageParams(Long id) {
-        PageParameters parameters = new PageParameters();
-        if (id != null) {
-            parameters.add("registryRecordId", id);
-        }
-        return parameters;
     }
 
     private void initTimerBehavior() {

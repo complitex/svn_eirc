@@ -7,9 +7,7 @@ import org.apache.ibatis.session.SqlSession;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
-import ru.flexpay.eirc.registry.entity.Container;
-import ru.flexpay.eirc.registry.entity.Registry;
-import ru.flexpay.eirc.registry.entity.RegistryRecordData;
+import ru.flexpay.eirc.registry.entity.*;
 
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
@@ -154,5 +152,17 @@ public class RegistryRecordBean extends AbstractBean {
 
     public boolean hasRecordsToProcessing(Registry registry) {
         return sqlSession().selectOne(NS + ".hasRecordsToProcessing", registry.getId()) != null;
+    }
+
+    public List<StatusDetailInfo> getStatusStatistics(RegistryRecordData registryRecord) {
+        return sqlSession().selectList(NS + ".selectStatusStatistics", registryRecord);
+    }
+
+    public List<ImportErrorDetailInfo> getImportErrorStatistics(RegistryRecordData registryRecord) {
+        return sqlSession().selectList(NS + ".selectImportErrorStatistics", registryRecord);
+    }
+
+    public List<ImportErrorDetail> getAddressErrorStatistics(RegistryRecordData registryRecord) {
+        return sqlSession().selectList(NS + ".selectAddressErrorStatistics", registryRecord);
     }
 }
