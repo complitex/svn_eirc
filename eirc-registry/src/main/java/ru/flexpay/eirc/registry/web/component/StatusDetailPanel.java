@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
+import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxLink;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.list.ListItem;
@@ -92,7 +93,7 @@ public class StatusDetailPanel extends Panel {
 
                         };
 
-                        AjaxLink expand = new AjaxLink("expand") {
+                        AjaxLink expand = new IndicatingAjaxLink("expand") {
 
                             @Override
                             public void onClick(AjaxRequestTarget target) {
@@ -127,7 +128,7 @@ public class StatusDetailPanel extends Panel {
 
                 };
 
-                AjaxLink expand = new AjaxLink("expand") {
+                AjaxLink expand = new IndicatingAjaxLink("expand") {
 
                     @Override
                     public void onClick(AjaxRequestTarget target) {
