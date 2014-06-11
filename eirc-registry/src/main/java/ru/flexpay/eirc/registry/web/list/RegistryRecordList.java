@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
+import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
 import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxLink;
 import org.apache.wicket.extensions.markup.html.repeater.data.sort.SortOrder;
 import org.apache.wicket.markup.html.basic.Label;
@@ -34,6 +35,7 @@ import org.complitex.dictionary.web.component.DatePicker;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.paging.PagingNavigator;
+import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
 import org.odlabs.wiquery.ui.accordion.Accordion;
 import org.odlabs.wiquery.ui.options.HeightStyleEnum;
@@ -63,6 +65,7 @@ import static org.complitex.dictionary.util.PageUtil.newSorting;
 /**
  * @author Pavel Sknar
  */
+@AuthorizeInstantiation(SecurityRole.AUTHORIZED)
 public class RegistryRecordList extends TemplatePage {
 
     private static final SimpleDateFormat OPERATION_DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
