@@ -205,7 +205,6 @@ public class RegistryRecordList extends TemplatePage {
                 FilterWrapper<RegistryRecordData> filterWrapper = FilterWrapper.of(filterModel.getObject(), first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
-                filterWrapper.setLike(true);
 
                 return registryRecordBean.getRegistryRecords(filterWrapper);
             }
