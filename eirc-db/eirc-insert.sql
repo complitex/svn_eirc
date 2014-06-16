@@ -226,4 +226,4 @@ INSERT INTO `container_type` (`code`, `name`) values
 ;
 
 -- Current database version
- INSERT INTO `update` (`version`) VALUE ('20140610_192_0.0.1');
+ INSERT INTO `update` (`version`) VALUE ('20140610_195_0.0.2');
