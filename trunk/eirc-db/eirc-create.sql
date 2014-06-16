@@ -341,7 +341,7 @@ CREATE TABLE `registry_record` (
   `building_id` BIGINT(20),
   `apartment_id` BIGINT(20),
   `room_id` BIGINT(20),
-  `status` BIGINT(20) NOT NULL comment 'Record status reference',
+  `status` BIGINT(20) comment 'Record status reference',
   `import_error_type` BIGINT(20) comment 'Import error type from import error',
   `registry_id` BIGINT(20) NOT NULL comment 'Registry reference',
   PRIMARY KEY (`id`),

@@ -25,6 +25,7 @@ import org.apache.wicket.request.resource.SharedResourceReference;
 import org.complitex.dictionary.entity.DictionaryConfig;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
+import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
 import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
@@ -43,9 +44,7 @@ import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryStatus;
 import ru.flexpay.eirc.registry.entity.RegistryType;
-import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
-import ru.flexpay.eirc.registry.service.RegistryBean;
-import ru.flexpay.eirc.registry.service.RegistryMessenger;
+import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.handle.RegistryHandler;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
@@ -109,6 +108,9 @@ public class RegistryList extends TemplatePage {
 
     @EJB
     private RegistryWorkflowManager registryWorkflowManager;
+
+    @EJB
+    private JobProcessor processor;
 
     BrowserFilesDialog fileDialog;
 
@@ -235,7 +237,7 @@ public class RegistryList extends TemplatePage {
                 item.add(new Label("type", registry.getType().getLabel(getLocale())));
                 item.add(new Label("loadDate", registry.getLoadDate() != null ? LOAD_DATE_FORMAT.format(registry.getLoadDate()) : ""));
                 item.add(new Label("recordsCount", String.valueOf(registry.getRecordsCount())));
-                item.add(new Label("status", registry.getStatus().getLabel(getLocale())));
+                item.add(new Label("status", registry.getStatus() == null? getString("deleted") : registry.getStatus().getLabel(getLocale())));
 
                 ScrollBookmarkablePageLink<WebPage> detailsLink = new ScrollBookmarkablePageLink<>("detailsLink",
                         getViewPage(), getViewPageParams(registry.getId()),
@@ -406,7 +408,8 @@ public class RegistryList extends TemplatePage {
         return !finishCallback.isCompleted() &&
                 (registryWorkflowManager.isLinking(registry) ||
                 registryWorkflowManager.isLoading(registry) ||
-                registryWorkflowManager.isProcessing(registry));
+                registryWorkflowManager.isProcessing(registry) ||
+                registry.getStatus() == null);
     }
 
     private Class<? extends Page> getViewPage() {
@@ -436,9 +439,32 @@ public class RegistryList extends TemplatePage {
 
                     @Override
                     protected void onClick(AjaxRequestTarget target) {
-                        for (Map.Entry<Registry, AjaxCheckBox> entry : selected.entrySet()) {
+                        initTimerBehavior();
+                        for (final Map.Entry<Registry, AjaxCheckBox> entry : selected.entrySet()) {
                             if (entry.getValue().getModelObject()) {
-                                registryBean.delete(entry.getKey());
+                                finishCallback.init();
+                                processor.processJob(new AbstractJob<Void>() {
+                                    @Override
+                                    public Void execute() throws ExecuteException {
+                                        try {
+                                            Registry registry = entry.getKey();
+
+                                            RegistryStatus oldStatus = registry.getStatus();
+                                            registry.setStatus(null);
+                                            registryBean.updateInNewTransaction(registry);
+
+                                            try {
+                                                registryBean.delete(registry);
+                                            } catch (Throwable th) {
+                                                registry.setStatus(oldStatus);
+                                                registryBean.updateInNewTransaction(registry);
+                                            }
+                                        } finally {
+                                            finishCallback.complete();
+                                        }
+                                        return null;
+                                    }
+                                });
                             }
                         }
                         selected.clear();

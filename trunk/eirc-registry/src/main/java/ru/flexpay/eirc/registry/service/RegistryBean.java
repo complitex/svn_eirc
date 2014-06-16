@@ -8,6 +8,8 @@ import ru.flexpay.eirc.registry.entity.Registry;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import java.util.List;
 
 /**
@@ -41,11 +43,18 @@ public class RegistryBean extends AbstractBean {
         }
     }
 
+    @Transactional
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public void updateInNewTransaction(Registry registry) {
+        update(registry);
+    }
+
     public void update(Registry registry) {
         sqlSession().update(NS + ".updateRegistry", registry);
     }
 
     @Transactional
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void delete(Registry registry) {
         sqlSession().delete(NS + ".deleteRegistryRecordContainers", registry.getId());
         sqlSession().delete(NS + ".deleteRegistryRecords", registry.getId());
