@@ -307,7 +307,9 @@ public class RegistryRecordList extends TemplatePage {
                 };
                 addressCorrectionLink.setVisible(registryRecord.getStatus() == RegistryRecordStatus.LINKED_WITH_ERROR &&
                 registryRecord.getImportErrorType() != null &&
-                        (registryRecord.getImportErrorType().getId() < 17 || registryRecord.getImportErrorType().getId() > 18));
+                        (registryRecord.getImportErrorType().getId() < 17 || registryRecord.getImportErrorType().getId() > 18) &&
+                                registryWorkflowManager.canLink(registry)
+                );
                 item.add(addressCorrectionLink);
             }
         };
