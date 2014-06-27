@@ -45,4 +45,17 @@
         <antcall target="create"/>
         <antcall target="populate_test_data"/>
     </target>
+
+    <target name="create-junit-test">
+        <sql driver="com.mysql.jdbc.Driver" encoding="UTF-8" url="${junit_test_url}" userid="${junit_test_username}" password="${junit_test_password}">
+            <classpath>
+                <pathelement location="${jdbc}"/>
+            </classpath>
+
+            <transaction src="eirc-testdump.sql"/>
+
+            <transaction src="../../complitex/complitex-db/complitex-junit-test-create.sql"/>
+
+        </sql>
+    </target>
 </project>

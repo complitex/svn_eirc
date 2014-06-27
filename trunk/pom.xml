@@ -12,6 +12,7 @@
 
     <properties>
         <complitex.version>3.0.0-SNAPSHOT</complitex.version>
+        <maven.test.skip>true</maven.test.skip>
     </properties>
 
     <groupId>ru.flexpay.eirc</groupId>

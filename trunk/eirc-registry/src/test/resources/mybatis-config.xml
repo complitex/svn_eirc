@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <typeAliases>
+        <typeAlias type="org.complitex.dictionary.entity.Locale" alias="Locale"/>
+        <typeAlias type="org.complitex.dictionary.entity.StringCulture" alias="StringCulture"/>
+        <typeAlias type="org.complitex.dictionary.entity.Parameter" alias="Parameter"/>
+        <typeAlias type="org.complitex.dictionary.entity.DomainObject" alias="DomainObject"/>
+        <typeAlias type="org.complitex.dictionary.entity.Attribute" alias="Attribute"/>
+        <typeAlias type="org.complitex.dictionary.entity.example.DomainObjectExample" alias="DomainObjectExample"/>
+    </typeAliases>
+
+    <environments default="local">
+        <environment id="local">
+            <transactionManager type="MANAGED"/>
+            <dataSource type="JNDI">
+                <property name="data_source" value="jdbc/junitTestResource"/>
+            </dataSource>
+            <!--
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql://localhost:3306/junitTest"/>
+                <property name="username" value="junitTest"/>
+                <property name="password" value="junitTest"/>
+            </dataSource>
+            -->
+        </environment>
+    </environments>
+
+    <mappers>
+        <mapper resource="org/complitex/dictionary/entity/Locale.xml"/>
+        <mapper resource="org/complitex/dictionary/entity/Sequence.xml"/>
+        <mapper resource="org/complitex/dictionary/entity/StringCulture.xml"/>
+        <mapper resource="org/complitex/dictionary/entity/description/Entity.xml"/>
+        <mapper resource="org/complitex/dictionary/entity/Attribute.xml"/>
+        <mapper resource="org/complitex/dictionary/entity/DomainObject.xml"/>
+
+        <mapper resource="org/complitex/dictionary/service/LogBean.xml"/>
+        <mapper resource="org/complitex/dictionary/service/SessionBean.xml"/>
+        <mapper resource="org/complitex/dictionary/service/PreferenceBean.xml"/>
+        <mapper resource="org/complitex/dictionary/service/PermissionBean.xml"/>
+        <mapper resource="org/complitex/dictionary/service/NameBean.xml"/>
+        <mapper resource="org/complitex/dictionary/service/ConfigBean.xml"/>
+
+        <mapper resource="org/complitex/address/strategy/building/Building.xml"/>
+        <mapper resource="org/complitex/address/strategy/building_address/BuildingAddress.xml"/>
+        <mapper resource="org/complitex/address/strategy/street/Street.xml"/>
+        <mapper resource="org/complitex/address/strategy/city/City.xml"/>
+        <mapper resource="org/complitex/address/strategy/district/District.xml"/>
+        <mapper resource="org/complitex/address/strategy/apartment/Apartment.xml"/>
+        <mapper resource="org/complitex/address/strategy/room/Room.xml"/>
+
+        <mapper resource="org/complitex/admin/service/UserBean.xml"/>
+        <mapper resource="org/complitex/admin/service/UserProfileBean.xml"/>
+        <mapper resource="org/complitex/logging/service/LogListBean.xml"/>
+
+        <mapper resource="org/complitex/organization/strategy/Organization.xml"/>
+        <mapper resource="org/complitex/organization/service/OrganizationImportBean.xml"/>
+
+        <mapper resource="org/complitex/dictionary/entity/Correction.xml"/>
+        <mapper resource="org/complitex/correction/service/AddressCorrectionBean.xml"/>
+        <mapper resource="org/complitex/correction/service/OrganizationCorrectionBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service/correction/service/ServiceCorrectionBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service_provider_account/service/ServiceProviderAccountCorrectionBean.xml"/>
+
+        <mapper resource="ru/flexpay/eirc/dictionary/service/PersonBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/dictionary/strategy/ModuleInstanceStrategy.xml"/>
+        <mapper resource="ru/flexpay/eirc/eirc_account/service/EircAccountBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service/service/ServiceBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service_provider_account/service/ServiceProviderAccountBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service_provider_account/service/ExemptionBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service_provider_account/service/OwnerExemptionBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service_provider_account/service/FinancialAttributeBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service_provider_account/service/SaldoOutBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service_provider_account/service/ChargeBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service_provider_account/service/PaymentAttributeBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service_provider_account/service/CashPaymentBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/service_provider_account/service/CashlessPaymentBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/registry/service/ContainerBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/registry/service/RegistryRecordBean.xml"/>
+        <mapper resource="ru/flexpay/eirc/registry/service/RegistryBean.xml"/>
+
+        <mapper resource="org/complitex/dictionary/service/TestBean.xml"/>
+    </mappers>
+</configuration>
