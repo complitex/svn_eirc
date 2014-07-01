@@ -5,7 +5,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.entity.Locale;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import ru.flexpay.eirc.service.entity.Service;
 
@@ -24,7 +23,6 @@ public class ServiceBean extends AbstractBean {
 
     public static final String FILTER_MAPPING_ATTRIBUTE_NAME = "service";
 
-    @Transactional
     public void delete(Service service) {
         sqlSession().delete("delete", service);
     }
@@ -70,7 +68,6 @@ public class ServiceBean extends AbstractBean {
         return sqlSession().selectOne(NS + ".countServices", filter);
     }
 
-    @Transactional
     public void save(Service service) {
         if (service.getId() == null) {
             insert(service);

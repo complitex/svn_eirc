@@ -9,7 +9,7 @@ public class RegistryLinkerMessenger extends IMessenger {
     private static final String RESOURCE_BUNDLE = RegistryLinkerMessenger.class.getName();
 
     @Override
-    protected String getResourceBundle() {
+    public String getResourceBundle() {
         return RESOURCE_BUNDLE;
     }
 }

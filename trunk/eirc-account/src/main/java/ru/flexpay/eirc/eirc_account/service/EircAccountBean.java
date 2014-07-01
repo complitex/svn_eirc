@@ -7,7 +7,6 @@ import org.apache.commons.validator.routines.checkdigit.CheckDigit;
 import org.apache.commons.validator.routines.checkdigit.CheckDigitException;
 import org.apache.commons.validator.routines.checkdigit.EAN13CheckDigit;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.service.SequenceBean;
 import ru.flexpay.eirc.dictionary.entity.Address;
@@ -41,7 +40,6 @@ public class EircAccountBean extends AbstractBean {
     @EJB
     private ServiceProviderAccountBean serviceProviderAccountBean;
 
-    @Transactional
     public String generateEircAccountNumber(String prefix) throws NumberFormatException, CheckDigitException {
         long lPrefix = Long.parseLong(prefix);
         long id = sequenceBean.nextIdOrInit(prefix);
@@ -50,7 +48,6 @@ public class EircAccountBean extends AbstractBean {
         return accountNumber + CHECK_DIGIT.calculate(accountNumber);
     }
 
-    @Transactional
     public void archive(EircAccount object) {
         if (object.getEndDate() == null) {
             object.setEndDate(new Date());
@@ -101,7 +98,6 @@ public class EircAccountBean extends AbstractBean {
         return sqlSession().selectOne(NS + ".countEircAccounts", filter);
     }
 
-    @Transactional
     public void save(EircAccount eircAccount) {
         if (eircAccount.getId() == null) {
             saveNew(eircAccount);

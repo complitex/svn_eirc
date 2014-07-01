@@ -1,7 +1,6 @@
 package ru.flexpay.eirc.registry.service;
 
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import ru.flexpay.eirc.registry.entity.Container;
 import ru.flexpay.eirc.registry.entity.Registry;
@@ -33,7 +32,6 @@ public class RegistryBean extends AbstractBean {
         return sqlSession().selectOne(NS + ".countRegistries", filter);
     }
 
-    @Transactional
     public void save(Registry registry) {
         sqlSession().insert(NS + ".insertRegistry", registry);
 
@@ -43,7 +41,6 @@ public class RegistryBean extends AbstractBean {
         }
     }
 
-    @Transactional
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void updateInNewTransaction(Registry registry) {
         update(registry);
@@ -53,7 +50,6 @@ public class RegistryBean extends AbstractBean {
         sqlSession().update(NS + ".updateRegistry", registry);
     }
 
-    @Transactional
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void delete(Registry registry) {
         sqlSession().delete(NS + ".deleteRegistryRecordContainers", registry.getId());

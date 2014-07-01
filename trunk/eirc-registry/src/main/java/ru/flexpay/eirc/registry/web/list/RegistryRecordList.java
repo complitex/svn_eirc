@@ -134,7 +134,12 @@ public class RegistryRecordList extends TemplatePage {
         add(new Label("title", labelModel));
         add(new Label("label", labelModel));
 
-        container = new IMessengerContainer("container", imessenger, finishCallback);
+        container = new IMessengerContainer("container", imessenger, finishCallback) {
+            @Override
+            protected boolean isCompleted() {
+                return !registryWorkflowManager.isInWork(registry) || super.isCompleted();
+            }
+        };
         container.setOutputMarkupPlaceholderTag(true);
         container.setVisible(true);
         add(container);

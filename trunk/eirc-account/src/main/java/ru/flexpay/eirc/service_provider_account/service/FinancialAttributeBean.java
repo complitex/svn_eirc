@@ -2,7 +2,6 @@ package ru.flexpay.eirc.service_provider_account.service;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.util.StringUtil;
 import ru.flexpay.eirc.service_provider_account.entity.FinancialAttribute;
@@ -16,7 +15,6 @@ public abstract class FinancialAttributeBean<T extends FinancialAttribute> exten
 
     private static final String NS = ru.flexpay.eirc.service_provider_account.service.FinancialAttributeBean.class.getName();
 
-    @Transactional
     public void delete(T financialAttribute) {
         sqlSession().delete("delete", financialAttribute);
     }
@@ -43,7 +41,6 @@ public abstract class FinancialAttributeBean<T extends FinancialAttribute> exten
                 sqlSession().<Integer>selectOne(getNameSpace() + ".countAllPeriodDateFinancialAttributes", filter);
     }
 
-    @Transactional
     public void save(T financialAttribute) {
         if (financialAttribute.getId() == null) {
             insert(financialAttribute);

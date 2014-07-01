@@ -6,7 +6,6 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 import org.complitex.dictionary.entity.Attribute;
 import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.service.SequenceBean;
@@ -41,7 +40,6 @@ public class ServiceProviderAccountBean extends AbstractBean {
     @EJB
     private EircOrganizationStrategy eircOrganizationStrategy;
 
-    @Transactional
     public void archive(ServiceProviderAccount object) {
         if (object.getEndDate() == null) {
             object.setEndDate(DateUtil.getCurrentDate());
@@ -67,7 +65,6 @@ public class ServiceProviderAccountBean extends AbstractBean {
         return sqlSession().selectOne(NS + ".countServiceProviderAccounts", filter);
     }
 
-    @Transactional
     public void save(ServiceProviderAccount serviceProviderAccount) throws ServiceNotAllowableException {
         validate(serviceProviderAccount);
 

@@ -7,7 +7,6 @@ import org.complitex.dictionary.entity.SimpleTypes;
 import org.complitex.dictionary.entity.StringCulture;
 import org.complitex.dictionary.entity.description.EntityAttributeType;
 import org.complitex.dictionary.entity.example.DomainObjectExample;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.StringCultureBean;
 import org.complitex.dictionary.util.Numbers;
 import org.complitex.dictionary.util.StringUtil;
@@ -53,7 +52,6 @@ public class ServiceProviderAccountStrategy extends TemplateStrategy {
         throw new UnsupportedOperationException("Use findById");
     }
 
-    @Transactional
     @Override
     public DomainObject findById(Long id, boolean runAsAdmin) {
 
@@ -71,7 +69,6 @@ public class ServiceProviderAccountStrategy extends TemplateStrategy {
         throw new UnsupportedOperationException();
     }
 
-    @Transactional
     @Override
     public void insert(DomainObject object, Date insertDate) {
         for (Attribute attribute : object.getAttributes()) {
@@ -81,7 +78,6 @@ public class ServiceProviderAccountStrategy extends TemplateStrategy {
         }
     }
 
-    @Transactional
     @Override
     public void update(DomainObject oldObject, DomainObject newObject, Date updateDate) {
 

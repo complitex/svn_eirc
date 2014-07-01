@@ -70,6 +70,13 @@ public class RegistryWorkflowManager {
     private static final Set<RegistryStatus> loadedStates = ImmutableSet.of(LOADED, LOADED_WITH_ERROR);
 
 
+    private static final Set<RegistryStatus> inWorkStates = ImmutableSet.<RegistryStatus>builder().
+            addAll(linkingStates).
+            addAll(loadingStates).
+            addAll(processingStates).
+            build();
+
+
     /**
      * Check if registry status transition allowed
      *
@@ -118,6 +125,10 @@ public class RegistryWorkflowManager {
 
     public boolean isLoaded(Registry registry) {
         return loadedStates.contains(registry.getStatus());
+    }
+
+    public boolean isInWork(Registry registry) {
+        return registry.getStatus() == null || inWorkStates.contains(registry.getStatus());
     }
 
     /**

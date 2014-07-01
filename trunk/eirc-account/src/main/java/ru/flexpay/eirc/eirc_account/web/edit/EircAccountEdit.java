@@ -11,6 +11,7 @@ import org.apache.wicket.markup.html.form.FormComponent;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.model.IModel;
+import org.apache.wicket.model.Model;
 import org.apache.wicket.model.PropertyModel;
 import org.apache.wicket.model.ResourceModel;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
@@ -127,7 +128,7 @@ public class EircAccountEdit extends TemplatePage {
         }
         accordion.setCollapsible(true);
         accordion.setOutputMarkupPlaceholderTag(true);
-        accordion.add(new FormComponent("accordionSPAHeader") {
+        accordion.add(new FormComponent<Boolean>("accordionSPAHeader", new Model<>(Boolean.TRUE)) {
 
         }.add(new AjaxEventBehavior("click") {
             Integer state = accordion.getActive();

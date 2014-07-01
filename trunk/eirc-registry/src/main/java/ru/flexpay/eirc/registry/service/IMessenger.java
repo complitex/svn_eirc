@@ -53,7 +53,7 @@ public abstract class IMessenger extends AbstractMessenger {
         }
 
         @Override
-        protected String getResourceBundle() {
+        public String getResourceBundle() {
             return resourceBundle;
         }
     }

@@ -9,7 +9,6 @@ import org.complitex.dictionary.entity.StringCulture;
 import org.complitex.dictionary.entity.description.EntityAttributeType;
 import org.complitex.dictionary.entity.example.DomainObjectExample;
 import org.complitex.dictionary.mybatis.SqlSessionFactoryBean;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.LocaleBean;
 import org.complitex.dictionary.service.StringCultureBean;
 import org.complitex.dictionary.strategy.DeleteException;
@@ -136,7 +135,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
     }
 
     @SuppressWarnings("unchecked")
-    @Transactional
     @Override
     public List<DomainObject> getAllOuterOrganizations(Locale locale) {
         DomainObjectExample example = new DomainObjectExample();
@@ -158,7 +156,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
      * @return All EIRC organizations.
      */
     @SuppressWarnings("unchecked")
-    @Transactional
     public List<DomainObject> getAllServiceProviders(Locale locale) {
         DomainObjectExample example = new DomainObjectExample();
 
@@ -182,7 +179,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
      * @return All EIRC organizations.
      */
     @SuppressWarnings("unchecked")
-    @Transactional
     public List<DomainObject> getAllPaymentCollectors(Locale locale) {
         DomainObjectExample example = new DomainObjectExample();
 
@@ -232,13 +228,11 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
         }
     }
 
-    @Transactional
     @Override
     public Organization findById(Long id, boolean runAsAdmin) {
         return findById(null, id, runAsAdmin);
     }
 
-    @Transactional
     @Override
     public Organization findById(String dataSource, Long id, boolean runAsAdmin) {
         /*if (log.isDebugEnabled()) {
@@ -273,7 +267,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
         return new Organization(object);
     }
 
-    @Transactional
     @Override
     public void insert(DomainObject object, Date insertDate) {
         //EircOrganization eircOrganization = (EircOrganization) object;
@@ -281,7 +274,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
         super.insert(object, insertDate);
     }
 
-    @Transactional
     @Override
     public void update(DomainObject oldObject, DomainObject newObject, Date updateDate) {
         //EircOrganization newOrganization = (EircOrganization) newObject;
@@ -290,7 +282,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
         super.update(oldObject, newObject, updateDate);
     }
 
-    @Transactional
     @Override
     public void delete(long objectId, Locale locale) throws DeleteException {
         deleteChecks(objectId, locale);
@@ -300,7 +291,6 @@ public class EircOrganizationStrategy extends AbstractOrganizationStrategy<Domai
         deleteObject(objectId, locale);
     }
 
-    @Transactional
     @Override
     protected Long insertStrings(long attributeTypeId, List<StringCulture> strings) {
         /* if it's data source or one of load/save request file directory attributes 
