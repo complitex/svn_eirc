@@ -2,10 +2,8 @@ package ru.flexpay.eirc.registry.service;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import ru.flexpay.eirc.registry.entity.*;
 
@@ -19,7 +17,6 @@ import java.util.Map;
  * @author Pavel Sknar
  */
 @Stateless
-@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class RegistryRecordBean extends AbstractBean {
     private static final String NS = RegistryRecordBean.class.getName();
 
@@ -58,6 +55,7 @@ public class RegistryRecordBean extends AbstractBean {
         return getSqlSessionManager().selectList(NS + ".selectRecordsToProcessing", filter);
     }
 
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void createBulk(List<RegistryRecordData> registryRecords) {
         Map<String, Object> params = createBulkRecords(registryRecords);
         List<Container> containers = Lists.newArrayList();
@@ -79,7 +77,7 @@ public class RegistryRecordBean extends AbstractBean {
 
     }
 
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    @TransactionAttribute(TransactionAttributeType.MANDATORY)
     public void createBulkRecordContainers(List<RegistryRecordData> registryRecords, List<Container> containers, long id) {
         for (RegistryRecordData registryRecord : registryRecords) {
             for (Container container : registryRecord.getContainers()) {
@@ -91,7 +89,7 @@ public class RegistryRecordBean extends AbstractBean {
         getSqlSessionManager().insert(NS + ".insertRegistryRecordContainers", containers);
     }
 
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    @TransactionAttribute(TransactionAttributeType.MANDATORY)
     public Map<String, Object> createBulkRecords(List<RegistryRecordData> registryRecords) {
         for (RegistryRecordData registryRecord : registryRecords) {
             registryRecord.getUniqueOperationNumber();
@@ -103,7 +101,6 @@ public class RegistryRecordBean extends AbstractBean {
         return params;
     }
 
-    @Transactional(executorType = ExecutorType.BATCH)
     @TransactionAttribute(TransactionAttributeType.MANDATORY)
     public void updateBulk(List<RegistryRecordData> registryRecords) {
         SqlSession session = sqlSession();
@@ -114,7 +111,6 @@ public class RegistryRecordBean extends AbstractBean {
 
     }
 
-    @Transactional
     public void save(RegistryRecordData registryRecord) {
         SqlSession session = sqlSession();
         if (saveRegistryRecord(session, registryRecord)) {

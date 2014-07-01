@@ -1,7 +1,6 @@
 package ru.flexpay.eirc.mb_transformer.service;
 
 import com.google.common.collect.Maps;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 
 import javax.ejb.Stateless;
@@ -14,7 +13,6 @@ import java.util.Map;
 public class MbTransformerRegistryBean extends AbstractBean {
     private static final String NS = MbTransformerRegistryBean.class.getName();
 
-    @Transactional
     public Long generateRegistryNumber() {
         Map<String, Object> result = Maps.newHashMap();
 

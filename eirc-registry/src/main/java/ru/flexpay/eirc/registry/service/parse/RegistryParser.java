@@ -3,12 +3,10 @@ package ru.flexpay.eirc.registry.service.parse;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.lang.StringUtils;
-import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.complitex.correction.service.OrganizationCorrectionBean;
 import org.complitex.dictionary.entity.DictionaryConfig;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.util.AttributeUtil;
@@ -38,15 +36,15 @@ import javax.ejb.TransactionAttributeType;
 import java.io.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author Pavel Sknar
  */
-@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 @Stateless
 public class RegistryParser implements Serializable {
 
-    private final Logger log = LoggerFactory.getLogger(RegistryParser.class);
+    private final static Logger log = LoggerFactory.getLogger(RegistryParser.class);
 
     @EJB
     private RegistryRecordBean registryRecordService;
@@ -78,6 +76,8 @@ public class RegistryParser implements Serializable {
 
     @EJB
     private ModuleInstanceStrategy moduleInstanceStrategy;
+
+    private static final ReentrantReadWriteLock registryLock = new ReentrantReadWriteLock();
 
     public void parse(final AbstractMessenger imessenger, final AbstractFinishCallback finishUpload) throws ExecuteException {
         imessenger.addMessageInfo("starting_upload_registries");
@@ -175,11 +175,16 @@ public class RegistryParser implements Serializable {
                     Integer messageType = message.getType();
 
                     if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_HEADER)) {
-                        registry = processHeader(imessenger, fileName, messageFieldList, processLog);
-                        if (registry == null) {
-                            return null;
+                        registryLock.writeLock().lock();
+                        try {
+                            registry = processHeader(imessenger, fileName, messageFieldList, processLog);
+                            if (registry == null) {
+                                return null;
+                            }
+                            EjbBeanLocator.getBean(RegistryParser.class).saveRegistry(registry);
+                        } finally {
+                            registryLock.writeLock().unlock();
                         }
-                        EjbBeanLocator.getBean(RegistryParser.class).saveRegistry(registry);
 
                         processLog = getProcessLogger(registry.getRegistryNumber());
 
@@ -494,7 +499,6 @@ public class RegistryParser implements Serializable {
         return null;
     }
 
-    @Transactional(isolationLevel = TransactionIsolationLevel.READ_UNCOMMITTED)
     public boolean validateRegistry(Registry registry, AbstractMessenger iMessenger, Logger processLog) {
         Registry filterObject = new Registry();
         filterObject.setRegistryNumber(registry.getRegistryNumber());

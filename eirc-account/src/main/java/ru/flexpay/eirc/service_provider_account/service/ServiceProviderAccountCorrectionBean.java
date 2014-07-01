@@ -2,7 +2,6 @@ package ru.flexpay.eirc.service_provider_account.service;
 
 import org.complitex.dictionary.entity.Correction;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccountCorrection;
 
@@ -37,7 +36,6 @@ public class ServiceProviderAccountCorrectionBean extends AbstractBean{
         }
     }
 
-    @Transactional
     public void delete(ServiceProviderAccountCorrection ServiceProviderAccountCorrection){
         sqlSession().delete(NS_CORRECTION + ".deleteCorrection", ServiceProviderAccountCorrection);
     }

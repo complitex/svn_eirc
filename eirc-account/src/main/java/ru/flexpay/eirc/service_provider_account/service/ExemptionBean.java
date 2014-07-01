@@ -2,7 +2,6 @@ package ru.flexpay.eirc.service_provider_account.service;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.complitex.dictionary.entity.FilterWrapper;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.AbstractBean;
 import org.complitex.dictionary.service.SequenceBean;
 import org.complitex.dictionary.util.DateUtil;
@@ -24,7 +23,6 @@ public class ExemptionBean extends AbstractBean {
     @EJB
     private SequenceBean sequenceBean;
 
-    @Transactional
     public void archive(Exemption object) {
         if (object.getEndDate() == null) {
             object.setEndDate(DateUtil.getCurrentDate());
@@ -45,7 +43,6 @@ public class ExemptionBean extends AbstractBean {
         return sqlSession().selectOne(NS + ".countExemptions", filter);
     }
 
-    @Transactional
     public void save(Exemption exemption) {
         if (exemption.getId() == null) {
             saveNew(exemption);

@@ -708,7 +708,7 @@ public class EircPaymentsRegistryConverter {
         }
 
         @Override
-        protected String getResourceBundle() {
+        public String getResourceBundle() {
             return null;
         }
     }

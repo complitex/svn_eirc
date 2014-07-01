@@ -13,7 +13,7 @@ public class RegistryMessenger extends IMessenger {
     private static final String RESOURCE_BUNDLE = RegistryMessenger.class.getName();
 
     @Override
-    protected String getResourceBundle() {
+    public String getResourceBundle() {
         return RESOURCE_BUNDLE;
     }
 }

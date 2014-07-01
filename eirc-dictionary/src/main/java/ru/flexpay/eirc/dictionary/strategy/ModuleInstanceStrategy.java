@@ -13,7 +13,6 @@ import org.complitex.dictionary.entity.StringCulture;
 import org.complitex.dictionary.entity.description.EntityAttributeType;
 import org.complitex.dictionary.entity.example.AttributeExample;
 import org.complitex.dictionary.entity.example.DomainObjectExample;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.service.StringCultureBean;
 import org.complitex.dictionary.strategy.web.AbstractComplexAttributesPanel;
 import org.complitex.dictionary.strategy.web.DomainObjectListPanel;
@@ -150,7 +149,6 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
         return sqlSession().selectOne(MODULE_INSTANCE_NAMESPACE + ".selectModuleInstanceId", params);
     }
 
-    @Transactional
     @Override
     public List<? extends DomainObject> find(DomainObjectExample example) {
         if (example.getId() != null && example.getId() <= 0) {
@@ -206,7 +204,6 @@ public class ModuleInstanceStrategy extends TemplateStrategy {
         }
     }
 
-    @Transactional
     @Override
     protected Long insertStrings(long attributeTypeId, List<StringCulture> strings) {
         /* if it's data source or one of load/save request file directory attributes

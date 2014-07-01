@@ -11,7 +11,6 @@ import org.apache.wicket.util.string.Strings;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.example.AttributeExample;
 import org.complitex.dictionary.entity.example.DomainObjectExample;
-import org.complitex.dictionary.mybatis.Transactional;
 import org.complitex.dictionary.strategy.DeleteException;
 import org.complitex.dictionary.util.AttributeUtil;
 import org.complitex.dictionary.util.ResourceUtil;
@@ -74,7 +73,6 @@ public class ModuleInstanceTypeStrategy extends TemplateStrategy {
         return ResourceUtil.getString(RESOURCE_BUNDLE, getEntityTable(), locale);
     }
 
-    @Transactional
     public List<? extends DomainObject> getAll() {
         DomainObjectExample example = new DomainObjectExample();
         configureExample(example, ImmutableMap.<String, Long>of(), null);
@@ -96,7 +94,6 @@ public class ModuleInstanceTypeStrategy extends TemplateStrategy {
         return ImmutableList.of(EIRC_TYPE, PAYMENTS_TYPE);
     }
 
-    @Transactional
     @Override
     protected void deleteChecks(long objectId, Locale locale) throws DeleteException {
         if (getReservedInstanceIds().contains(objectId)) {

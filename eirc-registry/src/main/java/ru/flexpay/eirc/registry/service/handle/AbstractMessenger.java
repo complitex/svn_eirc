@@ -42,7 +42,7 @@ public abstract class AbstractMessenger implements Serializable {
         return getIMessages().poll();
     }
 
-    protected abstract String getResourceBundle();
+    public abstract String getResourceBundle();
 
     public class IMessage implements Serializable {
 

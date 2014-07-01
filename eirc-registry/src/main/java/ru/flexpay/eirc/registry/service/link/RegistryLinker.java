@@ -25,7 +25,7 @@ import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 
 import javax.ejb.EJB;
-import javax.ejb.Singleton;
+import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import java.util.List;
@@ -34,15 +34,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author Pavel Sknar
  */
-@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-@Singleton
+@Stateless
 public class RegistryLinker {
 
-    private final Logger log = LoggerFactory.getLogger(RegistryLinker.class);
+    private static final Logger log = LoggerFactory.getLogger(RegistryLinker.class);
 
     @EJB
     private ConfigBean configBean;
@@ -73,6 +73,8 @@ public class RegistryLinker {
 
     @EJB
     private ModuleInstanceStrategy moduleInstanceStrategy;
+
+    private static final ReentrantReadWriteLock registryLock = new ReentrantReadWriteLock();
 
     public void link(final Long registryId, final AbstractMessenger imessenger, final AbstractFinishCallback finishLink) {
         link(FilterWrapper.<RegistryRecordData>of(new RegistryRecord(registryId)), imessenger, finishLink, false);
@@ -124,7 +126,8 @@ public class RegistryLinker {
 
 
                     // one process on linking
-                    synchronized (this) {
+                    registryLock.writeLock().lock();
+                    try {
                         // check registry status
                         if (!registryWorkflowManager.canLink(registry)) {
                             imessenger.addMessageError("registry_failed_status", registry.getRegistryNumber());
@@ -136,6 +139,8 @@ public class RegistryLinker {
                             imessenger.addMessageError("registry_status_inner_error", registry.getRegistryNumber());
                             return null;
                         }
+                    } finally {
+                        registryLock.writeLock().unlock();
                     }
 
                     // check registry records status

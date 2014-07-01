@@ -29,12 +29,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author Pavel Sknar
  */
-@TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-@Singleton
+@Stateless
 public class RegistryHandler {
 
     private static final Logger log = LoggerFactory.getLogger(RegistryHandler.class);
@@ -69,6 +69,8 @@ public class RegistryHandler {
     @EJB
     private OperationFactory operationFactory;
 
+    private static final ReentrantReadWriteLock registryLock = new ReentrantReadWriteLock();
+
     public void handle(final Long registryId, final AbstractMessenger imessenger, final AbstractFinishCallback finishLink) {
         handle(FilterWrapper.<RegistryRecordData>of(new RegistryRecord(registryId)), imessenger, finishLink);
     }
@@ -99,7 +101,8 @@ public class RegistryHandler {
                     final Registry registry = registries.get(0);
 
                     // one process on handling
-                    synchronized (this) {
+                    registryLock.writeLock().lock();
+                    try {
                         // check registry status
                         if (!registryWorkflowManager.canProcess(registry)) {
                             imessenger.addMessageError("registry_failed_status", registryId);
@@ -111,6 +114,8 @@ public class RegistryHandler {
                             imessenger.addMessageError("registry_status_inner_error", registryId);
                             return null;
                         }
+                    } finally {
+                        registryLock.writeLock().unlock();
                     }
 
                     // check registry records status

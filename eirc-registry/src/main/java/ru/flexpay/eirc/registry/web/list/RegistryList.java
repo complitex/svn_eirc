@@ -405,11 +405,7 @@ public class RegistryList extends TemplatePage {
     }
 
     public boolean isExecuting(Registry registry) {
-        return !finishCallback.isCompleted() &&
-                (registryWorkflowManager.isLinking(registry) ||
-                registryWorkflowManager.isLoading(registry) ||
-                registryWorkflowManager.isProcessing(registry) ||
-                registry.getStatus() == null);
+        return !finishCallback.isCompleted() && registryWorkflowManager.isInWork(registry);
     }
 
     private Class<? extends Page> getViewPage() {

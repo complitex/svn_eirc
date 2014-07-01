@@ -87,7 +87,7 @@ public class IMessengerContainer extends WebMarkupContainer {
         }
     }
 
-    private boolean isCompleted() {
+    protected boolean isCompleted() {
         return finishCallback.isCompleted() && imessenger.countIMessages() <= 0;
     }
 }
