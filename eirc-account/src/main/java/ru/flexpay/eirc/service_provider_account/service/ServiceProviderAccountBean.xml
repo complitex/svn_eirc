@@ -115,7 +115,7 @@
         select
         <include refid="generalWithAddressSPAColumns"/>
         from `service_provider_account` spa
-        inner join (select spa.`pk_id` as `max_pk_id`
+        inner join (select distinct spa.`pk_id` as `max_pk_id`
 
                     from `service_provider_account` spa
                     <if test="map.inactive == true or map.all == true">

@@ -49,13 +49,19 @@ public class EircAccountBean extends AbstractBean {
     }
 
     public void archive(EircAccount object) {
+        archive(object, true);
+    }
+
+    private void archive(EircAccount object, boolean withSPA) {
         if (object.getEndDate() == null) {
             object.setEndDate(new Date());
         }
-        List<ServiceProviderAccount> serviceProviderAccounts =
-                serviceProviderAccountBean.getServiceProviderAccounts(FilterWrapper.of(new ServiceProviderAccount(new EircAccount(object.getId()))));
-        for (ServiceProviderAccount serviceProviderAccount : serviceProviderAccounts) {
-            serviceProviderAccountBean.archive(serviceProviderAccount);
+        if (withSPA) {
+            List<ServiceProviderAccount> serviceProviderAccounts =
+                    serviceProviderAccountBean.getServiceProviderAccounts(FilterWrapper.of(new ServiceProviderAccount(new EircAccount(object.getId()))));
+            for (ServiceProviderAccount serviceProviderAccount : serviceProviderAccounts) {
+                serviceProviderAccountBean.archive(serviceProviderAccount);
+            }
         }
         sqlSession().update("updateEndDate", object);
     }
@@ -116,7 +122,7 @@ public class EircAccountBean extends AbstractBean {
         if (EqualsBuilder.reflectionEquals(oldObject, eircAccount)) {
             return;
         }
-        archive(oldObject);
+        archive(oldObject, false);
         eircAccount.setBeginDate(oldObject.getEndDate());
         sqlSession().insert(NS + ".insertEircAccount", eircAccount);
     }
