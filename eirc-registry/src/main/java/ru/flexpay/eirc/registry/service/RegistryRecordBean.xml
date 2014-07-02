@@ -2,6 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="ru.flexpay.eirc.registry.service.RegistryRecordBean">
+    <cache type="org.complitex.dictionary.mybatis.caches.EhcacheCache"/>
 
     <resultMap id="RegistryRecord" type="ru.flexpay.eirc.registry.entity.RegistryRecord">
         <result column="registry_record_id"                         property="id"/>
@@ -411,17 +412,17 @@
         where `id`=#{id}
     </update>
 
-    <select id="selectStatusStatistics" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecordData" resultMap="StatusDetailInfo">
+    <select id="selectStatusStatistics" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecordData" resultMap="StatusDetailInfo" useCache="true">
         select count(1) `count`, `status`, IF (max(`import_error_type`) is null,FALSE,TRUE) `import_error_exist`
                 from `registry_record` where `registry_id`=#{registryId} group by `status` order by `count` desc
     </select>
 
-    <select id="selectImportErrorStatistics" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecordData" resultMap="ImportErrorDetailInfo">
+    <select id="selectImportErrorStatistics" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecordData" resultMap="ImportErrorDetailInfo" useCache="true">
         select count(1) `count`, `import_error_type` from `registry_record` where `registry_id` = #{registryId} and `status` = #{status.id}
                 group by `import_error_type` order by `count` desc;
     </select>
 
-    <select id="selectAddressErrorStatistics" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecordData" resultMap="ImportErrorDetail">
+    <select id="selectAddressErrorStatistics" parameterType="ru.flexpay.eirc.registry.entity.RegistryRecordData" resultMap="ImportErrorDetail" useCache="true">
         select count(1) `count`,
                 <choose>
                     <when test="importErrorType.id == 1 or importErrorType.id == 7 or importErrorType.id == 12">

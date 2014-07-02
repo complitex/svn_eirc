@@ -347,7 +347,8 @@ CREATE TABLE `registry_record` (
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_registry_record__registry_record_status` FOREIGN KEY (`status`) REFERENCES `registry_record_status` (`code`),
   CONSTRAINT `fk_registry_record__import_error_type` FOREIGN KEY (`import_error_type`) REFERENCES `import_error_type` (`code`),
-  INDEX `idx_registry_record__status_error`  (`status`, `import_error_type`),
+  INDEX `idx_registry_record__status_error`  (`status`, `import_error_type`, `registry_id`),
+  INDEX `idx_registry_record__status`  (`status`, `registry_id`),
   CONSTRAINT `fk_registry_record__registry` FOREIGN KEY (`registry_id`) REFERENCES `registry` (`id`)
 ) ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci;
 

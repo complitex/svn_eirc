@@ -75,7 +75,7 @@ public class StatusDetailPanel extends Panel {
                             protected void populateItem(ListItem<ImportErrorDetail> item) {
                                 final ImportErrorDetail addressErrorDetail = item.getModelObject();
 
-                                AjaxLink filter = new AjaxLink("expand") {
+                                AjaxLink filter = new IndicatingAjaxLink("expand") {
 
                                     @Override
                                     public void onClick(AjaxRequestTarget target) {
@@ -181,6 +181,7 @@ public class StatusDetailPanel extends Panel {
     protected void filterByImportError(StatusDetailInfo statusDetailInfo, ImportErrorDetailInfo importErrorDetail,
                                        ImportErrorDetail importError, IModel<RegistryRecordData> filterModel) {
         filterByStatusDetailInfo(statusDetailInfo, filterModel);
+        filterByImportErrorInfo(statusDetailInfo, importErrorDetail, filterModel);
         CompoundPropertyModel<RegistryRecordData> compoundPropertyModel = new CompoundPropertyModel<>(filterModel);
         for (Map.Entry<String, String> entry : importError.getDetails().entrySet()) {
             IModel<String> property = compoundPropertyModel.bind(entry.getKey());
