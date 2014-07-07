@@ -3,6 +3,7 @@ package ru.flexpay.eirc.registry.entity;
 import com.google.common.collect.ImmutableMap;
 import org.complitex.correction.entity.AddressLinkStatus;
 import org.complitex.correction.entity.LinkStatus;
+import org.complitex.dictionary.entity.description.ILocalizedType;
 import org.complitex.dictionary.mybatis.IFixedIdType;
 import org.complitex.dictionary.util.ResourceUtil;
 
@@ -12,7 +13,7 @@ import java.util.Map;
 /**
  * @author Pavel Sknar
  */
-public enum ImportErrorType implements IFixedIdType {
+public enum ImportErrorType implements IFixedIdType, ILocalizedType {
 
     CITY_UNRESOLVED(1L),
     STREET_TYPE_UNRESOLVED(2L),
@@ -75,6 +76,7 @@ public enum ImportErrorType implements IFixedIdType {
         return id;
     }
 
+    @Override
     public String getLabel(Locale locale) {
         return ResourceUtil.getString(RESOURCE_BUNDLE, String.valueOf(getId()), locale);
     }

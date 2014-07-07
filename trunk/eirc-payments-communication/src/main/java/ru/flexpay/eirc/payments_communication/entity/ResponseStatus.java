@@ -1,5 +1,6 @@
 package ru.flexpay.eirc.payments_communication.entity;
 
+import org.complitex.dictionary.entity.description.ILocalizedType;
 import org.complitex.dictionary.util.ResourceUtil;
 
 import java.util.Locale;
@@ -7,7 +8,7 @@ import java.util.Locale;
 /**
  * @author Pavel Sknar
  */
-public enum ResponseStatus {
+public enum ResponseStatus implements ILocalizedType {
 
     OK(1L),
     INCORRECT_AUTHENTICATION_DATA(8L),
@@ -34,6 +35,7 @@ public enum ResponseStatus {
         return id;
     }
 
+    @Override
     public String getLabel(Locale locale) {
         return ResourceUtil.getString(RESOURCE_BUNDLE, String.valueOf(getId()), locale);
     }
