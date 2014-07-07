@@ -1,24 +1,23 @@
 package ru.flexpay.eirc.registry.web.list;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.StringUtils;
+import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.ajax.markup.html.AjaxLink;
-import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.authroles.authorization.strategies.role.annotations.AuthorizeInstantiation;
-import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxLink;
+import org.apache.wicket.extensions.ajax.markup.html.AjaxLazyLoadPanel;
+import org.apache.wicket.extensions.ajax.markup.html.repeater.data.table.AjaxFallbackHeadersToolbar;
+import org.apache.wicket.extensions.markup.html.repeater.data.grid.ICellPopulator;
 import org.apache.wicket.extensions.markup.html.repeater.data.sort.SortOrder;
+import org.apache.wicket.extensions.markup.html.repeater.data.table.DataTable;
+import org.apache.wicket.extensions.markup.html.repeater.data.table.IColumn;
+import org.apache.wicket.extensions.markup.html.repeater.data.table.filter.*;
 import org.apache.wicket.markup.html.basic.Label;
-import org.apache.wicket.markup.html.form.DropDownChoice;
+import org.apache.wicket.markup.html.form.ChoiceRenderer;
 import org.apache.wicket.markup.html.form.Form;
-import org.apache.wicket.markup.html.form.IChoiceRenderer;
-import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.repeater.Item;
-import org.apache.wicket.markup.repeater.data.DataView;
-import org.apache.wicket.model.CompoundPropertyModel;
-import org.apache.wicket.model.IModel;
-import org.apache.wicket.model.Model;
-import org.apache.wicket.model.ResourceModel;
+import org.apache.wicket.model.*;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.string.StringValue;
 import org.complitex.address.entity.AddressEntity;
@@ -29,17 +28,17 @@ import org.complitex.correction.service.exception.NotFoundCorrectionException;
 import org.complitex.correction.web.component.AddressCorrectionPanel;
 import org.complitex.dictionary.entity.DomainObject;
 import org.complitex.dictionary.entity.FilterWrapper;
+import org.complitex.dictionary.entity.description.ILocalizedType;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.util.AttributeUtil;
-import org.complitex.dictionary.web.component.DatePicker;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
+import org.complitex.dictionary.web.component.ajax.AjaxLinkPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
-import org.complitex.dictionary.web.component.paging.PagingNavigator;
+import org.complitex.dictionary.web.component.paging.AjaxNavigationToolbar;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
-import org.odlabs.wiquery.ui.accordion.Accordion;
-import org.odlabs.wiquery.ui.options.HeightStyleEnum;
 import ru.flexpay.eirc.dictionary.entity.EircConfig;
+import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
@@ -52,15 +51,13 @@ import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 import ru.flexpay.eirc.registry.web.component.StatusDetailPanel;
+import ru.flexpay.eirc.service_provider_account.web.component.AjaxGoAndClearFilter;
 
 import javax.ejb.EJB;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
-import static org.complitex.dictionary.util.PageUtil.newSorting;
 
 /**
  * @author Pavel Sknar
@@ -101,7 +98,7 @@ public class RegistryRecordList extends TemplatePage {
     @EJB
     private ModuleInstanceStrategy moduleInstanceStrategy;
 
-    private IModel<RegistryRecordData> filterModel = new CompoundPropertyModel<RegistryRecordData>(new RegistryRecord());
+    private CompoundPropertyModel<RegistryRecordData> filterModel = new CompoundPropertyModel<RegistryRecordData>(new RegistryRecord());
 
     private Registry registry;
 
@@ -145,15 +142,33 @@ public class RegistryRecordList extends TemplatePage {
         add(container);
 
         final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
-        messages.setOutputMarkupId(true);
         container.add(messages);
 
+        final IFilterStateLocator<RegistryRecordData> locator = new IFilterStateLocator<RegistryRecordData>() {
+            @Override
+            public RegistryRecordData getFilterState() {
+                return filterModel.getObject();
+            }
+
+            @Override
+            public void setFilterState(RegistryRecordData state) {
+                filterModel.setObject(state);
+            }
+        };
+
         //Form
-        final Form<RegistryRecordData> filterForm = new Form<>("filterForm", filterModel);
+        final FilterForm<RegistryRecordData> filterForm = new FilterForm<>("filterForm", locator);
         filterForm.setOutputMarkupId(true);
         container.add(filterForm);
 
-        container.add(new StatusDetailPanel("statusDetailPanel", filterModel, filterForm));
+        AjaxLazyLoadPanel statusDetailPanel = new AjaxLazyLoadPanel("statusDetailPanel") {
+            @Override
+            public Component getLazyLoadComponent(String markupId) {
+                return new StatusDetailPanel(markupId, filterModel, filterForm);
+            }
+        };
+        statusDetailPanel.setOutputMarkupId(true);
+        container.add(statusDetailPanel);
 
         Long moduleId = null;
         try {
@@ -202,8 +217,77 @@ public class RegistryRecordList extends TemplatePage {
         };
         add(addressCorrectionPanel);
 
+
+        ImmutableList.Builder<IColumn<RegistryRecordData, String>> builder = ImmutableList.builder();
+        builder.add(buildTextColumn("registry_record_service_code", "serviceCode"));
+        builder.add(buildTextColumn("registry_record_personal_account_ext", "personalAccountExt"));
+        builder.add(buildTextColumn("registry_record_city_type", "cityType"));
+        builder.add(buildTextColumn("registry_record_city", "city"));
+        builder.add(buildTextColumn("registry_record_street_type", "streetType"));
+        builder.add(buildTextColumn("registry_record_street", "street"));
+        builder.add(buildTextColumn("registry_record_building_number", "buildingNumber"));
+        builder.add(buildTextColumn("registry_record_building_corp", "buildingCorp"));
+        builder.add(buildTextColumn("registry_record_apartment", "apartment"));
+        builder.add(buildTextColumn("registry_record_room", "room"));
+        builder.add(buildFioColumn("registry_record_fio"));
+        builder.add(buildChoicesColumn("registry_record_import_error_type", "importErrorType", Arrays.asList(ImportErrorType.values())));
+        builder.add(buildChoicesColumn("registry_record_status", "status", Arrays.asList(RegistryRecordStatus.values())));
+
+        builder.add(
+                new FilteredAbstractColumn<RegistryRecordData, String>(new ResourceModel("empty"), "action") {
+                    @Override
+                    public Component getFilter(String s, FilterForm<?> components) {
+                        return new AjaxGoAndClearFilter(s, components, new ResourceModel("find"), new ResourceModel("reset")) {
+                            @Override
+                            public void onGoSubmit(AjaxRequestTarget target, Form<?> form) {
+                                target.add(container);
+                            }
+
+                            @Override
+                            public void onClearSubmit(AjaxRequestTarget target, Form<?> form) {
+                                filterForm.clearInput();
+                                Long registryId = filterModel.getObject().getRegistryId();
+
+                                filterModel.setObject(new RegistryRecord(registryId));
+
+                                target.add(container);
+                            }
+                        };
+                    }
+
+                    @Override
+                    public void populateItem(Item<ICellPopulator<RegistryRecordData>> components, String s,
+                                             IModel<RegistryRecordData> serviceProviderAccountIModel) {
+
+                        final RegistryRecordData registryRecord = serviceProviderAccountIModel.getObject();
+                        AjaxLinkPanel addressCorrectionLink = new AjaxLinkPanel(s, new ResourceModel("correctAddress")) {
+
+                            @Override
+                            public void onClick(AjaxRequestTarget target) {
+                                addressCorrectionPanel.open(target, registryRecord, registryRecord.getFirstName(),
+                                        registryRecord.getMiddleName(), registryRecord.getLastName(),
+                                        registryRecord.getCity(), registryRecord.getStreetType(), registryRecord.getStreet(),
+                                        registryRecord.getBuildingNumber(), registryRecord.getBuildingCorp(),
+                                        registryRecord.getApartment(), registryRecord.getRoom(),
+                                        registryRecord.getCityId(), registryRecord.getStreetTypeId(), registryRecord.getStreetId(),
+                                        registryRecord.getBuildingId(),
+                                        registryRecord.getApartmentId(), registryRecord.getRoomId());
+                            }
+                        };
+                        addressCorrectionLink.setVisible(registryRecord.getStatus() == RegistryRecordStatus.LINKED_WITH_ERROR &&
+                                        registryRecord.getImportErrorType() != null &&
+                                        (registryRecord.getImportErrorType().getId() < 17 || registryRecord.getImportErrorType().getId() > 18) &&
+                                        registryWorkflowManager.canLink(registry)
+                        );
+                        components.add(addressCorrectionLink);
+                    }
+                });
+
+
+        final List<IColumn<RegistryRecordData, String>> COLUMNS = builder.build();
+
         //Data Provider
-        final DataProvider<RegistryRecordData> dataProvider = new DataProvider<RegistryRecordData>() {
+        final DataProvider<RegistryRecordData> provider = new DataProvider<RegistryRecordData>() {
 
             @Override
             protected Iterable<? extends RegistryRecordData> getData(long first, long count) {
@@ -220,234 +304,16 @@ public class RegistryRecordList extends TemplatePage {
                 return registryRecordBean.count(filterWrapper);
             }
         };
-        dataProvider.setSort("registry_record_id", SortOrder.ASCENDING);
+        provider.setSort("registry_record_id", SortOrder.ASCENDING);
 
-        //Data View
-        DataView<RegistryRecordData> dataView = new DataView<RegistryRecordData>("data", dataProvider, 1) {
-
-            @Override
-            protected void populateItem(Item<RegistryRecordData> item) {
-                final RegistryRecordData registryRecord = item.getModelObject();
-
-                item.setModel(new CompoundPropertyModel<>(item.getModel()));
-
-                item.add(new Label("serviceCode"));
-                item.add(new Label("personalAccountExt"));
-                item.add(new Label("cityType"));
-                item.add(new Label("city"));
-                item.add(new Label("streetType"));
-                item.add(new Label("street"));
-                item.add(new Label("buildingNumber"));
-                item.add(new Label("buildingCorp"));
-                item.add(new Label("apartment"));
-                item.add(new Label("room"));
-                item.add(new Label("lastName"));
-                item.add(new Label("firstName"));
-                item.add(new Label("middleName"));
-                item.add(new Label("operationDate", registryRecord.getOperationDate() != null ?
-                        OPERATION_DATE_FORMAT.format(registryRecord.getOperationDate()) : ""));
-                item.add(new Label("amount"));
-
-                Accordion accordion = new Accordion("accordionContainers");
-                accordion.setCollapsible(true);
-                accordion.setActive(false);
-                accordion.setOutputMarkupPlaceholderTag(true);
-                accordion.setHeightStyle(HeightStyleEnum.CONTENT);
-                item.add(accordion);
-
-                final DataProvider<Container> dataProvider = new DataProvider<Container>() {
-                    @Override
-                    protected Iterable<? extends Container> getData(long first, long count) {
-                        return registryRecord.getContainers();
-                    }
-
-                    @Override
-                    protected int getSize() {
-                        return registryRecord.getContainers().size();
-                    }
-                };
-
-                DataView<Container> dataView = new DataView<Container>("containersData", dataProvider,
-                        registryRecord.getContainers().size()) {
-                    @Override
-                    protected void populateItem(Item<Container> item) {
-                        item.add(new Label("container", item.getModelObject().getData()));
-                    }
-                };
-
-                accordion.add(dataView);
-
-                item.add(new Label("importErrorType", registryRecord.getImportErrorType() != null?
-                        registryRecord.getImportErrorType().getLabel(getLocale()) : ""));
-                item.add(new Label("status", registryRecord.getStatus().getLabel(getLocale())));
-
-                /*
-                ScrollBookmarkablePageLink<WebPage> detailsLink = new ScrollBookmarkablePageLink<>("detailsLink",
-                        getEditPage(), getEditPageParams(registryRecord.getId()),
-                        String.valueOf(registryRecord.getId()));
-                detailsLink.add(new Label("editMessage", new AbstractReadOnlyModel<String>() {
-
-                    @Override
-                    public String getObject() {
-                        return getString("edit");
-                    }
-                }));
-                detailsLink.setEnabled(false);
-                item.add(detailsLink);
-                */
-
-                AjaxLink addressCorrectionLink = new IndicatingAjaxLink("addressCorrectionLink") {
-
-                    @Override
-                    public void onClick(AjaxRequestTarget target) {
-                        addressCorrectionPanel.open(target, registryRecord, registryRecord.getFirstName(),
-                                registryRecord.getMiddleName(), registryRecord.getLastName(),
-                                registryRecord.getCity(), registryRecord.getStreetType(), registryRecord.getStreet(),
-                                registryRecord.getBuildingNumber(), registryRecord.getBuildingCorp(),
-                                registryRecord.getApartment(), registryRecord.getRoom(),
-                                registryRecord.getCityId(), registryRecord.getStreetTypeId(), registryRecord.getStreetId(),
-                                registryRecord.getBuildingId(),
-                                registryRecord.getApartmentId(), registryRecord.getRoomId());
-                    }
-                };
-                addressCorrectionLink.setVisible(registryRecord.getStatus() == RegistryRecordStatus.LINKED_WITH_ERROR &&
-                registryRecord.getImportErrorType() != null &&
-                        (registryRecord.getImportErrorType().getId() < 17 || registryRecord.getImportErrorType().getId() > 18) &&
-                                registryWorkflowManager.canLink(registry)
-                );
-                item.add(addressCorrectionLink);
-            }
-        };
-        filterForm.add(dataView);
-
-        //Sorting
-        filterForm.add(newSorting("header.", dataProvider, dataView, filterForm, true,
-                "registryRecordServiceCode", "registryRecordPersonalAccountExt",
-                "registryRecordCityType",    "registryRecordCity",
-                "registryRecordStreetType", "registryRecordStreet",
-                "registryRecordBuildingNumber", "registryRecordBulkNumber",
-                "registryRecordApartmentNumber", "registryRecordRoomNumber",
-                "registryRecordFio",
-                "registryRecordOperationDate", "registryRecordAmount",
-                "registryRecordImportErrorType", "registryRecordStatus"));
-
-        //Filters
-        filterForm.add(new TextField<>("serviceCode"));
-        filterForm.add(new TextField<>("personalAccountExt"));
-        filterForm.add(new TextField<>("cityType"));
-        filterForm.add(new TextField<>("city"));
-        filterForm.add(new TextField<>("streetType"));
-        filterForm.add(new TextField<>("street"));
-        filterForm.add(new TextField<>("buildingNumber"));
-        filterForm.add(new TextField<>("buildingCorp"));
-        filterForm.add(new TextField<>("apartment"));
-        filterForm.add(new TextField<>("room"));
-
-        filterForm.add(new TextField<>("FIO", new Model<String>() {
-
-            @Override
-            public String getObject() {
-                RegistryRecordData filterObject = filterModel.getObject();
-                return StringUtils.join(new String[]{
-                        filterObject.getLastName(), filterObject.getFirstName(), filterObject.getMiddleName()
-                }, " ");
-            }
-
-            @Override
-            public void setObject(String fio) {
-                RegistryRecord registryRecord = (RegistryRecord)filterModel.getObject();
-                if (StringUtils.isBlank(fio)) {
-                    registryRecord.setLastName(null);
-                    registryRecord.setFirstName(null);
-                    registryRecord.setMiddleName(null);
-                } else {
-                    fio = fio.trim();
-                    String[] personFio = fio.split(" ", 3);
-
-                    if (personFio.length > 0) {
-                        registryRecord.setLastName(personFio[0]);
-                    }
-                    if (personFio.length > 1) {
-                        registryRecord.setFirstName(personFio[1]);
-                    } else {
-                        registryRecord.setFirstName(null);
-                    }
-                    if (personFio.length > 2) {
-                        registryRecord.setMiddleName(personFio[2]);
-                    } else {
-                        registryRecord.setMiddleName(null);
-                    }
-
-                }
-            }
-        }));
-
-        filterForm.add(new DatePicker<Date>("operationDate"));
-
-        filterForm.add(new TextField<>("amount"));
-
-        filterForm.add(new DropDownChoice<>("importErrorType",
-                Arrays.asList(ImportErrorType.values()),
-                new IChoiceRenderer<ImportErrorType>() {
-                    @Override
-                    public Object getDisplayValue(ImportErrorType type) {
-                        return type.getLabel(getLocale());
-                    }
-
-                    @Override
-                    public String getIdValue(ImportErrorType type, int i) {
-                        return type.getId().toString();
-                    }
-                }
-        ).setNullValid(true));
-
-        filterForm.add(new DropDownChoice<>("status",
-                Arrays.asList(RegistryRecordStatus.values()),
-                new IChoiceRenderer<RegistryRecordStatus>() {
-                    @Override
-                    public Object getDisplayValue(RegistryRecordStatus type) {
-                        return type.getLabel(getLocale());
-                    }
-
-                    @Override
-                    public String getIdValue(RegistryRecordStatus type, int i) {
-                        return type.getId().toString();
-                    }
-                }
-        ).setNullValid(true));
-
-        //Reset Action
-        AjaxLink reset = new AjaxLink("reset") {
-
-            @Override
-            public void onClick(AjaxRequestTarget target) {
-                filterForm.clearInput();
-                Long registryId = filterModel.getObject().getRegistryId();
-
-                filterModel.setObject(new RegistryRecord(registryId));
-
-                target.add(container);
-            }
-        };
-        filterForm.add(reset);
-
-        //Submit Action
-        AjaxButton submit = new AjaxButton("submit", filterForm) {
-
-            @Override
-            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
-
-                target.add(container);
-            }
-
-            @Override
-            protected void onError(AjaxRequestTarget target, Form<?> form) {
-            }
-        };
-        filterForm.add(submit);
-
-        //Navigator
-        container.add(new PagingNavigator("navigator", dataView, getPreferencesPage(), container));
+        final DataTable<RegistryRecordData, String> table = new DataTable<>("datatable", COLUMNS, provider, 10);
+        table.setOutputMarkupId(true);
+        table.setVersioned(false);
+        table.addTopToolbar(new AjaxFallbackHeadersToolbar<>(table, provider));
+        table.addTopToolbar(new FilterToolbar(table, filterForm, locator));
+        table.addBottomToolbar(new AjaxNavigationToolbar(table));
+        container.add(filterForm);
+        filterForm.add(table);
 
         add(new Link("back") {
             @Override
@@ -455,6 +321,92 @@ public class RegistryRecordList extends TemplatePage {
                 setResponsePage(RegistryList.class);
             }
         });
+    }
+
+    private FilteredAbstractColumn<RegistryRecordData, String> buildTextColumn(final String sortColumn, final String propertyName) {
+        return new FilteredAbstractColumn<RegistryRecordData, String>(new ResourceModel(sortColumn), sortColumn) {
+            @Override
+            public Component getFilter(String s, FilterForm<?> components) {
+                return new TextFilter<>(s, filterModel.bind(propertyName), components);
+            }
+
+            @Override
+            public void populateItem(Item<ICellPopulator<RegistryRecordData>> components, String s,
+                                     IModel<RegistryRecordData> registryRecordIModel) {
+                components.add(new Label(s, new PropertyModel<RegistryRecordData>(registryRecordIModel.getObject(), propertyName)));
+            }
+        };
+    }
+
+    private <T extends ILocalizedType> FilteredAbstractColumn<RegistryRecordData, String> buildChoicesColumn(final String sortColumn, final String propertyName, final List<T> choices) {
+        return new FilteredAbstractColumn<RegistryRecordData, String>(new ResourceModel(sortColumn), sortColumn) {
+            @Override
+            public Component getFilter(String s, FilterForm<?> components) {
+                return new ChoiceFilter<T>(s, filterModel.<T>bind(propertyName), components, choices, new ChoiceRenderer<T>() {
+                    @Override
+                    public Object getDisplayValue(T object) {
+                        return object.getLabel(getLocale());
+                    }
+                }, false);
+            }
+
+            @Override
+            public void populateItem(Item<ICellPopulator<RegistryRecordData>> components, String s,
+                                     IModel<RegistryRecordData> registryRecordIModel) {
+                components.add(new Label(s, new CompoundPropertyModel<>(registryRecordIModel.getObject()).<T>bind(propertyName).getObject().getLabel(getLocale())));
+            }
+        };
+    }
+
+    private FilteredAbstractColumn<RegistryRecordData, String> buildFioColumn(final String sortColumn) {
+        return new FilteredAbstractColumn<RegistryRecordData, String>(new ResourceModel(sortColumn), sortColumn) {
+            @Override
+            public Component getFilter(String s, FilterForm<?> components) {
+                return new TextFilter<>(s, new Model<String>() {
+
+                    @Override
+                    public String getObject() {
+                        Person person = filterModel.getObject().getPerson();
+                        return person != null ? person.toString() : "";
+                    }
+
+                    @Override
+                    public void setObject(String fio) {
+                        RegistryRecord registryRecord = (RegistryRecord) filterModel.getObject();
+                        if (StringUtils.isBlank(fio)) {
+                            registryRecord.setLastName(null);
+                            registryRecord.setFirstName(null);
+                            registryRecord.setMiddleName(null);
+                        } else {
+                            fio = fio.trim();
+                            String[] personFio = fio.split(" ", 3);
+
+                            if (personFio.length > 0) {
+                                registryRecord.setLastName(personFio[0]);
+                            }
+                            if (personFio.length > 1) {
+                                registryRecord.setFirstName(personFio[1]);
+                            } else {
+                                registryRecord.setFirstName(null);
+                            }
+                            if (personFio.length > 2) {
+                                registryRecord.setMiddleName(personFio[2]);
+                            } else {
+                                registryRecord.setMiddleName(null);
+                            }
+
+                        }
+                    }
+                }, components);
+            }
+
+            @Override
+            public void populateItem(Item<ICellPopulator<RegistryRecordData>> components, String s,
+                                     IModel<RegistryRecordData> registryRecordIModel) {
+                Person person = registryRecordIModel.getObject().getPerson();
+                components.add(new Label(s, person != null? person.toString() : ""));
+            }
+        };
     }
 
     private void initTimerBehavior() {
