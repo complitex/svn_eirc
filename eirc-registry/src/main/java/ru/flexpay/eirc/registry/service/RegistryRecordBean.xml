@@ -153,6 +153,14 @@
             <if test="object.registryId != null">
                 and rr.`registry_id` = #{object.registryId}
             </if>
+
+            <if test="object.amount != null">
+                and rr.`amount` = #{object.amount}
+            </if>
+
+            <if test="map.operationDateRange != null">
+                and (rr.`operation_date` between #{map.operationDateRange.start} and #{map.operationDateRange.end})
+            </if>
         </if>
     </sql>
 
