@@ -1,6 +1,8 @@
 package ru.flexpay.eirc.registry.web.list;
 
 import com.google.common.collect.ImmutableList;
+import com.googlecode.wicket.jquery.ui.plugins.datepicker.DateRange;
+import com.googlecode.wicket.jquery.ui.plugins.datepicker.RangeDatePickerTextField;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
@@ -9,6 +11,7 @@ import org.apache.wicket.extensions.ajax.markup.html.AjaxLazyLoadPanel;
 import org.apache.wicket.extensions.ajax.markup.html.repeater.data.table.AjaxFallbackHeadersToolbar;
 import org.apache.wicket.extensions.markup.html.repeater.data.grid.ICellPopulator;
 import org.apache.wicket.extensions.markup.html.repeater.data.sort.SortOrder;
+import org.apache.wicket.extensions.markup.html.repeater.data.table.AbstractColumn;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.DataTable;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.IColumn;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.filter.*;
@@ -31,6 +34,7 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.entity.description.ILocalizedType;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.util.AttributeUtil;
+import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.ajax.AjaxLinkPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
@@ -49,14 +53,19 @@ import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
+import ru.flexpay.eirc.registry.web.component.ContainerListPanel;
 import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 import ru.flexpay.eirc.registry.web.component.StatusDetailPanel;
+import ru.flexpay.eirc.service_provider_account.web.component.AbstractFilter;
 import ru.flexpay.eirc.service_provider_account.web.component.AjaxGoAndClearFilter;
 
 import javax.ejb.EJB;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -65,7 +74,12 @@ import java.util.concurrent.ExecutionException;
 @AuthorizeInstantiation(SecurityRole.AUTHORIZED)
 public class RegistryRecordList extends TemplatePage {
 
-    private static final SimpleDateFormat OPERATION_DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
+    private static final SimpleDateFormat FILTER_DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
+
+    static {
+        FILTER_DATE_FORMAT.setTimeZone(DateRange.UTC);
+    }
 
     @EJB
     private RegistryRecordBean registryRecordBean;
@@ -126,6 +140,8 @@ public class RegistryRecordList extends TemplatePage {
     }
 
     private void init() throws ExecutionException, InterruptedException {
+        final IModel<DateRange> operationDateModel = new Model<>(getAllDateRange());
+
         IModel<String> labelModel = new ResourceModel("label");
 
         add(new Label("title", labelModel));
@@ -230,6 +246,9 @@ public class RegistryRecordList extends TemplatePage {
         builder.add(buildTextColumn("registry_record_apartment", "apartment"));
         builder.add(buildTextColumn("registry_record_room", "room"));
         builder.add(buildFioColumn("registry_record_fio"));
+        builder.add(buildDateColumn("registry_record_operation_date", "operationDate", operationDateModel));
+        builder.add(buildTextColumn("registry_record_amount", "amount"));
+        builder.add(buildContainerColumn("registry_record_containers"));
         builder.add(buildChoicesColumn("registry_record_import_error_type", "importErrorType", Arrays.asList(ImportErrorType.values())));
         builder.add(buildChoicesColumn("registry_record_status", "status", Arrays.asList(RegistryRecordStatus.values())));
 
@@ -249,6 +268,7 @@ public class RegistryRecordList extends TemplatePage {
                                 Long registryId = filterModel.getObject().getRegistryId();
 
                                 filterModel.setObject(new RegistryRecord(registryId));
+                                operationDateModel.setObject(getAllDateRange());
 
                                 target.add(container);
                             }
@@ -294,6 +314,7 @@ public class RegistryRecordList extends TemplatePage {
                 FilterWrapper<RegistryRecordData> filterWrapper = FilterWrapper.of(filterModel.getObject(), first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
+                filterWrapper.getMap().put(RegistryRecordBean.OPERATION_DATE_RANGE, prepareDateRange(operationDateModel.getObject()));
 
                 return registryRecordBean.getRegistryRecords(filterWrapper);
             }
@@ -301,6 +322,8 @@ public class RegistryRecordList extends TemplatePage {
             @Override
             protected int getSize() {
                 FilterWrapper<RegistryRecordData> filterWrapper = FilterWrapper.of(filterModel.getObject());
+                filterWrapper.getMap().put(RegistryRecordBean.OPERATION_DATE_RANGE, prepareDateRange(operationDateModel.getObject()));
+
                 return registryRecordBean.count(filterWrapper);
             }
         };
@@ -353,7 +376,36 @@ public class RegistryRecordList extends TemplatePage {
             @Override
             public void populateItem(Item<ICellPopulator<RegistryRecordData>> components, String s,
                                      IModel<RegistryRecordData> registryRecordIModel) {
-                components.add(new Label(s, new CompoundPropertyModel<>(registryRecordIModel.getObject()).<T>bind(propertyName).getObject().getLabel(getLocale())));
+                T object = new CompoundPropertyModel<>(registryRecordIModel.getObject()).<T>bind(propertyName).getObject();
+                components.add(new Label(s, object != null? object.getLabel(getLocale()) : ""));
+            }
+        };
+    }
+
+    private FilteredAbstractColumn<RegistryRecordData, String> buildDateColumn(final String sortColumn, final String propertyName,
+                                                                               final IModel<DateRange> dateRangeModel) {
+        return new FilteredAbstractColumn<RegistryRecordData, String>(new ResourceModel(sortColumn), sortColumn) {
+            @Override
+            public Component getFilter(String s, FilterForm<?> components) {
+                return new AbstractFilter<DateRange>(s, components, dateRangeModel) {
+
+                    @Override
+                    protected Component createFilterComponent(String id, IModel<DateRange> model) {
+                        return new RangeDatePickerTextField(id, model) {
+                            @Override
+                            protected DateFormat newDateFormat(Locale locale) {
+                                return FILTER_DATE_FORMAT;
+                            }
+                        };
+                    }
+                };
+            }
+
+            @Override
+            public void populateItem(Item<ICellPopulator<RegistryRecordData>> components, String s,
+                                     IModel<RegistryRecordData> registryRecordIModel) {
+                Date date = new CompoundPropertyModel<>(registryRecordIModel.getObject()).<Date>bind(propertyName).getObject();
+                components.add(new Label(s, date != null ? DATE_FORMAT.format(date) : ""));
             }
         };
     }
@@ -409,11 +461,42 @@ public class RegistryRecordList extends TemplatePage {
         };
     }
 
+    private AbstractColumn<RegistryRecordData, String> buildContainerColumn(final String sortColumn) {
+        return new AbstractColumn<RegistryRecordData, String>(new ResourceModel(sortColumn), sortColumn) {
+
+            @Override
+            public void populateItem(Item<ICellPopulator<RegistryRecordData>> components, String s,
+                                     IModel<RegistryRecordData> registryRecordIModel) {
+
+                components.add(new ContainerListPanel<>(s, registryRecordIModel));
+            }
+
+            @Override
+            public boolean isSortable() {
+                return false;
+            }
+        };
+    }
+
     private void initTimerBehavior() {
         container.initTimerBehavior();
     }
 
     private void showIMessages(AjaxRequestTarget target) {
         container.showIMessages(target);
+    }
+
+    private DateRange getAllDateRange() {
+        Date fromDate = registry.getFromDate() != null ? DateUtil.getBeginOfDay(registry.getFromDate()) : DateUtil.MIN_BEGIN_DATE;
+        Date tillDate = registry.getTillDate() != null ? DateUtil.getEndOfDay(registry.getTillDate()) : DateUtil.getCurrentDate();
+
+        return new DateRange(fromDate, tillDate);
+    }
+
+    private static DateRange prepareDateRange(DateRange dateRange) {
+        return new DateRange(
+                DateUtil.getBeginOfDay(dateRange.getStart()),
+                DateUtil.getEndOfDay(dateRange.getEnd())
+        );
     }
 }

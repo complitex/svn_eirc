@@ -20,6 +20,8 @@ import java.util.Map;
 public class RegistryRecordBean extends AbstractBean {
     private static final String NS = RegistryRecordBean.class.getName();
 
+    public static final String OPERATION_DATE_RANGE = "operationDateRange";
+
     public List<RegistryRecordData> getRegistryRecords(FilterWrapper<RegistryRecordData> filter) {
         return getSqlSessionManager().selectList(NS + ".selectRegistryRecords", filter);
     }
