@@ -1,6 +1,7 @@
 package ru.flexpay.eirc.registry.web.list;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.googlecode.wicket.jquery.ui.plugins.datepicker.DateRange;
 import com.googlecode.wicket.jquery.ui.plugins.datepicker.RangeDatePickerTextField;
 import org.apache.commons.lang.StringUtils;
@@ -13,7 +14,6 @@ import org.apache.wicket.extensions.markup.html.repeater.data.grid.ICellPopulato
 import org.apache.wicket.extensions.markup.html.repeater.data.sort.SortOrder;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.AbstractColumn;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.DataTable;
-import org.apache.wicket.extensions.markup.html.repeater.data.table.IColumn;
 import org.apache.wicket.extensions.markup.html.repeater.data.table.filter.*;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.ChoiceRenderer;
@@ -22,6 +22,7 @@ import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.model.*;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
+import org.apache.wicket.request.resource.SharedResourceReference;
 import org.apache.wicket.util.string.StringValue;
 import org.complitex.address.entity.AddressEntity;
 import org.complitex.correction.service.AddressService;
@@ -36,9 +37,11 @@ import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.util.AttributeUtil;
 import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
+import org.complitex.dictionary.web.component.ajax.AjaxFilterToolbar;
 import org.complitex.dictionary.web.component.ajax.AjaxLinkPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.paging.AjaxNavigationToolbar;
+import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
 import ru.flexpay.eirc.dictionary.entity.EircConfig;
@@ -53,6 +56,7 @@ import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
+import ru.flexpay.eirc.registry.web.component.ColumnsPropertiesDialog;
 import ru.flexpay.eirc.registry.web.component.ContainerListPanel;
 import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 import ru.flexpay.eirc.registry.web.component.StatusDetailPanel;
@@ -117,6 +121,8 @@ public class RegistryRecordList extends TemplatePage {
     private Registry registry;
 
     private IMessengerContainer container;
+
+    private ColumnsPropertiesDialog columnsPropertiesDialog;
 
     public RegistryRecordList(PageParameters params) throws ExecutionException, InterruptedException {
         imessenger = imessengerService.getInstance();
@@ -234,26 +240,31 @@ public class RegistryRecordList extends TemplatePage {
         add(addressCorrectionPanel);
 
 
-        ImmutableList.Builder<IColumn<RegistryRecordData, String>> builder = ImmutableList.builder();
-        builder.add(buildTextColumn("registry_record_service_code", "serviceCode"));
-        builder.add(buildTextColumn("registry_record_personal_account_ext", "personalAccountExt"));
-        builder.add(buildTextColumn("registry_record_city_type", "cityType"));
-        builder.add(buildTextColumn("registry_record_city", "city"));
-        builder.add(buildTextColumn("registry_record_street_type", "streetType"));
-        builder.add(buildTextColumn("registry_record_street", "street"));
-        builder.add(buildTextColumn("registry_record_building_number", "buildingNumber"));
-        builder.add(buildTextColumn("registry_record_building_corp", "buildingCorp"));
-        builder.add(buildTextColumn("registry_record_apartment", "apartment"));
-        builder.add(buildTextColumn("registry_record_room", "room"));
-        builder.add(buildFioColumn("registry_record_fio"));
-        builder.add(buildDateColumn("registry_record_operation_date", "operationDate", operationDateModel));
-        builder.add(buildTextColumn("registry_record_amount", "amount"));
-        builder.add(buildContainerColumn("registry_record_containers"));
-        builder.add(buildChoicesColumn("registry_record_import_error_type", "importErrorType", Arrays.asList(ImportErrorType.values())));
-        builder.add(buildChoicesColumn("registry_record_status", "status", Arrays.asList(RegistryRecordStatus.values())));
+        final List<AbstractColumn<RegistryRecordData, String>> columns = Lists.newArrayList();
+        columns.add(buildTextColumn("registry_record_service_code", "serviceCode"));
+        columns.add(buildTextColumn("registry_record_personal_account_ext", "personalAccountExt"));
+        columns.add(buildTextColumn("registry_record_city_type", "cityType"));
+        columns.add(buildTextColumn("registry_record_city", "city"));
+        columns.add(buildTextColumn("registry_record_street_type", "streetType"));
+        columns.add(buildTextColumn("registry_record_street", "street"));
+        columns.add(buildTextColumn("registry_record_building_number", "buildingNumber"));
+        columns.add(buildTextColumn("registry_record_building_corp", "buildingCorp"));
+        columns.add(buildTextColumn("registry_record_apartment", "apartment"));
+        columns.add(buildTextColumn("registry_record_room", "room"));
+        columns.add(buildFioColumn("registry_record_fio"));
+        columns.add(buildDateColumn("registry_record_operation_date", "operationDate", operationDateModel));
+        columns.add(buildTextColumn("registry_record_amount", "amount"));
+        columns.add(buildContainerColumn("registry_record_containers"));
+        columns.add(buildChoicesColumn("registry_record_import_error_type", "importErrorType", Arrays.asList(ImportErrorType.values())));
+        columns.add(buildChoicesColumn("registry_record_status", "status", Arrays.asList(RegistryRecordStatus.values())));
 
-        builder.add(
-                new FilteredAbstractColumn<RegistryRecordData, String>(new ResourceModel("empty"), "action") {
+        columns.add(
+                new FilteredAbstractColumn<RegistryRecordData, String>(new StringResourceModel("empty", this, null), "action_skip") {
+                    @Override
+                    public boolean isSortable() {
+                        return false;
+                    }
+
                     @Override
                     public Component getFilter(String s, FilterForm<?> components) {
                         return new AjaxGoAndClearFilter(s, components, new ResourceModel("find"), new ResourceModel("reset")) {
@@ -303,9 +314,6 @@ public class RegistryRecordList extends TemplatePage {
                     }
                 });
 
-
-        final List<IColumn<RegistryRecordData, String>> COLUMNS = builder.build();
-
         //Data Provider
         final DataProvider<RegistryRecordData> provider = new DataProvider<RegistryRecordData>() {
 
@@ -329,11 +337,11 @@ public class RegistryRecordList extends TemplatePage {
         };
         provider.setSort("registry_record_id", SortOrder.ASCENDING);
 
-        final DataTable<RegistryRecordData, String> table = new DataTable<>("datatable", COLUMNS, provider, 10);
+        final DataTable<RegistryRecordData, String> table = new DataTable<>("datatable", columns, provider, 10);
         table.setOutputMarkupId(true);
         table.setVersioned(false);
         table.addTopToolbar(new AjaxFallbackHeadersToolbar<>(table, provider));
-        table.addTopToolbar(new FilterToolbar(table, filterForm, locator));
+        table.addTopToolbar(new AjaxFilterToolbar(table, filterForm, locator));
         table.addBottomToolbar(new AjaxNavigationToolbar(table));
         container.add(filterForm);
         filterForm.add(table);
@@ -344,10 +352,13 @@ public class RegistryRecordList extends TemplatePage {
                 setResponsePage(RegistryList.class);
             }
         });
+
+        columnsPropertiesDialog = new ColumnsPropertiesDialog("columnsPropertiesDialog", table);
+        add(columnsPropertiesDialog);
     }
 
     private FilteredAbstractColumn<RegistryRecordData, String> buildTextColumn(final String sortColumn, final String propertyName) {
-        return new FilteredAbstractColumn<RegistryRecordData, String>(new ResourceModel(sortColumn), sortColumn) {
+        return new FilteredAbstractColumn<RegistryRecordData, String>(new StringResourceModel(sortColumn, this, null), sortColumn) {
             @Override
             public Component getFilter(String s, FilterForm<?> components) {
                 return new TextFilter<>(s, filterModel.bind(propertyName), components);
@@ -362,7 +373,7 @@ public class RegistryRecordList extends TemplatePage {
     }
 
     private <T extends ILocalizedType> FilteredAbstractColumn<RegistryRecordData, String> buildChoicesColumn(final String sortColumn, final String propertyName, final List<T> choices) {
-        return new FilteredAbstractColumn<RegistryRecordData, String>(new ResourceModel(sortColumn), sortColumn) {
+        return new FilteredAbstractColumn<RegistryRecordData, String>(new StringResourceModel(sortColumn, this, null), sortColumn) {
             @Override
             public Component getFilter(String s, FilterForm<?> components) {
                 return new ChoiceFilter<T>(s, filterModel.<T>bind(propertyName), components, choices, new ChoiceRenderer<T>() {
@@ -384,7 +395,7 @@ public class RegistryRecordList extends TemplatePage {
 
     private FilteredAbstractColumn<RegistryRecordData, String> buildDateColumn(final String sortColumn, final String propertyName,
                                                                                final IModel<DateRange> dateRangeModel) {
-        return new FilteredAbstractColumn<RegistryRecordData, String>(new ResourceModel(sortColumn), sortColumn) {
+        return new FilteredAbstractColumn<RegistryRecordData, String>(new StringResourceModel(sortColumn, this, null), sortColumn) {
             @Override
             public Component getFilter(String s, FilterForm<?> components) {
                 return new AbstractFilter<DateRange>(s, components, dateRangeModel) {
@@ -411,7 +422,7 @@ public class RegistryRecordList extends TemplatePage {
     }
 
     private FilteredAbstractColumn<RegistryRecordData, String> buildFioColumn(final String sortColumn) {
-        return new FilteredAbstractColumn<RegistryRecordData, String>(new ResourceModel(sortColumn), sortColumn) {
+        return new FilteredAbstractColumn<RegistryRecordData, String>(new StringResourceModel(sortColumn, this, null), sortColumn) {
             @Override
             public Component getFilter(String s, FilterForm<?> components) {
                 return new TextFilter<>(s, new Model<String>() {
@@ -462,7 +473,7 @@ public class RegistryRecordList extends TemplatePage {
     }
 
     private AbstractColumn<RegistryRecordData, String> buildContainerColumn(final String sortColumn) {
-        return new AbstractColumn<RegistryRecordData, String>(new ResourceModel(sortColumn), sortColumn) {
+        return new AbstractColumn<RegistryRecordData, String>(new StringResourceModel(sortColumn, this, null), sortColumn) {
 
             @Override
             public void populateItem(Item<ICellPopulator<RegistryRecordData>> components, String s,
@@ -497,6 +508,18 @@ public class RegistryRecordList extends TemplatePage {
         return new DateRange(
                 DateUtil.getBeginOfDay(dateRange.getStart()),
                 DateUtil.getEndOfDay(dateRange.getEnd())
+        );
+    }
+
+    @Override
+    protected List<? extends ToolbarButton> getToolbarButtons(String id) {
+        return ImmutableList.of(
+                new ToolbarButton(id, new SharedResourceReference("images/gear_blue.png"), "image.title.columns_properties", true) {
+                    @Override
+                    protected void onClick(AjaxRequestTarget target) {
+                        columnsPropertiesDialog.open(target);
+                    }
+                }
         );
     }
 }
