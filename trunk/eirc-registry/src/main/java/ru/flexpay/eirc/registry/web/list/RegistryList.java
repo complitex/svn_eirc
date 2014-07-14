@@ -2,8 +2,8 @@ package ru.flexpay.eirc.registry.web.list;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.googlecode.wicket.jquery.core.Options;
 import com.googlecode.wicket.jquery.ui.plugins.datepicker.DateRange;
-import com.googlecode.wicket.jquery.ui.plugins.datepicker.RangeDatePickerTextField;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
@@ -27,7 +27,6 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.strategy.organization.IOrganizationStrategy;
-import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.datatable.DataProvider;
 import org.complitex.dictionary.web.component.image.StaticImage;
@@ -39,6 +38,7 @@ import org.complitex.template.web.component.toolbar.ToolbarButton;
 import org.complitex.template.web.component.toolbar.UploadButton;
 import org.complitex.template.web.security.SecurityRole;
 import org.complitex.template.web.template.TemplatePage;
+import ru.flexpay.eirc.dictionary.web.RangeDatePickerTextField;
 import ru.flexpay.eirc.organization.entity.Organization;
 import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.Registry;
@@ -56,15 +56,15 @@ import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 
 import javax.ejb.EJB;
 import java.io.File;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static org.complitex.dictionary.util.PageUtil.newSorting;
+import static ru.flexpay.eirc.dictionary.web.util.DateRangeUtil.getAllDateRange;
+import static ru.flexpay.eirc.dictionary.web.util.DateRangeUtil.setDate;
 
 /**
  * @author Pavel Sknar
@@ -173,8 +173,9 @@ public class RegistryList extends TemplatePage {
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
                 filterWrapper.setLike(true);
-                filterWrapper.getMap().put(RegistryBean.CREATION_DATE_RANGE, prepareDateRange(creationDateModel.getObject()));
-                filterWrapper.getMap().put(RegistryBean.LOAD_DATE_RANGE, prepareDateRange(loadDateModel.getObject()));
+
+                setDate(filterWrapper, RegistryBean.CREATION_DATE_RANGE, creationDateModel.getObject());
+                setDate(filterWrapper, RegistryBean.LOAD_DATE_RANGE, loadDateModel.getObject());
 
                 return registryBean.getRegistries(filterWrapper);
             }
@@ -182,14 +183,12 @@ public class RegistryList extends TemplatePage {
             @Override
             protected int getSize() {
                 FilterWrapper<Registry> filterWrapper = FilterWrapper.of(new Registry());
-                return registryBean.count(filterWrapper);
-            }
+                filterWrapper.setLike(true);
 
-            private DateRange prepareDateRange(DateRange dateRange) {
-                return new DateRange(
-                        DateUtil.getBeginOfDay(dateRange.getStart()),
-                        DateUtil.getEndOfDay(dateRange.getEnd())
-                );
+                setDate(filterWrapper, RegistryBean.CREATION_DATE_RANGE, creationDateModel.getObject());
+                setDate(filterWrapper, RegistryBean.LOAD_DATE_RANGE, loadDateModel.getObject());
+
+                return registryBean.count(filterWrapper);
             }
         };
         dataProvider.setSort("creation_date", SortOrder.ASCENDING);
@@ -313,16 +312,8 @@ public class RegistryList extends TemplatePage {
                 "registryLoadDate", "registryRecordsCount", "registryStatus"));
 
         //Filters
-
-        filterForm.add(new RangeDatePickerTextField("creationDate", creationDateModel) {
-            @Override
-            protected DateFormat newDateFormat(Locale locale) {
-                DateFormat df = new SimpleDateFormat("dd/MM/yyyy", locale);
-                df.setTimeZone(DateRange.UTC);
-
-                return df;
-            }
-        });
+        final Options options = new Options("calendars", 3);
+        filterForm.add(new RangeDatePickerTextField("creationDate", creationDateModel));
         filterForm.add(new TextField<>("registryNumber"));
         filterForm.add(new OrganizationPicker("senderOrganizationId", filterModel));
         filterForm.add(new OrganizationPicker("recipientOrganizationId", filterModel));
@@ -342,15 +333,7 @@ public class RegistryList extends TemplatePage {
                 }
         ).setNullValid(true));
 
-        filterForm.add(new RangeDatePickerTextField("loadDate", loadDateModel) {
-            @Override
-            protected DateFormat newDateFormat(Locale locale) {
-                DateFormat df = new SimpleDateFormat("dd/MM/yyyy", locale);
-                df.setTimeZone(DateRange.UTC);
-
-                return df;
-            }
-        });
+        filterForm.add(new RangeDatePickerTextField("loadDate", loadDateModel));
 
         filterForm.add(new DropDownChoice<>("status",
                 Arrays.asList(RegistryStatus.values()),
@@ -478,8 +461,5 @@ public class RegistryList extends TemplatePage {
         container.showIMessages(target);
     }
 
-    private static DateRange getAllDateRange() {
-        return new DateRange(DateUtil.MIN_BEGIN_DATE, DateUtil.getCurrentDate());
-    }
 
 }

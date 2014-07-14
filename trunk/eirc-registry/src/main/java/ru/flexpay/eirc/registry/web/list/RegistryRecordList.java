@@ -3,7 +3,6 @@ package ru.flexpay.eirc.registry.web.list;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.googlecode.wicket.jquery.ui.plugins.datepicker.DateRange;
-import com.googlecode.wicket.jquery.ui.plugins.datepicker.RangeDatePickerTextField;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
@@ -35,7 +34,6 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import org.complitex.dictionary.entity.description.ILocalizedType;
 import org.complitex.dictionary.service.ConfigBean;
 import org.complitex.dictionary.util.AttributeUtil;
-import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.web.component.ajax.AjaxFeedbackPanel;
 import org.complitex.dictionary.web.component.ajax.AjaxFilterToolbar;
 import org.complitex.dictionary.web.component.ajax.AjaxLinkPanel;
@@ -47,6 +45,7 @@ import org.complitex.template.web.template.TemplatePage;
 import ru.flexpay.eirc.dictionary.entity.EircConfig;
 import ru.flexpay.eirc.dictionary.entity.Person;
 import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
+import ru.flexpay.eirc.dictionary.web.RangeDatePickerTextField;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
 import ru.flexpay.eirc.registry.service.RegistryBean;
@@ -64,13 +63,14 @@ import ru.flexpay.eirc.service_provider_account.web.component.AbstractFilter;
 import ru.flexpay.eirc.service_provider_account.web.component.AjaxGoAndClearFilter;
 
 import javax.ejb.EJB;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ExecutionException;
+
+import static ru.flexpay.eirc.dictionary.web.util.DateRangeUtil.getAllDateRange;
+import static ru.flexpay.eirc.dictionary.web.util.DateRangeUtil.setDate;
 
 /**
  * @author Pavel Sknar
@@ -322,7 +322,7 @@ public class RegistryRecordList extends TemplatePage {
                 FilterWrapper<RegistryRecordData> filterWrapper = FilterWrapper.of(filterModel.getObject(), first, count);
                 filterWrapper.setAscending(getSort().isAscending());
                 filterWrapper.setSortProperty(getSort().getProperty());
-                filterWrapper.getMap().put(RegistryRecordBean.OPERATION_DATE_RANGE, prepareDateRange(operationDateModel.getObject()));
+                setDate(filterWrapper, RegistryRecordBean.OPERATION_DATE_RANGE, operationDateModel.getObject());
 
                 return registryRecordBean.getRegistryRecords(filterWrapper);
             }
@@ -330,7 +330,7 @@ public class RegistryRecordList extends TemplatePage {
             @Override
             protected int getSize() {
                 FilterWrapper<RegistryRecordData> filterWrapper = FilterWrapper.of(filterModel.getObject());
-                filterWrapper.getMap().put(RegistryRecordBean.OPERATION_DATE_RANGE, prepareDateRange(operationDateModel.getObject()));
+                setDate(filterWrapper, RegistryRecordBean.OPERATION_DATE_RANGE, operationDateModel.getObject());
 
                 return registryRecordBean.count(filterWrapper);
             }
@@ -402,12 +402,7 @@ public class RegistryRecordList extends TemplatePage {
 
                     @Override
                     protected Component createFilterComponent(String id, IModel<DateRange> model) {
-                        return new RangeDatePickerTextField(id, model) {
-                            @Override
-                            protected DateFormat newDateFormat(Locale locale) {
-                                return FILTER_DATE_FORMAT;
-                            }
-                        };
+                        return new RangeDatePickerTextField(id, model);
                     }
                 };
             }
@@ -495,20 +490,6 @@ public class RegistryRecordList extends TemplatePage {
 
     private void showIMessages(AjaxRequestTarget target) {
         container.showIMessages(target);
-    }
-
-    private DateRange getAllDateRange() {
-        Date fromDate = registry.getFromDate() != null ? DateUtil.getBeginOfDay(registry.getFromDate()) : DateUtil.MIN_BEGIN_DATE;
-        Date tillDate = registry.getTillDate() != null ? DateUtil.getEndOfDay(registry.getTillDate()) : DateUtil.getCurrentDate();
-
-        return new DateRange(fromDate, tillDate);
-    }
-
-    private static DateRange prepareDateRange(DateRange dateRange) {
-        return new DateRange(
-                DateUtil.getBeginOfDay(dateRange.getStart()),
-                DateUtil.getEndOfDay(dateRange.getEnd())
-        );
     }
 
     @Override
