@@ -225,5 +225,14 @@ INSERT INTO `container_type` (`code`, `name`) values
     (604,'Отапливаемая площадь')
 ;
 
+insert into `config` (`name`, `value`) values
+    ('IMPORT_FILE_STORAGE_DIR', '/var/tmp/data'),
+    ('SYNC_DATA_SOURCE', 'jdbc/eircConnectionRemoteResource'),
+    ('MODULE_ID', '1'),
+    ('TMP_DIR', '/tmp'),
+    ('NUMBER_FLUSH_REGISTRY_RECORDS', '1000'),
+    ('NUMBER_READ_CHARS', '32000')
+;
+
 -- Current database version
- INSERT INTO `update` (`version`) VALUE ('20140610_195_0.0.2');
+ INSERT INTO `update` (`version`) VALUE ('20140610_201_0.0.3');
