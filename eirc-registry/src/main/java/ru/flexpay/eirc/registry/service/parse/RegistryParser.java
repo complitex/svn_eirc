@@ -15,6 +15,7 @@ import org.complitex.dictionary.util.EjbBeanLocator;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.cal10n.LocLogger;
 import ru.flexpay.eirc.dictionary.entity.EircConfig;
 import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
 import ru.flexpay.eirc.organization.entity.Organization;
@@ -23,6 +24,7 @@ import ru.flexpay.eirc.registry.entity.Container;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecord;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
+import ru.flexpay.eirc.registry.entity.log.Parsing;
 import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.util.ParseUtil;
@@ -80,7 +82,8 @@ public class RegistryParser implements Serializable {
     private static final ReentrantReadWriteLock registryLock = new ReentrantReadWriteLock();
 
     public void parse(final AbstractMessenger imessenger, final AbstractFinishCallback finishUpload) throws ExecuteException {
-        imessenger.addMessageInfo("starting_upload_registries");
+        LocLogger logger = getProcessLogger(imessenger);
+        logger.info(Parsing.STARTING_UPLOAD_REGISTRIES);
         finishUpload.init();
 
         final String dir = configBean.getString(DictionaryConfig.IMPORT_FILE_STORAGE_DIR, true);
@@ -88,7 +91,7 @@ public class RegistryParser implements Serializable {
         String[] fileNames = new File(dir).list();
 
         if (fileNames == null || fileNames.length == 0) {
-            imessenger.addMessageInfo("files_not_found");
+            logger.info(Parsing.FILES_NOT_FOUND);
             finishUpload.complete();
             return;
         }
@@ -101,7 +104,8 @@ public class RegistryParser implements Serializable {
 
     public void parse(final AbstractMessenger imessenger, final AbstractFinishCallback finishUpload, final String dir,
                       final String fileName, final AtomicInteger recordCounter) {
-        imessenger.addMessageInfo("starting_upload_registry", fileName);
+        final LocLogger logger = getProcessLogger(imessenger);
+        logger.info(Parsing.STARTING_UPLOAD_REGISTRY, fileName);
         if (recordCounter == null) {
             finishUpload.init();
         }
@@ -121,11 +125,11 @@ public class RegistryParser implements Serializable {
 
                     return null;
                 } catch (Throwable th) {
-                    imessenger.addMessageError("registry_failed_upload", fileName);
+                    imessenger.addMessageError("registry_failed_upload_with_error", fileName, th.getLocalizedMessage());
                     throw new ExecuteException(th, "Failed upload registry file by file name: " + fileName);
                 } finally {
                     if (recordCounter == null || recordCounter.decrementAndGet() == 0) {
-                        imessenger.addMessageInfo("registry_finish_upload");
+                        logger.info(Parsing.REGISTRY_FINISH_UPLOAD);
                         finishUpload.complete();
                     }
                 }
@@ -143,7 +147,7 @@ public class RegistryParser implements Serializable {
             throws ExecuteException {
         log.debug("start action");
 
-        Logger processLog = getProcessLogger();
+        LocLogger processLog = getProcessLogger(imessenger);
 
         Context context = new Context(imessenger, numberFlushRegistryRecords);
 
@@ -186,7 +190,7 @@ public class RegistryParser implements Serializable {
                             registryLock.writeLock().unlock();
                         }
 
-                        processLog = getProcessLogger(registry.getRegistryNumber());
+                        processLog = getProcessLogger(registry.getRegistryNumber(), imessenger);
 
                         context.setRegistry(registry);
                         context.addMessageInfo("registry_creating", registry.getRegistryNumber(), fileName);
@@ -208,7 +212,7 @@ public class RegistryParser implements Serializable {
             } while(nextIterate);
         } catch(Exception e) {
             log.error("Processing error", e);
-            processLog.error("Inner error");
+            processLog.error(Parsing.INNER_ERROR);
             EjbBeanLocator.getBean(RegistryParser.class).setErrorStatus(context.getRegistry());
         } finally {
             try {
@@ -223,12 +227,12 @@ public class RegistryParser implements Serializable {
         return context.getRegistry();
     }
 
-    private Logger getProcessLogger() {
-        return getProcessLogger(-1L);
+    private LocLogger getProcessLogger(AbstractMessenger imessenger) {
+        return getProcessLogger(-1L, imessenger);
     }
 
-    private Logger getProcessLogger(Long registryId) {
-        return RegistryLogger.getInstance(log, registryId);
+    private LocLogger getProcessLogger(Long registryId, AbstractMessenger imessenger) {
+        return RegistryLogger.getInstance(registryId, imessenger, RegistryParser.class);
     }
 
     private void flushRecordStack(Context context, Logger processLog) throws ExecuteException {

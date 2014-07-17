@@ -1,5 +1,8 @@
 package ru.flexpay.eirc.registry.service.handle;
 
+import ch.qos.cal10n.IMessageConveyor;
+import ch.qos.cal10n.MessageConveyor;
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.util.ResourceUtil;
@@ -10,12 +13,21 @@ import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Queue;
 
 /**
  * @author Pavel Sknar
  */
 public abstract class AbstractMessenger implements Serializable {
+
+    private final static Map<Locale, IMessageConveyor> IMESSAGE_CONVEYOR =
+            ImmutableMap.<Locale, IMessageConveyor>of(
+                    new Locale("ru"), new MessageConveyor(new Locale("ru")),
+                    Locale.ENGLISH, new MessageConveyor(Locale.ENGLISH)
+            );
+
+    private final static IMessageConveyor DEFAULT_IMESSAGE_CONVEYOR = IMESSAGE_CONVEYOR.get(0);
 
     private static final DateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss ");
 
@@ -25,6 +37,15 @@ public abstract class AbstractMessenger implements Serializable {
     }
 
     public void addMessageError(String message, Object... parameters) {
+        addMessage(new IMessage(IMessageType.ERROR, message, parameters));
+    }
+
+    public <E extends Enum<?>> void addMessageInfo(E message, Object... parameters) {
+        addMessage(new IMessage(IMessageType.INFO, message, parameters));
+
+    }
+
+    public <E extends Enum<?>> void addMessageError(E message, Object... parameters) {
         addMessage(new IMessage(IMessageType.ERROR, message, parameters));
     }
 
@@ -50,7 +71,9 @@ public abstract class AbstractMessenger implements Serializable {
 
         private Date date = DateUtil.getCurrentDate();
 
-        private String data;
+        private String data = null;
+
+        private Enum eData = null;
 
         private Object[] parameters;
 
@@ -64,6 +87,19 @@ public abstract class AbstractMessenger implements Serializable {
             this.type = type;
             this.date = date;
             this.data = data;
+            this.parameters = parameters;
+        }
+
+        private IMessage(IMessageType type, Enum data, Object... parameters) {
+            this.type = type;
+            this.eData = data;
+            this.parameters = parameters;
+        }
+
+        private IMessage(IMessageType type, Date date, Enum data, Object... parameters) {
+            this.type = type;
+            this.date = date;
+            this.eData = data;
             this.parameters = parameters;
         }
 
@@ -84,10 +120,19 @@ public abstract class AbstractMessenger implements Serializable {
         }
 
         public String getLocalizedString(Locale locale) {
-            String message = ResourceUtil.getString(getResourceBundle(), String.valueOf(getData()), locale);
-            message = parameters != null && parameters.length > 0? MessageFormat.format(message, parameters) : message;
+            if (data != null) {
+                String message = ResourceUtil.getString(getResourceBundle(), String.valueOf(getData()), locale);
+                message = parameters != null && parameters.length > 0 ? MessageFormat.format(message, parameters) : message;
 
-            return TIME_FORMAT.format(date) + message;
+                return TIME_FORMAT.format(date) + message;
+            }
+            if (eData != null) {
+                IMessageConveyor conveyor = IMESSAGE_CONVEYOR.get(locale);
+                conveyor = conveyor == null? DEFAULT_IMESSAGE_CONVEYOR : conveyor;
+
+                return conveyor.getMessage(eData, parameters);
+            }
+            return "";
         }
 
         @Override
