@@ -1,53 +1,70 @@
 package ru.flexpay.eirc.registry.service.parse;
 
-import org.apache.commons.lang.StringUtils;
+import ch.qos.cal10n.IMessageConveyor;
+import ch.qos.cal10n.MessageConveyor;
+import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
+import org.slf4j.cal10n.LocLogger;
+import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
+import java.util.Locale;
 
 /**
 * @author Pavel Sknar
 */
-class RegistryLogger implements InvocationHandler {
+class RegistryLogger extends LocLogger {
 
-    private Logger logger;
-    private String incMessage;
+    // create a message conveyor for a given locale
+    private static final IMessageConveyor messageConveyor = new MessageConveyor(new Locale("ru"));
 
-    RegistryLogger(Logger logger, Long registryId) {
-        this.logger = logger;
-        this.incMessage = registryId > 0? "(Registry : " + registryId + ")" : "";
+    private AbstractMessenger messenger;
+
+    private Long registryId;
+
+    RegistryLogger(Logger logger, IMessageConveyor imc, Long registryId, AbstractMessenger messenger) {
+        super(logger, imc);
+        this.registryId = registryId;
+        this.messenger = messenger;
     }
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] params) throws Throwable {
-        if (
-                StringUtils.equals(method.getName(), "trace") ||
-                StringUtils.equals(method.getName(), "debug") ||
-                StringUtils.equals(method.getName(), "warn") ||
-                StringUtils.equals(method.getName(), "info") ||
-                StringUtils.equals(method.getName(), "error")
-                ) {
-
-            if (StringUtils.isNotEmpty(incMessage)) {
-                int i = 0;
-                while (i < params.length && !(params[i] instanceof String)) {
-                    i++;
-                }
-                if (i < params.length) {
-                    String message = ((String)params[i]).concat(incMessage);
-                    params[i] = message;
-                }
-            }
-
-        }
-        return method.invoke(logger, params);
+    public void trace(Enum<?> key, Object... args) {
+        super.trace(key, addAdditionalArguments(args));
     }
 
-    public static Logger getInstance(Logger logger, Long registryId) {
-        InvocationHandler handler = new RegistryLogger(logger, registryId);
-        ClassLoader cl = Logger.class.getClassLoader();
-        return (Logger) Proxy.newProxyInstance(cl, new Class[]{Logger.class}, handler);
+    @Override
+    public void debug(Enum<?> key, Object... args) {
+        super.debug(key, addAdditionalArguments(args));
+    }
+
+    @Override
+    public void info(Enum<?> key, Object... args) {
+        args = addAdditionalArguments(args);
+        if (messenger != null) {
+            messenger.addMessageInfo(key, args);
+        }
+        super.info(key, args);
+    }
+
+    @Override
+    public void warn(Enum<?> key, Object... args) {
+        super.warn(key, addAdditionalArguments(args));
+    }
+
+    @Override
+    public void error(Enum<?> key, Object... args) {
+        args = addAdditionalArguments(args);
+        if (messenger != null) {
+            messenger.addMessageError(key, args);
+        }
+        super.error(key, args);
+    }
+    
+    private Object[] addAdditionalArguments(Object... args) {
+        return registryId != null && registryId > 0 ? ArrayUtils.add(args, registryId) : args;
+    }
+
+    public static LocLogger getInstance(Long registryId, AbstractMessenger messenger, Class<?> clazz) {
+        return new RegistryLocLoggerFactory(messageConveyor, messenger, registryId).getLocLogger(clazz);
     }
 }
