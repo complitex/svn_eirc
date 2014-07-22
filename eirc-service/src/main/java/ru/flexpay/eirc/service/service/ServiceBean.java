@@ -24,7 +24,8 @@ public class ServiceBean extends AbstractBean {
     public static final String FILTER_MAPPING_ATTRIBUTE_NAME = "service";
 
     public void delete(Service service) {
-        sqlSession().delete("delete", service);
+        sqlSession().delete(NS + ".deleteServiceNames", service);
+        sqlSession().delete(NS + ".deleteService", service);
     }
 
     public Service getService(long id) {
