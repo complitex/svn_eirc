@@ -11,6 +11,10 @@
         <typeAlias type="org.complitex.dictionary.entity.example.DomainObjectExample" alias="DomainObjectExample"/>
     </typeAliases>
 
+    <plugins>
+        <plugin interceptor="org.complitex.dictionary.mybatis.plugin.EhcacheClearCachePlugin"/>
+    </plugins>
+
     <environments default="local">
         <environment id="local">
             <transactionManager type="MANAGED"/>

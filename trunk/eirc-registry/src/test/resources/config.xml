@@ -1,10 +1,10 @@
 <config>
-    <property name="org.glassfish.ejb.embedded.glassfish.installation.root"
-              value="C:\\java\\org.complitex\\complitex\\complitex-dictionary\\src\\test\\glassfish">
-    </property>
     <!--property name="org.glassfish.ejb.embedded.glassfish.installation.root"
-              value="../complitex/complitex-dictionary/src/test/glassfish">
+              value="C:\\java\\org.complitex\\complitex\\complitex-dictionary\\src\\test\\glassfish">
     </property-->
+    <property name="org.glassfish.ejb.embedded.glassfish.installation.root"
+              value="../complitex/complitex-dictionary/src/test/glassfish">
+    </property>
     <property name="javax.ejb.embeddable.modules">
         <collection itemsType="java.io.File">
             <item>eirc-account/target/classes</item>

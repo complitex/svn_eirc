@@ -175,7 +175,7 @@
         <include refid="generalWithAddressSPACondition"/>
     </select>
 
-    <select id="selectServiceProviderAccount" parameterType="map" resultMap="ServiceProviderAccount" flushCache="false" useCache="false">
+    <select id="selectServiceProviderAccount" parameterType="map" resultMap="ServiceProviderAccount" flushCache="false" useCache="true">
         select
         <include refid="generalSPAColumns"/>
 
@@ -185,7 +185,7 @@
         where spa.`object_id` = #{id} order by `spa_begin_date` desc
     </select>
 
-    <select id="selectServiceProviderAccountByPkId" parameterType="map" resultMap="ServiceProviderAccount" flushCache="false" useCache="false">
+    <select id="selectServiceProviderAccountByPkId" parameterType="map" resultMap="ServiceProviderAccount" flushCache="false" useCache="true">
         select
         <include refid="generalSPAColumns"/>
 

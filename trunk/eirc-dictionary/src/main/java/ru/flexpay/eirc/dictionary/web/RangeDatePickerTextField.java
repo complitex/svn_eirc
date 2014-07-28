@@ -24,15 +24,6 @@ public class RangeDatePickerTextField extends com.googlecode.wicket.jquery.ui.pl
 
     private Options options;
 
-    public RangeDatePickerTextField(String id) {
-        this(id, new Options("calendars", 3));
-    }
-
-    public RangeDatePickerTextField(String id, Options options) {
-        super(id, options);
-        this.options = options;
-    }
-
     public RangeDatePickerTextField(String id, IModel<DateRange> model) {
         this(id, model, new Options("calendars", 3));
     }
@@ -40,6 +31,7 @@ public class RangeDatePickerTextField extends com.googlecode.wicket.jquery.ui.pl
     public RangeDatePickerTextField(String id, IModel<DateRange> model, Options options) {
         super(id, model, options);
         this.options = options;
+        setCurrentDate(model.getObject());
     }
 
     @Override
@@ -47,10 +39,14 @@ public class RangeDatePickerTextField extends com.googlecode.wicket.jquery.ui.pl
         super.onValueChanged(target);
         DateRange dateRange = getModelObject();
         if (DateRangeUtil.isChanged(dateRange)) {
-            options.set("current", String.format("new Date('%s')", AJAX_DATE_FORMAT.print(
-                    DateUtils.addMonths(dateRange.getEnd(), -1).
-                            getTime())));
+            setCurrentDate(dateRange);
         }
+    }
+
+    public void setCurrentDate(DateRange dateRange) {
+        options.set("current", String.format("new Date('%s')", AJAX_DATE_FORMAT.print(
+                DateUtils.addMonths(dateRange.getEnd(), -1).
+                        getTime())));
     }
 
     @Override
