@@ -12,8 +12,22 @@
     </typeAliases>
 
     <plugins>
-        <plugin interceptor="org.complitex.dictionary.mybatis.plugin.EhcacheClearCachePlugin"/>
-        <plugin interceptor="org.complitex.dictionary.mybatis.plugin.SelectStatementPlugin"/>
+        <plugin interceptor="org.complitex.dictionary.mybatis.plugin.EhcacheClearCachePluginExclude">
+            <property name="excludeNamespaces" value="
+            org.complitex.dictionary.entity.Locale,
+            org.complitex.dictionary.entity.description.Entity,
+            ru.flexpay.eirc.service_provider_account.service.OwnerExemptionBean,
+            ru.flexpay.eirc.registry.service.RegistryRecordBean,
+            ru.flexpay.eirc.registry.service.RegistryBean"/>
+        </plugin>
+        <plugin interceptor="org.complitex.dictionary.mybatis.plugin.SelectStatementPluginExclude">
+            <property name="excludeNamespaces" value="
+            org.complitex.dictionary.entity.Locale,
+            org.complitex.dictionary.entity.description.Entity,
+            ru.flexpay.eirc.service_provider_account.service.OwnerExemptionBean,
+            ru.flexpay.eirc.registry.service.RegistryRecordBean,
+            ru.flexpay.eirc.registry.service.RegistryBean"/>
+        </plugin>
     </plugins>
 
     <environments default="local">
