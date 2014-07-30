@@ -4,7 +4,7 @@
 <mapper namespace="ru.flexpay.eirc.eirc_account.service.EircAccountBean">
 
     <cache type="org.complitex.dictionary.mybatis.caches.EhcacheCache"/>
-    <cache-ref namespace="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean"/>
+    <!--cache-ref namespace="ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean"/-->
 
     <resultMap id="EircAccount" type="ru.flexpay.eirc.eirc_account.entity.EircAccount">
         <id column="eirc_account_pk_id" property="pkId"/>
