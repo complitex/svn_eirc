@@ -12,7 +12,7 @@
     </typeAliases>
 
     <plugins>
-        <plugin interceptor="org.complitex.dictionary.mybatis.plugin.EhcacheClearCachePluginExclude">
+        <plugin interceptor="org.complitex.dictionary.mybatis.plugin.EhcacheClearCachePlugin">
             <property name="excludeNamespaces" value="
             org.complitex.dictionary.entity.Locale,
             org.complitex.dictionary.entity.description.Entity,
@@ -20,7 +20,7 @@
             ru.flexpay.eirc.registry.service.RegistryRecordBean,
             ru.flexpay.eirc.registry.service.RegistryBean"/>
         </plugin>
-        <plugin interceptor="org.complitex.dictionary.mybatis.plugin.SelectStatementPluginExclude">
+        <plugin interceptor="org.complitex.dictionary.mybatis.plugin.SelectStatementPlugin">
             <property name="excludeNamespaces" value="
             org.complitex.dictionary.entity.Locale,
             org.complitex.dictionary.entity.description.Entity,
