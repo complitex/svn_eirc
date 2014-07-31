@@ -118,14 +118,14 @@ public class RegistryParser implements Serializable {
                     Registry registry = EjbBeanLocator.getBean(RegistryParser.class).parse(imessenger, is, fileName);
 
                     if (registry != null) {
-                        imessenger.addMessageInfo("registry_created", registry.getRegistryNumber(), fileName);
+                        logger.info(Parsing.REGISTRY_CREATED, registry.getRegistryNumber(), fileName);
                     } else {
-                        imessenger.addMessageError("registry_failed_upload", fileName);
+                        logger.error(Parsing.REGISTRY_FAILED_UPLOAD, fileName);
                     }
 
                     return null;
                 } catch (Throwable th) {
-                    imessenger.addMessageError("registry_failed_upload_with_error", fileName, th.getLocalizedMessage());
+                    logger.error(Parsing.REGISTRY_FAILED_UPLOAD_WITH_ERROR, fileName, th.getLocalizedMessage());
                     throw new ExecuteException(th, "Failed upload registry file by file name: " + fileName);
                 } finally {
                     if (recordCounter == null || recordCounter.decrementAndGet() == 0) {
@@ -164,9 +164,9 @@ public class RegistryParser implements Serializable {
                 for (FileReader.Message message : listMessage) {
                     if (message == null) {
                         if (context.getRegistry() == null) {
-                            imessenger.addMessageError("file_is_not_registry", fileName);
+                            processLog.error(Parsing.FILE_IS_NOT_REGISTRY, fileName);
                         }
-                        finalizeRegistry(context, processLog);
+                        finalizeRegistry(context);
                         return registry;
                     }
                     String messageValue = message.getBody();
@@ -181,7 +181,7 @@ public class RegistryParser implements Serializable {
                     if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_HEADER)) {
                         registryLock.writeLock().lock();
                         try {
-                            registry = processHeader(imessenger, fileName, messageFieldList, processLog);
+                            registry = processHeader(fileName, messageFieldList, processLog);
                             if (registry == null) {
                                 return null;
                             }
@@ -193,17 +193,16 @@ public class RegistryParser implements Serializable {
                         processLog = getProcessLogger(registry.getRegistryNumber(), imessenger);
 
                         context.setRegistry(registry);
-                        context.addMessageInfo("registry_creating", registry.getRegistryNumber(), fileName);
-                        log.debug("Creating registry {}", registry.getId());
+                        context.addMessageInfo(Parsing.REGISTRY_CREATING, fileName);
                     } else if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_RECORD)) {
                         RegistryRecordData record = processRecord(registry, messageFieldList, processLog);
                         if (record == null) {
                             return null;
                         }
                         context.add(record);
-                        flushRecordStack(context, processLog);
+                        flushRecordStack(context);
                     } else if (messageType.equals(ParseRegistryConstants.MESSAGE_TYPE_FOOTER)) {
-                        processFooter(messageFieldList, context, processLog);
+                        processFooter(messageFieldList, context);
                     }
                 }
                 nextIterate = !listMessage.isEmpty();
@@ -219,7 +218,7 @@ public class RegistryParser implements Serializable {
                 reader.close();
             } catch (IOException e) {
                 log.error("Failed reader", e);
-                processLog.error("Inner error");
+                processLog.error(Parsing.INNER_ERROR);
             }
             EjbBeanLocator.getBean(RegistryParser.class).setLoadedStatus(context);
         }
@@ -228,18 +227,18 @@ public class RegistryParser implements Serializable {
     }
 
     private LocLogger getProcessLogger(AbstractMessenger imessenger) {
-        return getProcessLogger(-1L, imessenger);
+        return getProcessLogger(null, imessenger);
     }
 
     private LocLogger getProcessLogger(Long registryId, AbstractMessenger imessenger) {
         return RegistryLogger.getInstance(registryId, imessenger, RegistryParser.class);
     }
 
-    private void flushRecordStack(Context context, Logger processLog) throws ExecuteException {
-        flushRecordStack(context, false, processLog);
+    private void flushRecordStack(Context context) throws ExecuteException {
+        flushRecordStack(context, false);
     }
 
-    private void flushRecordStack(final Context context, boolean finalize, Logger processLog) throws ExecuteException {
+    private void flushRecordStack(final Context context, boolean finalize) throws ExecuteException {
         if (context.getRecords() != null &&
                 (context.getRecords().size() >= context.getNumberFlushRegistryRecords() || finalize)) {
 
@@ -258,7 +257,7 @@ public class RegistryParser implements Serializable {
                     registryRecordService.createBulk(records);
                     //TODO save intermediate state
                     int currentCounter = context.addRecordCounter(records.size());
-                    context.addMessageInfo("registry_record_upload", currentCounter, context.getRegistry().getRegistryNumber());
+                    context.addMessageInfo(Parsing.REGISTRY_RECORD_UPLOAD, currentCounter);
                     return JobResult.SUCCESSFUL;
                 }
             });
@@ -267,13 +266,13 @@ public class RegistryParser implements Serializable {
         }
     }
 
-    private void finalizeRegistry(Context context, Logger processLog) throws ExecuteException {
+    private void finalizeRegistry(Context context) throws ExecuteException {
 
         if (context.getRegistry() == null) {
             return;
         }
 
-        flushRecordStack(context, true, processLog);
+        flushRecordStack(context, true);
 
         context.getBatchProcessor().waitEndWorks();
 
@@ -282,18 +281,12 @@ public class RegistryParser implements Serializable {
         boolean failed = false;
 
         if (context.getRegistry().getRecordsCount() != context.getRecordCounter()) {
-            context.addMessageError("registry_records_number_error", context.getRegistry().getRegistryNumber(),
-                    context.getRecordCounter(), context.getRegistry().getRecordsCount());
-            processLog.error("Registry records number error, expected: {}, found: {}",
-                    new Object[]{context.getRegistry().getRecordsCount(), context.getRecordCounter()});
+            context.addMessageError(Parsing.REGISTRY_RECORDS_NUMBER_ERROR, context.getRecordCounter(), context.getRegistry().getRecordsCount());
             failed = true;
         }
 
         if (!context.checkTotalAmount()) {
-            context.addMessageError("total_amount_error", context.getRegistry().getRegistryNumber(),
-                    context.getRegistry().getAmount(), context.getTotalAmount());
-            processLog.error("Total amount error, expected: {}, found: {}",
-                    new Object[]{context.getRegistry().getAmount(), context.getTotalAmount()});
+            context.addMessageError(Parsing.TOTAL_AMOUNT_ERROR, context.getRegistry().getAmount(), context.getTotalAmount());
             failed = true;
         }
 
@@ -342,9 +335,9 @@ public class RegistryParser implements Serializable {
         return false;
     }
 
-    private Registry processHeader(AbstractMessenger iMessenger, String fileName, List<String> messageFieldList, Logger processLog) {
+    private Registry processHeader(String fileName, List<String> messageFieldList, LocLogger processLog) {
         if (messageFieldList.size() < 10) {
-            processLog.error("Message header error, invalid number of fields: {}, expected at least 10", messageFieldList.size());
+            processLog.error(Parsing.HEADER_INVALID_NUMBER_FIELDS, fileName, messageFieldList.size());
             return null;
         }
 
@@ -365,34 +358,31 @@ public class RegistryParser implements Serializable {
             processLog.info("Creating new registry: {}", newRegistry);
 
             if (newRegistry.getType() == null) {
-                iMessenger.addMessageError("unknown_registry_type", fileName, registryTypeValue);
-                processLog.error("Unknown registry type field: {}", registryTypeValue);
+                processLog.error(Parsing.UNKNOWN_REGISTRY_TYPE, fileName, registryTypeValue);
                 return null;
             }
 
-            Organization recipient = getRecipient(newRegistry, iMessenger, processLog);
+            Organization recipient = getRecipient(newRegistry, processLog);
             if (recipient == null) {
-                iMessenger.addMessageError("recipient_not_found", newRegistry.getRegistryNumber());
-                processLog.error("Failed processing registry header, recipient not found: #{}", newRegistry.getRecipientOrganizationId());
+                processLog.error(Parsing.RECIPIENT_NOT_FOUND, newRegistry.getRecipientOrganizationId(), newRegistry.getRegistryNumber());
                 return null;
             }
             Organization sender = getSender(newRegistry, processLog);
             if (sender == null) {
-                iMessenger.addMessageError("sender_not_found", newRegistry.getRegistryNumber());
-                processLog.error("Failed processing registry header, sender not found: #{}", newRegistry.getSenderOrganizationId());
+                processLog.error(Parsing.SENDER_NOT_FOUND, newRegistry.getSenderOrganizationId(), newRegistry.getRegistryNumber());
                 return null;
             }
             processLog.info("Recipient: {}\n sender: {}", recipient, sender);
 
-            if (!validateServiceProvider(newRegistry, iMessenger, processLog)) {
+            if (!validateServiceProvider(newRegistry, processLog)) {
                 return null;
             }
 
-            if (!validatePaymentCollector(newRegistry, iMessenger, processLog)) {
+            if (!validatePaymentCollector(newRegistry, processLog)) {
                 return null;
             }
 
-            if (!EjbBeanLocator.getBean(RegistryParser.class).validateRegistry(newRegistry, iMessenger, processLog)) {
+            if (!EjbBeanLocator.getBean(RegistryParser.class).validateRegistry(newRegistry, processLog)) {
                 return null;
             }
 
@@ -400,8 +390,7 @@ public class RegistryParser implements Serializable {
 
             return newRegistry;
         } catch (Exception e) {
-            iMessenger.addMessageError("header_parse_error", fileName, e.getMessage());
-            processLog.error("Header parse error in file: {}", fileName, e);
+            processLog.error(Parsing.HEADER_PARSE_ERROR, fileName, e.getMessage());
         }
         return null;
     }
@@ -411,7 +400,7 @@ public class RegistryParser implements Serializable {
         registryService.save(registry);
     }
 
-    private boolean validateServiceProvider(Registry registry, AbstractMessenger iMessenger, Logger processLog) {
+    private boolean validateServiceProvider(Registry registry, LocLogger processLog) {
         Organization provider = getProvider(registry);
         /*
         if (registry.getType().isPayments()) {
@@ -423,18 +412,16 @@ public class RegistryParser implements Serializable {
         }
         */
         if (!provider.isServiceProvider()) {
-            iMessenger.addMessageError("organization_not_service_provider", provider.getId(), registry.getRegistryNumber());
-            processLog.error("Organization found, but it is not service provider: {}", provider);
+            processLog.error(Parsing.ORGANIZATION_NOT_SERVICE_PROVIDER, provider.getId(), registry.getRegistryNumber());
             return false;
         }
         return true;
     }
 
-    private boolean validatePaymentCollector(Registry registry, AbstractMessenger iMessenger, Logger processLog) {
+    private boolean validatePaymentCollector(Registry registry, LocLogger processLog) {
         Organization paymentCollector = organizationStrategy.findById(registry.getSenderOrganizationId(), false);
         if (registry.getType().isPayments() && !paymentCollector.isPaymentCollector()) {
-            iMessenger.addMessageError("organization_not_payment_collector", paymentCollector.getId(), registry.getRegistryNumber());
-            processLog.error("Organization found, but it is not payment collector: {}", paymentCollector);
+            processLog.error(Parsing.ORGANIZATION_NOT_PAYMENT_COLLECTOR, paymentCollector.getId(), registry.getRegistryNumber());
             return false;
         }
         return true;
@@ -458,7 +445,7 @@ public class RegistryParser implements Serializable {
         return sender;
     }
 
-    private Organization getRecipient(Registry registry, AbstractMessenger iMessenger, Logger processLog) {
+    private Organization getRecipient(Registry registry, LocLogger processLog) {
 
         Integer eircOrganizationId = null;
 
@@ -471,8 +458,7 @@ public class RegistryParser implements Serializable {
         }
 
         if (eircOrganizationId == null) {
-            iMessenger.addMessageError("eirc_organization_id_not_defined");
-            processLog.error("Eirc organization is not defined in config");
+            processLog.error(Parsing.EIRC_ORGANIZATION_ID_NOT_DEFINED);
             return null;
         }
 
@@ -483,8 +469,7 @@ public class RegistryParser implements Serializable {
         }
 
         if (!registry.getType().isPayments() && !registry.getRecipientOrganizationId().equals(eircOrganizationId.longValue())) {
-            iMessenger.addMessageError("recipient_not_eirc_organization", registry.getRegistryNumber());
-            processLog.error("Recipient is not EIRC organization");
+            processLog.error(Parsing.RECIPIENT_NOT_EIRC_ORGANIZATION, registry.getRegistryNumber());
             return null;
         }
 
@@ -503,21 +488,20 @@ public class RegistryParser implements Serializable {
         return null;
     }
 
-    public boolean validateRegistry(Registry registry, AbstractMessenger iMessenger, Logger processLog) {
+    public boolean validateRegistry(Registry registry, LocLogger processLog) {
         Registry filterObject = new Registry();
         filterObject.setRegistryNumber(registry.getRegistryNumber());
         int countRegistries = registryService.count(FilterWrapper.of(filterObject));
         if (countRegistries > 0) {
-            iMessenger.addMessageError("registry_was_already_uploaded", registry.getRegistryNumber());
-            processLog.error("Registry was already uploaded", registry.getRegistryNumber());
+            processLog.error(Parsing.REGISTRY_WAS_ALREADY_UPLOADED, registry.getRegistryNumber());
             return false;
         }
         return true;
     }
 
-    private RegistryRecordData processRecord(Registry registry, List<String> messageFieldList, Logger processLog) {
+    private RegistryRecordData processRecord(Registry registry, List<String> messageFieldList, LocLogger processLog) {
         if (messageFieldList.size() < 10) {
-            processLog.error("Message record error, invalid number of fields: {}", messageFieldList.size());
+            processLog.error(Parsing.RECORD_INCORRECT_NUMBER_FIELDS, messageFieldList.size());
             return null;
         }
 
@@ -562,11 +546,10 @@ public class RegistryParser implements Serializable {
         return null;
     }
 
-    public void processFooter(List<String> messageFieldList, Context context, Logger processLog) throws ExecuteException {
+    public void processFooter(List<String> messageFieldList, Context context) throws ExecuteException {
         if (messageFieldList.size() < 2) {
             EjbBeanLocator.getBean(RegistryParser.class).setNextErrorStatus(context);
-            processLog.error("Message footer error, invalid number of fields");
-            context.addMessageError("footer_invalid_number_fields", context.getRegistry().getRegistryNumber());
+            context.addMessageError(Parsing.FOOTER_INVALID_NUMBER_FIELDS);
         }
     }
 
@@ -581,13 +564,13 @@ public class RegistryParser implements Serializable {
 
         private BatchProcessor<JobResult> batchProcessor;
 
-        private AbstractMessenger imessenger;
+        private LocLogger logger;
 
         private AtomicDouble totalAmount = new AtomicDouble(0);
 
         private Context(AbstractMessenger imessenger, int numberFlushRegistryRecords) {
             this.numberFlushRegistryRecords = numberFlushRegistryRecords;
-            this.imessenger = imessenger;
+            this.logger = getProcessLogger(imessenger);
             batchProcessor = new BatchProcessor<>(10, processor);
         }
 
@@ -642,13 +625,13 @@ public class RegistryParser implements Serializable {
             records = Lists.newArrayList();
         }
 
-        public void addMessageInfo(String message, Object... parameters) {
-            imessenger.addMessageInfo(message, parameters);
+        public void addMessageInfo(java.lang.Enum<?> key, Object... parameters) {
+            logger.info(key, parameters);
 
         }
 
-        public void addMessageError(String message, Object... parameters) {
-            imessenger.addMessageError(message, parameters);
+        public void addMessageError(java.lang.Enum<?> key, Object... parameters) {
+            logger.error(key, parameters);
         }
     }
 
