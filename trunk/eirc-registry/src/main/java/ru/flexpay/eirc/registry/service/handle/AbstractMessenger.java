@@ -3,6 +3,7 @@ package ru.flexpay.eirc.registry.service.handle;
 import ch.qos.cal10n.IMessageConveyor;
 import ch.qos.cal10n.MessageConveyor;
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.complitex.dictionary.util.DateUtil;
 import org.complitex.dictionary.util.ResourceUtil;
@@ -120,19 +121,20 @@ public abstract class AbstractMessenger implements Serializable {
         }
 
         public String getLocalizedString(Locale locale) {
+            String message = "";
             if (data != null) {
-                String message = ResourceUtil.getString(getResourceBundle(), String.valueOf(getData()), locale);
+                message = ResourceUtil.getString(getResourceBundle(), String.valueOf(getData()), locale);
                 message = parameters != null && parameters.length > 0 ? MessageFormat.format(message, parameters) : message;
-
-                return TIME_FORMAT.format(date) + message;
             }
             if (eData != null) {
                 IMessageConveyor conveyor = IMESSAGE_CONVEYOR.get(locale);
                 conveyor = conveyor == null? DEFAULT_IMESSAGE_CONVEYOR : conveyor;
-
-                return conveyor.getMessage(eData, parameters);
+                message = conveyor.getMessage(eData, parameters);
             }
-            return "";
+            if (StringUtils.isNotEmpty(message)) {
+                return TIME_FORMAT.format(date) + message;
+            }
+            return message;
         }
 
         @Override

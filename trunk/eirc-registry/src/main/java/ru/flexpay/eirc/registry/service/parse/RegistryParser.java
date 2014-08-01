@@ -566,10 +566,13 @@ public class RegistryParser implements Serializable {
 
         private LocLogger logger;
 
+        private AbstractMessenger imessenger;
+
         private AtomicDouble totalAmount = new AtomicDouble(0);
 
         private Context(AbstractMessenger imessenger, int numberFlushRegistryRecords) {
             this.numberFlushRegistryRecords = numberFlushRegistryRecords;
+            this.imessenger = imessenger;
             this.logger = getProcessLogger(imessenger);
             batchProcessor = new BatchProcessor<>(10, processor);
         }
@@ -579,6 +582,9 @@ public class RegistryParser implements Serializable {
         }
 
         public void setRegistry(Registry registry) {
+            if (registry != null) {
+                logger = getProcessLogger(registry.getId(), imessenger);
+            }
             this.registry = registry;
         }
 
