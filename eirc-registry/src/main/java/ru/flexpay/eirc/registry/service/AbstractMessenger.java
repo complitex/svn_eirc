@@ -1,4 +1,4 @@
-package ru.flexpay.eirc.registry.service.handle;
+package ru.flexpay.eirc.registry.service;
 
 import ch.qos.cal10n.IMessageConveyor;
 import ch.qos.cal10n.MessageConveyor;

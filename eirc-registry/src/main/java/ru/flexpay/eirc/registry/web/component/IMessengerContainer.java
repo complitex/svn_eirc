@@ -6,8 +6,8 @@ import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.util.time.Duration;
 import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
+import ru.flexpay.eirc.registry.service.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.IMessenger;
-import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 
 /**
  * @author Pavel Sknar

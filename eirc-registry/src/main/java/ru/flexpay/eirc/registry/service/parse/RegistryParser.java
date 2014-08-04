@@ -24,9 +24,9 @@ import ru.flexpay.eirc.registry.entity.Container;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecord;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
+import ru.flexpay.eirc.registry.entity.log.GeneralProcessing;
 import ru.flexpay.eirc.registry.entity.log.Parsing;
 import ru.flexpay.eirc.registry.service.*;
-import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.util.ParseUtil;
 import ru.flexpay.eirc.registry.util.StringUtil;
 import ru.flexpay.eirc.service.service.ServiceBean;
@@ -458,7 +458,7 @@ public class RegistryParser implements Serializable {
         }
 
         if (eircOrganizationId == null) {
-            processLog.error(Parsing.EIRC_ORGANIZATION_ID_NOT_DEFINED);
+            processLog.error(GeneralProcessing.EIRC_ORGANIZATION_ID_NOT_DEFINED);
             return null;
         }
 
@@ -517,7 +517,7 @@ public class RegistryParser implements Serializable {
             if (registry.getFromDate().after(record.getOperationDate()) ||
                     registry.getTillDate().before(record.getOperationDate())) {
 
-                processLog.error("Failed operation date {} in operation number {} for account {}",
+                processLog.error(Parsing.RECORD_INCORRECT_OPERATION_DATE,
                         record.getOperationDate(), record.getUniqueOperationNumber(),
                         record.getPersonalAccountExt());
                 failed = true;
@@ -539,10 +539,14 @@ public class RegistryParser implements Serializable {
 
             return record;
         } catch (Exception e) {
-            log.error("Record parse error. Message fields: " + messageFieldList, e);
-            EjbBeanLocator.getBean(RegistryParser.class).setErrorStatus(registry);
+            try {
+                EjbBeanLocator.getBean(RegistryParser.class).setErrorStatus(registry);
+            } catch (Exception e2) {
+                //
+            }
+            log.error("Record parse error. Registry " + registry.getRegistryNumber() + ". Message fields: " + messageFieldList, e);
+            processLog.error(Parsing.RECORD_ERROR, messageFieldList, e.getMessage());
         }
-        processLog.error("Record number parse error");
         return null;
     }
 

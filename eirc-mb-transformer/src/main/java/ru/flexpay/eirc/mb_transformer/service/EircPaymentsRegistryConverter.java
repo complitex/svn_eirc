@@ -23,7 +23,7 @@ import ru.flexpay.eirc.organization.strategy.EircOrganizationStrategy;
 import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.AbstractFinishCallback;
 import ru.flexpay.eirc.registry.service.AbstractJob;
-import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
+import ru.flexpay.eirc.registry.service.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.handle.MbConverterQueueProcessor;
 import ru.flexpay.eirc.registry.service.parse.FileReader;
 import ru.flexpay.eirc.registry.service.parse.ParseRegistryConstants;
