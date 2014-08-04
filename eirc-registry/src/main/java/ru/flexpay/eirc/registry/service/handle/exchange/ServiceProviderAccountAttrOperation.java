@@ -39,7 +39,7 @@ public abstract class ServiceProviderAccountAttrOperation extends GeneralAccount
 
         BaseAccountOperationData data = getContainerData(container);
 
-        AttributeUtil.setStringValue(numberOfHabitants, data.getNewValue(), localeBean.getSystemLocaleObject().getId());
+        numberOfHabitants.setStringValue(data.getNewValue(), localeBean.getSystemLocaleObject().getId());
 
         serviceProviderAccountStrategy.update(oldObject, newObject, data.getChangeApplyingDate());
 
