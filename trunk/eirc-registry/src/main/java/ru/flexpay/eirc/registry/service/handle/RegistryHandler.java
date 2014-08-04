@@ -9,11 +9,14 @@ import org.complitex.dictionary.service.executor.ExecuteException;
 import org.complitex.dictionary.util.EjbBeanLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.cal10n.LocLogger;
 import ru.flexpay.eirc.dictionary.entity.EircConfig;
 import ru.flexpay.eirc.registry.entity.Container;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecord;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
+import ru.flexpay.eirc.registry.entity.log.GeneralProcessing;
+import ru.flexpay.eirc.registry.entity.log.Handling;
 import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.handle.exchange.Operation;
 import ru.flexpay.eirc.registry.service.handle.exchange.OperationFactory;
@@ -82,7 +85,20 @@ public class RegistryHandler {
 
         final Long registryId = filter.getObject().getRegistryId();
 
-        imessenger.addMessageInfo("starting_handle_registries", registryId);
+        List<Registry> registries = registryBean.getRegistries(FilterWrapper.of(new Registry(registryId)));
+
+        // check registry exist
+        if (registries.size() == 0) {
+            final LocLogger logger = getProcessLogger(registryId, imessenger);
+            logger.info(GeneralProcessing.REGISTRY_NOT_FOUND);
+            return;
+        }
+
+        final Registry registry = registries.get(0);
+
+        final LocLogger logger = getProcessLogger(registry.getRegistryNumber(), imessenger);
+
+        logger.info(Handling.STARTING_HANDLE_REGISTRIES);
         finishHandle.init();
 
         handleQueueProcessor.execute(new AbstractJob<Void>() {
@@ -90,28 +106,18 @@ public class RegistryHandler {
             public Void execute() throws ExecuteException {
                 try {
 
-                    List<Registry> registries = registryBean.getRegistries(FilterWrapper.of(new Registry(registryId)));
-
-                    // check registry exist
-                    if (registries.size() == 0) {
-                        imessenger.addMessageInfo("registry_not_found", registryId);
-                        return null;
-                    }
-
-                    final Registry registry = registries.get(0);
-
                     // one process on handling
                     registryLock.writeLock().lock();
                     try {
                         // check registry status
                         if (!registryWorkflowManager.canProcess(registry)) {
-                            imessenger.addMessageError("registry_failed_status", registryId);
+                            logger.error(Handling.REGISTRY_FAILED_STATUS);
                             return null;
                         }
 
                         // change registry status
                         if (!EjbBeanLocator.getBean(RegistryHandler.class).setHandlingStatus(registry)) {
-                            imessenger.addMessageError("registry_status_inner_error", registryId);
+                            logger.error(Handling.REGISTRY_STATUS_INNER_ERROR);
                             return null;
                         }
                     } finally {
@@ -120,7 +126,7 @@ public class RegistryHandler {
 
                     // check registry records status
                     if (!EjbBeanLocator.getBean(RegistryHandler.class).registryRecordBean.hasRecordsToProcessing(registry)) {
-                        imessenger.addMessageInfo("not_found_handle_registry_records", registryId);
+                        logger.info(Handling.NOT_FOUND_HANDLING_REGISTRY_RECORDS);
                         EjbBeanLocator.getBean(RegistryHandler.class).setHandlingStatus(registry);
                         return null;
                     }
@@ -161,14 +167,14 @@ public class RegistryHandler {
                                             if (StringUtils.isEmpty(message) && th.getCause() != null) {
                                                 message = th.getCause().getLocalizedMessage();
                                             }
-                                            imessenger.addMessageError("registry_failed_handle", registry.getRegistryNumber(), message);
+                                            logger.error(Handling.REGISTRY_FAILED_HANDLED, th.getMessage());
                                             throw new ExecuteException(th, "Failed handle registry " + registryId);
                                         } finally {
 
                                             statistics.add(recordsToProcessing.size(), results == null? 0 :results.size());
 
                                             if (recordHandlingCounter.decrementAndGet() == 0 && finishReadRecords.get()) {
-                                                imessenger.addMessageInfo("registry_finish_handle", registry.getRegistryNumber());
+                                                logger.info(Handling.REGISTRY_FINISH_HANDLE);
                                                 finishHandle.complete();
                                                 EjbBeanLocator.getBean(RegistryHandler.class).setHandledStatus(registry);
                                             }
@@ -179,7 +185,7 @@ public class RegistryHandler {
                                 // next registry record`s id is last in this partition
                                 innerFilter.setFirst(recordsToProcessing.get(recordsToProcessing.size() - 1).getId().intValue() + 1);
                             } else if (recordHandlingCounter.get() == 0) {
-                                imessenger.addMessageInfo("registry_finish_handle", registryId);
+                                logger.info(Handling.REGISTRY_FINISH_HANDLE);
                                 finishHandle.complete();
                                 EjbBeanLocator.getBean(RegistryHandler.class).setHandledStatus(registry);
                             }
@@ -188,6 +194,7 @@ public class RegistryHandler {
 
                     } catch (Throwable th) {
 
+                        logger.error(Handling.REGISTRY_FAILED_HANDLED, th.getMessage());
                         log.error("Can not handle registry " + registryId, th);
 
                         EjbBeanLocator.getBean(RegistryHandler.class).setErrorStatus(registry);
@@ -196,7 +203,7 @@ public class RegistryHandler {
 
                 } finally {
                     if (!finishReadRecords.get()) {
-                        imessenger.addMessageInfo("registry_finish_handle", registryId);
+                        logger.info(Handling.REGISTRY_FINISH_HANDLE);
                         finishHandle.complete();
                     }
                 }
@@ -286,18 +293,20 @@ public class RegistryHandler {
         return false;
     }
 
+    private LocLogger getProcessLogger(Long registryId, AbstractMessenger imessenger) {
+        return RegistryLogger.getInstance(registryId, imessenger, RegistryHandler.class);
+    }
+
     private class Statistics {
         private int totalHandledRecords = 0;
         private int totalOperations = 0;
 
         private Lock lock = new ReentrantLock();
 
-        private Long registryNumber;
-        private AbstractMessenger imessenger;
+        private LocLogger logger;
 
         private Statistics(Long registryNumber, AbstractMessenger imessenger) {
-            this.registryNumber = registryNumber;
-            this.imessenger = imessenger;
+            this.logger = getProcessLogger(registryNumber, imessenger);
         }
 
         public int getTotalHandledRecords() {
@@ -313,8 +322,7 @@ public class RegistryHandler {
             try {
                 this.totalHandledRecords += totalHandledRecords;
                 this.totalOperations     += totalOperations;
-                imessenger.addMessageInfo("handled_records", this.totalHandledRecords, this.totalOperations,
-                        registryNumber);
+                logger.info(Handling.HANDLED_BULK_RECORDS, this.totalHandledRecords, this.totalOperations);
             } finally {
                 lock.unlock();
             }

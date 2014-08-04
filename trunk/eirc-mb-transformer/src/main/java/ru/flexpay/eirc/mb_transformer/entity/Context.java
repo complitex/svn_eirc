@@ -8,7 +8,7 @@ import org.complitex.dictionary.entity.FilterWrapper;
 import ru.flexpay.eirc.mb_transformer.service.MbConverterException;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryRecordData;
-import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
+import ru.flexpay.eirc.registry.service.AbstractMessenger;
 import ru.flexpay.eirc.registry.util.FPRegistryConstants;
 import ru.flexpay.eirc.service.correction.entity.ServiceCorrection;
 import ru.flexpay.eirc.service.correction.service.ServiceCorrectionBean;

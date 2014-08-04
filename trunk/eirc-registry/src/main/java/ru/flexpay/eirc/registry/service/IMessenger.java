@@ -3,7 +3,6 @@ package ru.flexpay.eirc.registry.service;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import org.complitex.dictionary.service.SessionBean;
-import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 
 import javax.ejb.EJB;
 import java.util.Map;

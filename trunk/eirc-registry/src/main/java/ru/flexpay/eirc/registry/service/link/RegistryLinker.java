@@ -10,13 +10,15 @@ import org.complitex.dictionary.util.AttributeUtil;
 import org.complitex.dictionary.util.EjbBeanLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.cal10n.LocLogger;
 import ru.flexpay.eirc.dictionary.entity.Address;
 import ru.flexpay.eirc.dictionary.entity.EircConfig;
 import ru.flexpay.eirc.dictionary.strategy.ModuleInstanceStrategy;
 import ru.flexpay.eirc.eirc_account.entity.EircAccount;
 import ru.flexpay.eirc.registry.entity.*;
+import ru.flexpay.eirc.registry.entity.log.GeneralProcessing;
+import ru.flexpay.eirc.registry.entity.log.Linking;
 import ru.flexpay.eirc.registry.service.*;
-import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 import ru.flexpay.eirc.registry.service.parse.RegistryRecordWorkflowManager;
 import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 import ru.flexpay.eirc.registry.service.parse.TransitionNotAllowed;
@@ -100,12 +102,25 @@ public class RegistryLinker {
             DomainObject module = moduleInstanceStrategy.findById(moduleId, true);
             userOrganizationId.set(AttributeUtil.getIntegerValue(module, ModuleInstanceStrategy.ORGANIZATION).longValue());
         } catch (Exception e) {
-            imessenger.addMessageError("eirc_organization_id_not_defined");
-            log.error("Can not get {} from config: {}", EircConfig.MODULE_ID, e.toString());
+            final LocLogger logger = getProcessLogger(null, imessenger);
+            logger.error(GeneralProcessing.EIRC_ORGANIZATION_ID_NOT_DEFINED);
             return;
         }
 
-        imessenger.addMessageInfo("starting_link_registries", registryId);
+        List<Registry> registries = registryBean.getRegistries(registryFilter);
+
+        // check registry exist
+        if (registries.size() == 0) {
+            final LocLogger logger = getProcessLogger(registryId, imessenger);
+            logger.info(GeneralProcessing.REGISTRY_NOT_FOUND);
+            return;
+        }
+
+        final Registry registry = registries.get(0);
+        registryFilter.setObject(registry);
+
+        final LocLogger logger = getProcessLogger(registry.getRegistryNumber(), imessenger);
+        logger.info(Linking.STARTING_LINK_REGISTRIES);
         finishLink.init();
 
         linkQueueProcessor.execute(new AbstractJob<Void>() {
@@ -113,30 +128,18 @@ public class RegistryLinker {
             public Void execute() throws ExecuteException {
                 try {
 
-                    List<Registry> registries = registryBean.getRegistries(registryFilter);
-
-                    // check registry exist
-                    if (registries.size() == 0) {
-                        imessenger.addMessageInfo("registry_not_found", registryId);
-                        return null;
-                    }
-
-                    final Registry registry = registries.get(0);
-                    registryFilter.setObject(registry);
-
-
                     // one process on linking
                     registryLock.writeLock().lock();
                     try {
                         // check registry status
                         if (!registryWorkflowManager.canLink(registry)) {
-                            imessenger.addMessageError("registry_failed_status", registry.getRegistryNumber());
+                            logger.error(Linking.REGISTRY_FAILED_STATUS);
                             return null;
                         }
 
                         // change registry status
                         if (!EjbBeanLocator.getBean(RegistryLinker.class).setLinkingStatus(registry)) {
-                            imessenger.addMessageError("registry_status_inner_error", registry.getRegistryNumber());
+                            logger.error(Linking.REGISTRY_STATUS_INNER_ERROR);
                             return null;
                         }
                     } finally {
@@ -145,7 +148,7 @@ public class RegistryLinker {
 
                     // check registry records status
                     if (!registryRecordBean.hasRecordsToLinking(registry)) {
-                        imessenger.addMessageInfo("not_found_linking_registry_records", registry.getRegistryNumber());
+                        logger.info(Linking.NOT_FOUND_LINKING_REGISTRY_RECORDS);
                         EjbBeanLocator.getBean(RegistryLinker.class).setLinkingStatus(registry);
                         return null;
                     }
@@ -184,11 +187,11 @@ public class RegistryLinker {
                                             return JobResult.SUCCESSFUL;
                                         } catch (Throwable th) {
                                             EjbBeanLocator.getBean(RegistryLinker.class).setErrorStatus(registry);
-                                            imessenger.addMessageError("registry_failed_linked", registry.getRegistryNumber());
-                                            throw new ExecuteException(th, "Failed upload registry " + registryId);
+                                            logger.error(Linking.REGISTRY_FAILED_LINKED, th.getMessage());
+                                            throw new ExecuteException(th, "Failed link registry " + registryId);
                                         } finally {
                                             if (recordLinkingCounter.decrementAndGet() == 0 && finishReadRecords.get()) {
-                                                imessenger.addMessageInfo("registry_finish_link", registry.getRegistryNumber());
+                                                logger.info(Linking.REGISTRY_FINISH_LINK);
                                                 finishLink.complete();
                                                 if (afterCorrection &&
                                                         registryRecordBean.getRecordsToLinking(FilterWrapper.of(filter.getObject(), 0, 1)).size() > 0) {
@@ -203,7 +206,7 @@ public class RegistryLinker {
                                 // next registry record`s id is last in this partition
                                 innerFilter.setFirst(recordsToLinking.get(recordsToLinking.size() - 1).getId().intValue() + 1);
                             } else if (recordLinkingCounter.get() == 0) {
-                                imessenger.addMessageInfo("registry_finish_link", registry.getRegistryNumber());
+                                logger.info(Linking.REGISTRY_FINISH_LINK);
                                 finishLink.complete();
                                 if (afterCorrection &&
                                         registryRecordBean.getRecordsToLinking(FilterWrapper.of(filter.getObject(), 0, 1)).size() > 0) {
@@ -216,6 +219,7 @@ public class RegistryLinker {
 
                     } catch (Throwable th) {
 
+                        logger.error(Linking.REGISTRY_FAILED_LINKED, th.getMessage());
                         log.error("Can not link registry " + registryId, th);
 
                         EjbBeanLocator.getBean(RegistryLinker.class).setErrorStatus(registry);
@@ -223,8 +227,7 @@ public class RegistryLinker {
                     }
                 } finally {
                     if (!finishReadRecords.get()) {
-                        imessenger.addMessageInfo("registry_finish_link", registryFilter.getObject().getRegistryNumber() != null?
-                                registryFilter.getObject().getRegistryNumber() : registryFilter.getObject().getId());
+                        logger.info(Linking.REGISTRY_FINISH_LINK);
                         finishLink.complete();
                     }
                 }
@@ -321,19 +324,20 @@ public class RegistryLinker {
         return false;
     }
 
+    private LocLogger getProcessLogger(Long registryId, AbstractMessenger imessenger) {
+        return RegistryLogger.getInstance(registryId, imessenger, RegistryLinker.class);
+    }
+
     private class Statistics {
         private int totalLinkedRecords = 0;
         private int successLinkedRecords = 0;
         private int errorLinkedRecords = 0;
 
         private Lock lock = new ReentrantLock();
-
-        private Long registryNumber;
-        private AbstractMessenger imessenger;
+        private LocLogger logger;
 
         private Statistics(Long registryNumber, AbstractMessenger imessenger) {
-            this.registryNumber = registryNumber;
-            this.imessenger = imessenger;
+            this.logger = getProcessLogger(registryNumber, imessenger);
         }
 
         public int getTotalLinkedRecords() {
@@ -355,8 +359,7 @@ public class RegistryLinker {
                 this.successLinkedRecords += successLinkedRecords;
                 this.errorLinkedRecords   += errorLinkedRecords;
 
-                imessenger.addMessageInfo("linked_bulk_records", this.totalLinkedRecords, this.successLinkedRecords,
-                        this.errorLinkedRecords, registryNumber);
+                logger.info(Linking.LINKED_BULK_RECORDS, this.totalLinkedRecords, this.successLinkedRecords, this.errorLinkedRecords);
             } finally {
                 lock.unlock();
             }

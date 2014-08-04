@@ -1,18 +1,17 @@
-package ru.flexpay.eirc.registry.service.parse;
+package ru.flexpay.eirc.registry.service;
 
 import ch.qos.cal10n.IMessageConveyor;
 import ch.qos.cal10n.MessageConveyor;
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.cal10n.LocLogger;
-import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 
 import java.util.Locale;
 
 /**
 * @author Pavel Sknar
 */
-class RegistryLogger extends LocLogger {
+public class RegistryLogger extends LocLogger {
 
     // create a message conveyor for a given locale
     private static final IMessageConveyor messageConveyor = new MessageConveyor(new Locale("ru"));

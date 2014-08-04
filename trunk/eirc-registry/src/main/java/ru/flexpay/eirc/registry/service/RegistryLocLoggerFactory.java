@@ -1,9 +1,8 @@
-package ru.flexpay.eirc.registry.service.parse;
+package ru.flexpay.eirc.registry.service;
 
 import ch.qos.cal10n.IMessageConveyor;
 import org.slf4j.LoggerFactory;
 import org.slf4j.cal10n.LocLogger;
-import ru.flexpay.eirc.registry.service.handle.AbstractMessenger;
 
 /**
  * @author Pavel Sknar
