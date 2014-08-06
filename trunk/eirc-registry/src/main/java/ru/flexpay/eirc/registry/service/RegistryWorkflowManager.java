@@ -1,14 +1,13 @@
-package ru.flexpay.eirc.registry.service.parse;
+package ru.flexpay.eirc.registry.service;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.complitex.dictionary.service.LocaleBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.registry.entity.Registry;
 import ru.flexpay.eirc.registry.entity.RegistryStatus;
-import ru.flexpay.eirc.registry.service.RegistryBean;
-import ru.flexpay.eirc.registry.service.RegistryRecordBean;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -32,6 +31,9 @@ public class RegistryWorkflowManager {
 
     @EJB
     private RegistryRecordBean registryRecordBean;
+
+    @EJB
+    private LocaleBean localeBean;
 
     // allowed transitions from source status code to target codes
     // first status in lists is the successfull one, the second is transition with some processing error
@@ -128,7 +130,11 @@ public class RegistryWorkflowManager {
     }
 
     public boolean isInWork(Registry registry) {
-        return registry.getStatus() == null || inWorkStates.contains(registry.getStatus());
+        return isDeleting(registry) || inWorkStates.contains(registry.getStatus());
+    }
+
+    public boolean isDeleting(Registry registry) {
+        return registry.getStatus() == null;
     }
 
     /**
@@ -166,6 +172,21 @@ public class RegistryWorkflowManager {
                 throw new RuntimeException("Unexpected error when ending processing", t);
             }
         }
+    }
+
+    /**
+     * Set canceled registry status
+     *
+     * @param registry Registry to update
+     * @throws TransitionNotAllowed if error transition is not allowed
+     */
+    public void setCanceledStatus(Registry registry) throws TransitionNotAllowed {
+        List<RegistryStatus> allowedCodes = transitions.get(registry.getStatus());
+        if (allowedCodes.size() < 3) {
+            throw new TransitionNotAllowed("No cancel transition", registry.getStatus());
+        }
+
+        setNextStatus(registry, allowedCodes.get(2));
     }
 
     /**
@@ -300,5 +321,22 @@ public class RegistryWorkflowManager {
         } else {
             log.debug("Not updating registry status, current is {}", registry.getStatus());
         }
+    }
+
+    /**
+     * Set registry canceled status to {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKING_CANCELED}
+     *
+     * @param registry Registry to update
+     * @throws TransitionNotAllowed if registry status is not {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKING}
+     *                              or {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKING_WITH_ERROR}
+     */
+    public void markLinkingCanceled(Registry registry) throws TransitionNotAllowed {
+        if (!linkingStates.contains(registry.getStatus())) {
+            throw new TransitionNotAllowed("Cannot mark linking with error. Current registry code", registry.getStatus());
+        }
+
+        log.debug("Setting registry linking canceled: {}", registry);
+
+        setCanceledStatus(registry);
     }
 }

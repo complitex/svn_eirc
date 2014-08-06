@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.registry.entity.*;
+import ru.flexpay.eirc.registry.service.RegistryWorkflowManager;
+import ru.flexpay.eirc.registry.service.TransitionNotAllowed;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -55,7 +57,7 @@ public class RegistryRecordWorkflowManager {
      * Check if registry record is in state that allows processing, or moves it to an allowed one.
      *
      * @param record Registry record to start
-     * @throws TransitionNotAllowed if record processing is not possible
+     * @throws ru.flexpay.eirc.registry.service.TransitionNotAllowed if record processing is not possible
      */
     public void startProcessing(RegistryRecord record) throws TransitionNotAllowed {
         if (!hasSuccessTransition(record)) {

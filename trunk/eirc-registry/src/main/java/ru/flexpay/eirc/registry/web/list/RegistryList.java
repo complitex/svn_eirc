@@ -2,7 +2,6 @@ package ru.flexpay.eirc.registry.web.list;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
-import com.googlecode.wicket.jquery.core.Options;
 import com.googlecode.wicket.jquery.ui.plugins.datepicker.DateRange;
 import org.apache.wicket.Page;
 import org.apache.wicket.ajax.AjaxRequestTarget;
@@ -49,7 +48,6 @@ import ru.flexpay.eirc.registry.service.handle.RegistryHandler;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryParser;
-import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 import ru.flexpay.eirc.registry.web.component.BrowserFilesDialog;
 import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
 
@@ -110,6 +108,9 @@ public class RegistryList extends TemplatePage {
 
     @EJB
     private JobProcessor processor;
+
+    @EJB
+    private CanceledProcessing canceledProcessing;
 
     BrowserFilesDialog fileDialog;
 
@@ -280,12 +281,15 @@ public class RegistryList extends TemplatePage {
                             } finally {
                                 showIMessages(target);
                             }
+                        } else if (canCanceled(registry)) {
+                            canceledProcessing.cancel(registry.getId());
                         }
                     }
 
                     @Override
                     public boolean isVisible() {
-                        return registryWorkflowManager.canLink(registry) || registryWorkflowManager.canProcess(registry);
+                        return registryWorkflowManager.canLink(registry) || registryWorkflowManager.canProcess(registry) ||
+                                canCanceled(registry);
                     }
                 };
                 actionLink.add(new Label("actionMessage", new AbstractReadOnlyModel<String>() {
@@ -296,6 +300,8 @@ public class RegistryList extends TemplatePage {
                             return getString("link");
                         } else if (registryWorkflowManager.canProcess(registry)) {
                             return getString("process");
+                        } else if (canCanceled(registry)) {
+                            return getString("cancel");
                         }
                         return "";
                     }
@@ -311,7 +317,6 @@ public class RegistryList extends TemplatePage {
                 "registryLoadDate", "registryRecordsCount", "registryStatus"));
 
         //Filters
-        final Options options = new Options("calendars", 3);
         filterForm.add(new RangeDatePickerTextField("creationDate", creationDateModel));
         filterForm.add(new TextField<>("registryNumber"));
         filterForm.add(new OrganizationPicker("senderOrganizationId", filterModel));
@@ -384,6 +389,10 @@ public class RegistryList extends TemplatePage {
 
         //Navigator
         container.add(new PagingNavigator("navigator", dataView, getPreferencesPage(), container));
+    }
+
+    public boolean canCanceled(Registry registry) {
+        return !finishCallback.isCompleted() && registryWorkflowManager.isInWork(registry) && !registryWorkflowManager.isDeleting(registry);
     }
 
     public boolean isExecuting(Registry registry) {
