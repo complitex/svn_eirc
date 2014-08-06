@@ -20,8 +20,6 @@ import ru.flexpay.eirc.registry.entity.log.GeneralProcessing;
 import ru.flexpay.eirc.registry.entity.log.Linking;
 import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.parse.RegistryRecordWorkflowManager;
-import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
-import ru.flexpay.eirc.registry.service.parse.TransitionNotAllowed;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
@@ -75,6 +73,9 @@ public class RegistryLinker {
 
     @EJB
     private ModuleInstanceStrategy moduleInstanceStrategy;
+
+    @EJB
+    private CanceledProcessing canceledProcessing;
 
     private static final ReentrantReadWriteLock registryLock = new ReentrantReadWriteLock();
 
@@ -160,14 +161,13 @@ public class RegistryLinker {
                         final Statistics statistics = new Statistics(registry.getRegistryNumber(), imessenger);
 
                         int numberFlushRegistryRecords = configBean.getInteger(EircConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
-                        List<RegistryRecordData> registryRecords;
                         FilterWrapper<RegistryRecordData> innerFilter = FilterWrapper.of(filter.getObject(), 0, numberFlushRegistryRecords);
                         do {
                             final List<RegistryRecordData> recordsToLinking = afterCorrection?
                                     registryRecordBean.getCorrectionRecordsToLinking(innerFilter) :
                                     registryRecordBean.getRecordsToLinking(innerFilter);
 
-                            if (recordsToLinking.size() < numberFlushRegistryRecords) {
+                            if (!isContinue(recordsToLinking, registry, logger)) {
                                 finishReadRecords.set(true);
                             }
 
@@ -214,8 +214,7 @@ public class RegistryLinker {
                                 }
                                 EjbBeanLocator.getBean(RegistryLinker.class).setLinkedStatus(registry);
                             }
-                            registryRecords = recordsToLinking;
-                        } while (registryRecords.size() >= numberFlushRegistryRecords);
+                        } while (!finishReadRecords.get());
 
                     } catch (Throwable th) {
 
@@ -227,6 +226,20 @@ public class RegistryLinker {
                     }
                 } finally {
                     if (!finishReadRecords.get()) {
+                        if (registryWorkflowManager.isLinking(registry)) {
+                            try {
+                                setErrorStatus(registry);
+                            } catch (Throwable th) {
+                                log.error("Can not change status", th);
+                                logger.error(Linking.REGISTRY_STATUS_INNER_ERROR);
+                            }
+                            try {
+                                setLinkedStatus(registry);
+                            } catch (Throwable th) {
+                                log.error("Can not change status", th);
+                                logger.error(Linking.REGISTRY_STATUS_INNER_ERROR);
+                            }
+                        }
                         logger.info(Linking.REGISTRY_FINISH_LINK);
                         finishLink.complete();
                     }
@@ -234,6 +247,18 @@ public class RegistryLinker {
                 return null;
             }
         });
+    }
+
+    protected boolean isContinue(List<RegistryRecordData> data, Registry registry, LocLogger logger) {
+        if (data.size() == 0) {
+            return false;
+        }
+        if (canceledProcessing.isCancel(registry.getId())) {
+            EjbBeanLocator.getBean(RegistryLinker.class).setCancelStatus(registry);
+            logger.error(Linking.LINKING_CANCELED);
+            return false;
+        }
+        return true;
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
@@ -320,6 +345,17 @@ public class RegistryLinker {
             return true;
         } catch (TransitionNotAllowed transitionNotAllowed) {
             log.error("Can not set error status. Current status: " + transitionNotAllowed.getType(), transitionNotAllowed);
+        }
+        return false;
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public boolean setCancelStatus(Registry registry) {
+        try {
+            registryWorkflowManager.markLinkingCanceled(registry);
+            return true;
+        } catch (TransitionNotAllowed transitionNotAllowed) {
+            log.error("Can not set linking canceled status. Current status: " + transitionNotAllowed.getType(), transitionNotAllowed);
         }
         return false;
     }

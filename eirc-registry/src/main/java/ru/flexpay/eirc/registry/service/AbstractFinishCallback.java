@@ -16,6 +16,10 @@ public abstract class AbstractFinishCallback implements Serializable {
         getCounter().decrementAndGet();
     }
 
+    public void cancel() {
+
+    }
+
     public boolean isCompleted() {
         return getCounter().get() <= 0;
     }

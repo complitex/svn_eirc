@@ -32,6 +32,7 @@ public enum  RegistryStatus implements IFixedIdType, ILocalizedType {
     LINKING_CANCELED(23L);
 
     private static final String RESOURCE_BUNDLE = RegistryStatus.class.getName();
+    private static final Locale DEFAULT_LOCALE = new Locale("ru");
 
     private Long id;
 
@@ -47,5 +48,11 @@ public enum  RegistryStatus implements IFixedIdType, ILocalizedType {
     @Override
     public String getLabel(Locale locale) {
         return ResourceUtil.getString(RESOURCE_BUNDLE, String.valueOf(getId()), locale);
+    }
+
+
+    @Override
+    public String toString() {
+        return getLabel(DEFAULT_LOCALE);
     }
 }

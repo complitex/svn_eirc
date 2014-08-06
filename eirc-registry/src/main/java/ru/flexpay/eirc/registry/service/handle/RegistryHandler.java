@@ -22,8 +22,6 @@ import ru.flexpay.eirc.registry.service.handle.exchange.Operation;
 import ru.flexpay.eirc.registry.service.handle.exchange.OperationFactory;
 import ru.flexpay.eirc.registry.service.handle.exchange.OperationResult;
 import ru.flexpay.eirc.registry.service.parse.RegistryRecordWorkflowManager;
-import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
-import ru.flexpay.eirc.registry.service.parse.TransitionNotAllowed;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 
 import javax.ejb.*;
@@ -38,7 +36,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author Pavel Sknar
  */
 @Stateless
-public class RegistryHandler {
+public class RegistryHandler extends CanceledProcessing {
 
     private static final Logger log = LoggerFactory.getLogger(RegistryHandler.class);
 

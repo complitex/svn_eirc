@@ -50,7 +50,6 @@ import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
 import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
-import ru.flexpay.eirc.registry.service.parse.RegistryWorkflowManager;
 import ru.flexpay.eirc.registry.web.component.ColumnsPropertiesDialog;
 import ru.flexpay.eirc.registry.web.component.ContainerListPanel;
 import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
