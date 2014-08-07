@@ -21,7 +21,6 @@ import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.handle.exchange.Operation;
 import ru.flexpay.eirc.registry.service.handle.exchange.OperationFactory;
 import ru.flexpay.eirc.registry.service.handle.exchange.OperationResult;
-import ru.flexpay.eirc.registry.service.parse.RegistryRecordWorkflowManager;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
 
 import javax.ejb.*;

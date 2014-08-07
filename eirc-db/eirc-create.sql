@@ -238,7 +238,7 @@ CREATE TABLE `registry` (
   `id` BIGINT(20) NOT NULL AUTO_INCREMENT,
   `registry_number` BIGINT(20),
   `type` BIGINT(20) NOT NULL,
-  `status` BIGINT(20) NOT NULL,
+  `status` BIGINT(20),
   `records_count` INTEGER,
   `errors_count` INTEGER default -1 NOT NULL comment 'Cached errors number value, -1 is not init',
   `creation_date` DATETIME,

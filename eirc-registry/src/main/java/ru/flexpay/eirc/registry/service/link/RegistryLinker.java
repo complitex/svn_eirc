@@ -19,7 +19,6 @@ import ru.flexpay.eirc.registry.entity.*;
 import ru.flexpay.eirc.registry.entity.log.GeneralProcessing;
 import ru.flexpay.eirc.registry.entity.log.Linking;
 import ru.flexpay.eirc.registry.service.*;
-import ru.flexpay.eirc.registry.service.parse.RegistryRecordWorkflowManager;
 import ru.flexpay.eirc.service.entity.Service;
 import ru.flexpay.eirc.service_provider_account.entity.ServiceProviderAccount;
 import ru.flexpay.eirc.service_provider_account.service.ServiceProviderAccountBean;
@@ -167,7 +166,7 @@ public class RegistryLinker {
                                     registryRecordBean.getCorrectionRecordsToLinking(innerFilter) :
                                     registryRecordBean.getRecordsToLinking(innerFilter);
 
-                            if (!isContinue(recordsToLinking, registry, logger)) {
+                            if (!isContinue(recordsToLinking, registry)) {
                                 finishReadRecords.set(true);
                             }
 
@@ -191,13 +190,7 @@ public class RegistryLinker {
                                             throw new ExecuteException(th, "Failed link registry " + registryId);
                                         } finally {
                                             if (recordLinkingCounter.decrementAndGet() == 0 && finishReadRecords.get()) {
-                                                logger.info(Linking.REGISTRY_FINISH_LINK);
-                                                finishLink.complete();
-                                                if (afterCorrection &&
-                                                        registryRecordBean.getRecordsToLinking(FilterWrapper.of(filter.getObject(), 0, 1)).size() > 0) {
-                                                    EjbBeanLocator.getBean(RegistryLinker.class).setErrorStatus(registry);
-                                                }
-                                                EjbBeanLocator.getBean(RegistryLinker.class).setLinkedStatus(registry);
+                                                finalizeRegistryLinked(logger, finishLink, registry, afterCorrection, filter);
                                             }
                                         }
                                     }
@@ -206,13 +199,7 @@ public class RegistryLinker {
                                 // next registry record`s id is last in this partition
                                 innerFilter.setFirst(recordsToLinking.get(recordsToLinking.size() - 1).getId().intValue() + 1);
                             } else if (recordLinkingCounter.get() == 0) {
-                                logger.info(Linking.REGISTRY_FINISH_LINK);
-                                finishLink.complete();
-                                if (afterCorrection &&
-                                        registryRecordBean.getRecordsToLinking(FilterWrapper.of(filter.getObject(), 0, 1)).size() > 0) {
-                                    EjbBeanLocator.getBean(RegistryLinker.class).setErrorStatus(registry);
-                                }
-                                EjbBeanLocator.getBean(RegistryLinker.class).setLinkedStatus(registry);
+                                finalizeRegistryLinked(logger, finishLink, registry, afterCorrection, filter);
                             }
                         } while (!finishReadRecords.get());
 
@@ -249,16 +236,46 @@ public class RegistryLinker {
         });
     }
 
-    protected boolean isContinue(List<RegistryRecordData> data, Registry registry, LocLogger logger) {
-        if (data.size() == 0) {
-            return false;
+    public void finalizeRegistryLinked(final LocLogger logger, AbstractFinishCallback finishLink, final Registry registry,
+                                       boolean afterCorrection, FilterWrapper<RegistryRecordData> filter) throws ExecuteException {
+
+        // Проставляем статус отмены
+        if (canceledProcessing.isCancel(registry.getId(), new Runnable() {
+            @Override
+            public void run() {
+                EjbBeanLocator.getBean(RegistryLinker.class).setCancelStatus(registry);
+                logger.error(Linking.LINKING_CANCELED);
+            }
+
+        })) {
+            return;
         }
-        if (canceledProcessing.isCancel(registry.getId())) {
-            EjbBeanLocator.getBean(RegistryLinker.class).setCancelStatus(registry);
-            logger.error(Linking.LINKING_CANCELED);
-            return false;
+
+        logger.info(Linking.REGISTRY_FINISH_LINK);
+        finishLink.complete();
+
+        // если не было отмены, то статус завершения
+        if (afterCorrection &&
+                registryRecordBean.getRecordsToLinking(FilterWrapper.of(filter.getObject(), 0, 1)).size() > 0) {
+            EjbBeanLocator.getBean(RegistryLinker.class).setErrorStatus(registry);
         }
-        return true;
+        EjbBeanLocator.getBean(RegistryLinker.class).setLinkedStatus(registry);
+
+    }
+
+    protected boolean isContinue(final List<RegistryRecordData> data, final Registry registry) throws ExecuteException {
+        return data.size() != 0 && !canceledProcessing.isCanceling(registry.getId());
+        /*
+        canceledProcessing.isCancel(registry.getId(), new Runnable() {
+            @Override
+            public void run() {
+                finishReadRecords.set(true);
+                finishCallback.waitCompleted();
+                EjbBeanLocator.getBean(RegistryLinker.class).setCancelStatus(registry);
+                logger.error(Linking.LINKING_CANCELED);
+            }
+        });
+        */
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)

@@ -36,6 +36,7 @@ import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import java.io.*;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -78,6 +79,9 @@ public class RegistryParser implements Serializable {
 
     @EJB
     private ModuleInstanceStrategy moduleInstanceStrategy;
+
+    @EJB
+    private CanceledProcessing canceledProcessing;
 
     private static final ReentrantReadWriteLock registryLock = new ReentrantReadWriteLock();
 
@@ -149,7 +153,7 @@ public class RegistryParser implements Serializable {
 
         LocLogger processLog = getProcessLogger(imessenger);
 
-        Context context = new Context(imessenger, numberFlushRegistryRecords);
+        final Context context = new Context(imessenger, numberFlushRegistryRecords);
 
         FileReader reader = new FileReader(is, fileName, -1);
 
@@ -205,7 +209,7 @@ public class RegistryParser implements Serializable {
                         processFooter(messageFieldList, context);
                     }
                 }
-                nextIterate = !listMessage.isEmpty();
+                nextIterate = isContinue(listMessage, context);
                 listMessage.clear();
 
             } while(nextIterate);
@@ -220,10 +224,27 @@ public class RegistryParser implements Serializable {
                 log.error("Failed reader", e);
                 processLog.error(Parsing.INNER_ERROR);
             }
-            EjbBeanLocator.getBean(RegistryParser.class).setLoadedStatus(context);
+            context.getBatchProcessor().waitEndWorks();
+            final Registry registry = context.getRegistry();
+            if (!canceledProcessing.isCancel(registry.getId(), new Runnable() {
+                @Override
+                public void run() {
+                    EjbBeanLocator.getBean(RegistryParser.class).setCancelStatus(registry);
+                    context.addMessageError(Parsing.LOADING_CANCELED);
+                }
+            })) {
+                EjbBeanLocator.getBean(RegistryParser.class).setLoadedStatus(context);
+            }
         }
 
         return context.getRegistry();
+    }
+
+    protected boolean isContinue(final Collection<?> data, final Context context) throws ExecuteException {
+        if (data.isEmpty()) {
+            return false;
+        }
+        return !canceledProcessing.isCanceling(context.getRegistry().getId());
     }
 
     private LocLogger getProcessLogger(AbstractMessenger imessenger) {
@@ -266,7 +287,7 @@ public class RegistryParser implements Serializable {
         }
     }
 
-    private void finalizeRegistry(Context context) throws ExecuteException {
+    private void finalizeRegistry(final  Context context) throws ExecuteException {
 
         if (context.getRegistry() == null) {
             return;
@@ -331,6 +352,17 @@ public class RegistryParser implements Serializable {
             return true;
         } catch (TransitionNotAllowed transitionNotAllowed) {
             log.error("Can not set error status. Current status: " + transitionNotAllowed.getType(), transitionNotAllowed);
+        }
+        return false;
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public boolean setCancelStatus(Registry registry) {
+        try {
+            registryWorkflowManager.markLoadingCanceled(registry);
+            return true;
+        } catch (TransitionNotAllowed transitionNotAllowed) {
+            log.error("Can not set loading canceled status. Current status: " + transitionNotAllowed.getType(), transitionNotAllowed);
         }
         return false;
     }
@@ -587,7 +619,7 @@ public class RegistryParser implements Serializable {
 
         public void setRegistry(Registry registry) {
             if (registry != null) {
-                logger = getProcessLogger(registry.getId(), imessenger);
+                logger = getProcessLogger(registry.getRegistryNumber(), imessenger);
             }
             this.registry = registry;
         }
