@@ -39,19 +39,20 @@ public class RegistryWorkflowManager {
     // first status in lists is the successfull one, the second is transition with some processing error
     private static final Map<RegistryStatus, List<RegistryStatus>> transitions =
             ImmutableMap.<RegistryStatus, List<RegistryStatus>>builder().
-                put(LOADING, ImmutableList.of(LOADED, LOADING_WITH_ERROR)).
-                put(LOADING_WITH_ERROR, ImmutableList.of(LOADED_WITH_ERROR, LOADED_WITH_ERROR)).
+                put(LOADING, ImmutableList.of(LOADED, LOADING_CANCELED, LOADING_WITH_ERROR)).
+                put(LOADING_WITH_ERROR, ImmutableList.of(LOADED_WITH_ERROR, LOADING_CANCELED, LOADED_WITH_ERROR)).
                 put(LOADED_WITH_ERROR, Collections.<RegistryStatus>emptyList()).
+                put(LOADING_CANCELED, Collections.<RegistryStatus>emptyList()).
                 put(LOADED, ImmutableList.of(LINKING)).
-                put(LINKING, ImmutableList.of(LINKED, LINKING_WITH_ERROR, LINKING_CANCELED)).
+                put(LINKING, ImmutableList.of(LINKED, LINKING_CANCELED, LINKING_WITH_ERROR)).
                 put(LINKED, ImmutableList.of(PROCESSING)).
-                put(LINKING_WITH_ERROR, ImmutableList.of(LINKED_WITH_ERROR, LINKING_CANCELED)).
+                put(LINKING_WITH_ERROR, ImmutableList.of(LINKED_WITH_ERROR, LINKING_CANCELED, LINKED_WITH_ERROR)).
                 put(LINKED_WITH_ERROR, ImmutableList.of(LINKING)).
                 put(LINKING_CANCELED, ImmutableList.of(LINKING)).
                 put(PROCESSING, ImmutableList.of(PROCESSED, PROCESSING_WITH_ERROR, PROCESSING_CANCELED)).
                 // allow set processed with errors if there are any not processed records
                 put(PROCESSED, ImmutableList.of(ROLLBACKING, PROCESSED_WITH_ERROR)).
-                put(PROCESSING_WITH_ERROR, ImmutableList.of(PROCESSED_WITH_ERROR, PROCESSING_CANCELED)).
+                put(PROCESSING_WITH_ERROR, ImmutableList.of(PROCESSED_WITH_ERROR, PROCESSING_CANCELED, PROCESSED_WITH_ERROR)).
                 put(PROCESSED_WITH_ERROR, ImmutableList.of(PROCESSING, ROLLBACKING)).
                 put(PROCESSING_CANCELED, ImmutableList.of(PROCESSING, ROLLBACKING)).
                 put(ROLLBACKING, ImmutableList.of(ROLLBACKED)).
@@ -182,11 +183,11 @@ public class RegistryWorkflowManager {
      */
     public void setCanceledStatus(Registry registry) throws TransitionNotAllowed {
         List<RegistryStatus> allowedCodes = transitions.get(registry.getStatus());
-        if (allowedCodes.size() < 3) {
+        if (allowedCodes.size() < 2) {
             throw new TransitionNotAllowed("No cancel transition", registry.getStatus());
         }
 
-        setNextStatus(registry, allowedCodes.get(2));
+        setNextStatus(registry, allowedCodes.get(1));
     }
 
     /**
@@ -197,11 +198,11 @@ public class RegistryWorkflowManager {
      */
     public void setNextErrorStatus(Registry registry) throws TransitionNotAllowed {
         List<RegistryStatus> allowedCodes = transitions.get(registry.getStatus());
-        if (allowedCodes.size() < 2) {
+        if (allowedCodes.size() < 3) {
             throw new TransitionNotAllowed("No error transition", registry.getStatus());
         }
 
-        setNextStatus(registry, allowedCodes.get(1));
+        setNextStatus(registry, allowedCodes.get(2));
     }
 
 
@@ -332,10 +333,27 @@ public class RegistryWorkflowManager {
      */
     public void markLinkingCanceled(Registry registry) throws TransitionNotAllowed {
         if (!linkingStates.contains(registry.getStatus())) {
-            throw new TransitionNotAllowed("Cannot mark linking with error. Current registry code", registry.getStatus());
+            throw new TransitionNotAllowed("Cannot mark linking canceled. Current registry code", registry.getStatus());
         }
 
         log.debug("Setting registry linking canceled: {}", registry);
+
+        setCanceledStatus(registry);
+    }
+
+    /**
+     * Set registry canceled status to {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKING_CANCELED}
+     *
+     * @param registry Registry to update
+     * @throws TransitionNotAllowed if registry status is not {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKING}
+     *                              or {@link ru.flexpay.eirc.registry.entity.RegistryStatus#LINKING_WITH_ERROR}
+     */
+    public void markLoadingCanceled(Registry registry) throws TransitionNotAllowed {
+        if (!loadingStates.contains(registry.getStatus())) {
+            throw new TransitionNotAllowed("Cannot mark loading canceled. Current registry code", registry.getStatus());
+        }
+
+        log.debug("Setting registry loading canceled: {}", registry);
 
         setCanceledStatus(registry);
     }

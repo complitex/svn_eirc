@@ -1,6 +1,4 @@
-package ru.flexpay.eirc.registry.service.parse;
-
-import ru.flexpay.eirc.registry.service.FinishCallback;
+package ru.flexpay.eirc.registry.service;
 
 import javax.ejb.Singleton;
 

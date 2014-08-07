@@ -1,12 +1,10 @@
-package ru.flexpay.eirc.registry.service.parse;
+package ru.flexpay.eirc.registry.service;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.flexpay.eirc.registry.entity.*;
-import ru.flexpay.eirc.registry.service.RegistryWorkflowManager;
-import ru.flexpay.eirc.registry.service.TransitionNotAllowed;
 
 import javax.ejb.EJB;
 import javax.ejb.Stateless;

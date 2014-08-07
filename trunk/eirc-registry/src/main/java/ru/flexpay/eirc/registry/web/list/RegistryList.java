@@ -46,7 +46,6 @@ import ru.flexpay.eirc.registry.entity.RegistryType;
 import ru.flexpay.eirc.registry.service.*;
 import ru.flexpay.eirc.registry.service.handle.RegistryHandler;
 import ru.flexpay.eirc.registry.service.link.RegistryLinker;
-import ru.flexpay.eirc.registry.service.parse.RegistryFinishCallback;
 import ru.flexpay.eirc.registry.service.parse.RegistryParser;
 import ru.flexpay.eirc.registry.web.component.BrowserFilesDialog;
 import ru.flexpay.eirc.registry.web.component.IMessengerContainer;
@@ -392,7 +391,8 @@ public class RegistryList extends TemplatePage {
     }
 
     public boolean canCanceled(Registry registry) {
-        return !finishCallback.isCompleted() && registryWorkflowManager.isInWork(registry) && !registryWorkflowManager.isDeleting(registry);
+        return !finishCallback.isCompleted() && !canceledProcessing.isCanceling(registry.getId()) &&
+                registryWorkflowManager.isInWork(registry) && !registryWorkflowManager.isDeleting(registry);
     }
 
     public boolean isExecuting(Registry registry) {
