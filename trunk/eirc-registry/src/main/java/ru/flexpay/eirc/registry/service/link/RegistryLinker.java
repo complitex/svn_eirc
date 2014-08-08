@@ -239,6 +239,8 @@ public class RegistryLinker {
     public void finalizeRegistryLinked(final LocLogger logger, AbstractFinishCallback finishLink, final Registry registry,
                                        boolean afterCorrection, FilterWrapper<RegistryRecordData> filter) throws ExecuteException {
 
+        finishLink.complete();
+
         // Проставляем статус отмены
         if (canceledProcessing.isCancel(registry.getId(), new Runnable() {
             @Override
@@ -252,7 +254,6 @@ public class RegistryLinker {
         }
 
         logger.info(Linking.REGISTRY_FINISH_LINK);
-        finishLink.complete();
 
         // если не было отмены, то статус завершения
         if (afterCorrection &&

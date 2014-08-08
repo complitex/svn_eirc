@@ -357,4 +357,21 @@ public class RegistryWorkflowManager {
 
         setCanceledStatus(registry);
     }
+
+    /**
+     * Set registry canceled status to {@link ru.flexpay.eirc.registry.entity.RegistryStatus#PROCESSING_CANCELED}
+     *
+     * @param registry Registry to update
+     * @throws TransitionNotAllowed if registry status is not {@link ru.flexpay.eirc.registry.entity.RegistryStatus#PROCESSING}
+     *                              or {@link ru.flexpay.eirc.registry.entity.RegistryStatus#PROCESSING_WITH_ERROR}
+     */
+    public void markProcessingCanceled(Registry registry) throws TransitionNotAllowed {
+        if (!processingStates.contains(registry.getStatus())) {
+            throw new TransitionNotAllowed("Cannot mark loading canceled. Current registry code", registry.getStatus());
+        }
+
+        log.debug("Setting registry processing canceled: {}", registry);
+
+        setCanceledStatus(registry);
+    }
 }
