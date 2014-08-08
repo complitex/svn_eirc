@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author Pavel Sknar
  */
 @Stateless
-public class RegistryHandler extends CanceledProcessing {
+public class RegistryHandler {
 
     private static final Logger log = LoggerFactory.getLogger(RegistryHandler.class);
 
@@ -69,10 +69,13 @@ public class RegistryHandler extends CanceledProcessing {
     @EJB
     private OperationFactory operationFactory;
 
+    @EJB
+    private CanceledProcessing canceledProcessing;
+
     private static final ReentrantReadWriteLock registryLock = new ReentrantReadWriteLock();
 
-    public void handle(final Long registryId, final AbstractMessenger imessenger, final AbstractFinishCallback finishLink) {
-        handle(FilterWrapper.<RegistryRecordData>of(new RegistryRecord(registryId)), imessenger, finishLink);
+    public void handle(final Long registryId, final AbstractMessenger imessenger, final AbstractFinishCallback finishHandle) {
+        handle(FilterWrapper.<RegistryRecordData>of(new RegistryRecord(registryId)), imessenger, finishHandle);
     }
 
     private void handle(final FilterWrapper<RegistryRecordData> filter, final AbstractMessenger imessenger,
@@ -135,12 +138,11 @@ public class RegistryHandler extends CanceledProcessing {
                         final Statistics statistics = new Statistics(registry.getRegistryNumber(), imessenger);
 
                         int numberFlushRegistryRecords = configBean.getInteger(EircConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
-                        List<RegistryRecordData> registryRecords;
                         FilterWrapper<RegistryRecordData> innerFilter = FilterWrapper.of(filter.getObject(), 0, numberFlushRegistryRecords);
                         do {
                             final List<RegistryRecordData> recordsToProcessing = registryRecordBean.getRecordsToProcessing(innerFilter);
 
-                            if (recordsToProcessing.size() < numberFlushRegistryRecords) {
+                            if (!isContinue(recordsToProcessing, registry)) {
                                 finishReadRecords.set(true);
                             }
 
@@ -164,16 +166,14 @@ public class RegistryHandler extends CanceledProcessing {
                                             if (StringUtils.isEmpty(message) && th.getCause() != null) {
                                                 message = th.getCause().getLocalizedMessage();
                                             }
-                                            logger.error(Handling.REGISTRY_FAILED_HANDLED, th.getMessage());
+                                            logger.error(Handling.REGISTRY_FAILED_HANDLED, message);
                                             throw new ExecuteException(th, "Failed handle registry " + registryId);
                                         } finally {
 
                                             statistics.add(recordsToProcessing.size(), results == null? 0 :results.size());
 
                                             if (recordHandlingCounter.decrementAndGet() == 0 && finishReadRecords.get()) {
-                                                logger.info(Handling.REGISTRY_FINISH_HANDLE);
-                                                finishHandle.complete();
-                                                EjbBeanLocator.getBean(RegistryHandler.class).setHandledStatus(registry);
+                                                finalizeRegistryHandled(finishHandle, registry, logger);
                                             }
                                         }
                                     }
@@ -182,12 +182,9 @@ public class RegistryHandler extends CanceledProcessing {
                                 // next registry record`s id is last in this partition
                                 innerFilter.setFirst(recordsToProcessing.get(recordsToProcessing.size() - 1).getId().intValue() + 1);
                             } else if (recordHandlingCounter.get() == 0) {
-                                logger.info(Handling.REGISTRY_FINISH_HANDLE);
-                                finishHandle.complete();
-                                EjbBeanLocator.getBean(RegistryHandler.class).setHandledStatus(registry);
+                                finalizeRegistryHandled(finishHandle, registry, logger);
                             }
-                            registryRecords = recordsToProcessing;
-                        } while (registryRecords.size() >= numberFlushRegistryRecords);
+                        } while (!finishReadRecords.get());
 
                     } catch (Throwable th) {
 
@@ -200,6 +197,20 @@ public class RegistryHandler extends CanceledProcessing {
 
                 } finally {
                     if (!finishReadRecords.get()) {
+                        if (registryWorkflowManager.isProcessing(registry)) {
+                            try {
+                                setErrorStatus(registry);
+                            } catch (Throwable th) {
+                                log.error("Can not change status", th);
+                                logger.error(Handling.REGISTRY_STATUS_INNER_ERROR);
+                            }
+                            try {
+                                setHandledStatus(registry);
+                            } catch (Throwable th) {
+                                log.error("Can not change status", th);
+                                logger.error(Handling.REGISTRY_STATUS_INNER_ERROR);
+                            }
+                        }
                         logger.info(Handling.REGISTRY_FINISH_HANDLE);
                         finishHandle.complete();
                     }
@@ -207,6 +218,31 @@ public class RegistryHandler extends CanceledProcessing {
                 return null;
             }
         });
+    }
+
+    public void finalizeRegistryHandled(AbstractFinishCallback finishHandle, final Registry registry, final LocLogger logger) throws ExecuteException {
+        finishHandle.complete();
+
+        // Проставляем статус отмены
+        if (canceledProcessing.isCancel(registry.getId(), new Runnable() {
+            @Override
+            public void run() {
+                EjbBeanLocator.getBean(RegistryHandler.class).setCancelStatus(registry);
+                logger.error(Handling.HANDLING_CANCELED);
+            }
+
+        })) {
+          return;
+        }
+
+        logger.info(Handling.REGISTRY_FINISH_HANDLE);
+
+        // если не было отмены, то статус завершения
+        EjbBeanLocator.getBean(RegistryHandler.class).setHandledStatus(registry);
+    }
+
+    protected boolean isContinue(final List<RegistryRecordData> data, final Registry registry) throws ExecuteException {
+        return data.size() != 0 && !canceledProcessing.isCanceling(registry.getId());
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
@@ -286,6 +322,17 @@ public class RegistryHandler extends CanceledProcessing {
             log.error("Can not set error status. Current status: " + transitionNotAllowed.getType(), transitionNotAllowed);
         } catch (Exception ex) {
             log.error("Can not set error status", ex);
+        }
+        return false;
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public boolean setCancelStatus(Registry registry) {
+        try {
+            registryWorkflowManager.markProcessingCanceled(registry);
+            return true;
+        } catch (TransitionNotAllowed transitionNotAllowed) {
+            log.error("Can not set handled canceled status. Current status: " + transitionNotAllowed.getType(), transitionNotAllowed);
         }
         return false;
     }
