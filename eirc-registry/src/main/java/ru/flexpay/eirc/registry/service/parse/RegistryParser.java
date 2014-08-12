@@ -119,7 +119,7 @@ public class RegistryParser implements Serializable {
             public Void execute() throws ExecuteException {
                 try {
                     InputStream is = new FileInputStream(new File(dir, fileName));
-                    Registry registry = EjbBeanLocator.getBean(RegistryParser.class).parse(imessenger, is, fileName);
+                    Registry registry = EjbBeanLocator.getBean(RegistryParser.class).parse(imessenger, finishUpload, is, fileName);
 
                     if (registry != null) {
                         logger.info(Parsing.REGISTRY_CREATED, registry.getRegistryNumber(), fileName);
@@ -141,14 +141,16 @@ public class RegistryParser implements Serializable {
         });
     }
 
-    public Registry parse(AbstractMessenger imessenger, InputStream is, String fileName) throws ExecuteException {
+    public Registry parse(AbstractMessenger imessenger, final AbstractFinishCallback finishUpload, InputStream is,
+                          String fileName) throws ExecuteException {
+
         int numberReadChars = configBean.getInteger(EircConfig.NUMBER_READ_CHARS, true);
         int numberFlushRegistryRecords = configBean.getInteger(EircConfig.NUMBER_FLUSH_REGISTRY_RECORDS, true);
-        return parse(imessenger, is, fileName, numberReadChars, numberFlushRegistryRecords);
+        return parse(imessenger, finishUpload, is, fileName, numberReadChars, numberFlushRegistryRecords);
     }
 
-    public Registry parse(AbstractMessenger imessenger, InputStream is, String fileName, int numberReadChars, int numberFlushRegistryRecords)
-            throws ExecuteException {
+    public Registry parse(AbstractMessenger imessenger, final AbstractFinishCallback finishUpload, InputStream is,
+                          String fileName, int numberReadChars, int numberFlushRegistryRecords) throws ExecuteException {
         log.debug("start action");
 
         LocLogger processLog = getProcessLogger(imessenger);
@@ -188,6 +190,9 @@ public class RegistryParser implements Serializable {
                             registry = processHeader(fileName, messageFieldList, processLog);
                             if (registry == null) {
                                 return null;
+                            }
+                            if (finishUpload != null) {
+                                finishUpload.setProcessId(registry.getId());
                             }
                             EjbBeanLocator.getBean(RegistryParser.class).saveRegistry(registry);
                         } finally {

@@ -12,6 +12,11 @@ public abstract class AbstractFinishCallback implements Serializable {
         getCounter().incrementAndGet();
     }
 
+    public void init(Long processId) {
+        setProcessId(processId);
+        init();
+    }
+
     public void complete() {
         getCounter().decrementAndGet();
     }
@@ -23,6 +28,8 @@ public abstract class AbstractFinishCallback implements Serializable {
     public boolean isCompleted() {
         return getCounter().get() <= 0;
     }
+
+    public abstract void setProcessId(Long processId);
 
     protected abstract AtomicInteger getCounter();
 }

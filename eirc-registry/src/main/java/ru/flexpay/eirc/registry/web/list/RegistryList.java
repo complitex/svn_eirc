@@ -131,7 +131,7 @@ public class RegistryList extends TemplatePage {
         final AjaxFeedbackPanel messages = new AjaxFeedbackPanel("messages");
         messages.setOutputMarkupId(true);
 
-        container = new IMessengerContainer("container", imessenger, finishCallback);
+        container = new IMessengerContainer("container", imessenger, finishCallbackService);
         container.setOutputMarkupPlaceholderTag(true);
         container.setVisible(true);
         add(container);
@@ -391,12 +391,11 @@ public class RegistryList extends TemplatePage {
     }
 
     public boolean canCanceled(Registry registry) {
-        return !finishCallback.isCompleted() && !canceledProcessing.isCanceling(registry.getId()) &&
-                registryWorkflowManager.isInWork(registry) && !registryWorkflowManager.isDeleting(registry);
+        return finishCallbackService.canCanceled(registry.getId()) && !canceledProcessing.isCanceling(registry.getId());
     }
 
     public boolean isExecuting(Registry registry) {
-        return !finishCallback.isCompleted() && registryWorkflowManager.isInWork(registry);
+        return !finishCallbackService.isCompleted(registry.getId()) && registryWorkflowManager.isInWork(registry);
     }
 
     private Class<? extends Page> getViewPage() {

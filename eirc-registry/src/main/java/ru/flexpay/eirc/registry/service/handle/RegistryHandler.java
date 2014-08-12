@@ -99,7 +99,7 @@ public class RegistryHandler {
         final LocLogger logger = getProcessLogger(registry.getRegistryNumber(), imessenger);
 
         logger.info(Handling.STARTING_HANDLE_REGISTRIES);
-        finishHandle.init();
+        finishHandle.init(registry.getId());
 
         handleQueueProcessor.execute(new AbstractJob<Void>() {
             @Override
