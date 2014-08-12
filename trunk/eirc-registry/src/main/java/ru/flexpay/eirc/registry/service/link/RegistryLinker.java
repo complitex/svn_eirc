@@ -121,7 +121,7 @@ public class RegistryLinker {
 
         final LocLogger logger = getProcessLogger(registry.getRegistryNumber(), imessenger);
         logger.info(Linking.STARTING_LINK_REGISTRIES);
-        finishLink.init();
+        finishLink.init(registry.getId());
 
         linkQueueProcessor.execute(new AbstractJob<Void>() {
             @Override
