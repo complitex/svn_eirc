@@ -114,13 +114,13 @@ public class TestCache {
 
             serviceBean.save(service);
 
+            service.setCode("3");
+            serviceBean.save(service);
+
             serviceBean.delete(service);
         }
     }
 
-    // 0:03:15.173 - include
-    // 0:03:08.095 - exclude
-    // 0:03:27.230 - exclude
     @Test
     public void testLinker() throws InterruptedException {
         try (final EJBContainer container = EjbTestBeanLocator.createEJBContainer()) {
@@ -135,12 +135,17 @@ public class TestCache {
                 protected AtomicInteger getCounter() {
                     return counter;
                 }
+
+                @Override
+                public void setProcessId(Long processId) {
+
+                }
             };
 
             final Locale locale = new Locale("ru");
             StopWatch watch = new StopWatch();
             watch.start();
-            registryLinker.link(1L, new AbstractMessenger() {
+            registryLinker.link(9L, new AbstractMessenger() {
                 private final String RESOURCE_BUNDLE = RegistryMessenger.class.getName();
 
                 Queue<IMessage> messages = new Queue<IMessage>() {
